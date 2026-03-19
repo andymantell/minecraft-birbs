@@ -21,6 +21,7 @@ public abstract class AbstractBirdRenderer<E extends AbstractBritishBird, S exte
     public void extractRenderState(E entity, S state, float partialTick) {
         super.extractRenderState(entity, state, partialTick);
         state.isMale = entity.isMale();
+        state.isBaby = entity.isBaby();
         state.isFlying = detectFlying(entity);
 
         if (state.isFlying && shouldComputeFlap(state)) {

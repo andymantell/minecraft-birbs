@@ -35,7 +35,6 @@ public class MallardRenderer extends AbstractBirdRenderer<MallardEntity, Mallard
         state.isSwimming = entity.isSwimming();
         state.isDabbling = entity.isDabbling();
         state.isWaddling = entity.isWaddling();
-        state.isBaby = entity.isBaby();
     }
 
     @Override

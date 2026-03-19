@@ -40,6 +40,6 @@ public class PeregrineFalconRenderer extends AbstractBirdRenderer<PeregrineFalco
 
     @Override
     public Identifier getTextureLocation(PeregrineFalconRenderState state) {
-        return PEREGRINE_ADULT_TEXTURE;
+        return state.isBaby ? PEREGRINE_JUVENILE_TEXTURE : PEREGRINE_ADULT_TEXTURE;
     }
 }
