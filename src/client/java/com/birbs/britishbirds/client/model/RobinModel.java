@@ -94,6 +94,49 @@ public class RobinModel extends EntityModel<RobinRenderState> {
     @Override
     public void setupAnim(RobinRenderState renderState) {
         super.setupAnim(renderState);
-        // No animations yet - will be added in Phase 2
+
+        if (renderState.isFlying) {
+            // Flying animations
+            // Wing flapping
+            this.leftWing.zRot = -renderState.flapAngle;
+            this.rightWing.zRot = renderState.flapAngle;
+
+            // Tuck legs up
+            this.leftLeg.xRot = 0.5f;
+            this.rightLeg.xRot = 0.5f;
+
+            // Tilt body forward
+            this.body.xRot = -0.2f;
+        } else {
+            // Ground animations
+            // Fold wings against body
+            this.leftWing.zRot = 0.0f;
+            this.rightWing.zRot = 0.0f;
+
+            // Reset body tilt
+            this.body.xRot = 0.0f;
+
+            // Gentle tail bob (sinusoidal)
+            this.tail.xRot = (float) Math.toRadians(-15.0) + (float) Math.sin(renderState.ageInTicks * 0.15f) * 0.05f;
+
+            // Occasional head tilt
+            if (((int) renderState.ageInTicks % 60) < 15) {
+                this.head.zRot = 0.15f;
+            } else {
+                this.head.zRot = 0.0f;
+            }
+
+            // Leg walking animation based on walkAnimationSpeed
+            float walkSpeed = renderState.walkAnimationSpeed;
+            float walkPos = renderState.walkAnimationPos;
+            if (walkSpeed > 0.01f) {
+                float legSwing = (float) Math.sin(walkPos * 0.6662f) * 1.4f * walkSpeed;
+                this.leftLeg.xRot = legSwing;
+                this.rightLeg.xRot = -legSwing;
+            } else {
+                this.leftLeg.xRot = 0.0f;
+                this.rightLeg.xRot = 0.0f;
+            }
+        }
     }
 }
