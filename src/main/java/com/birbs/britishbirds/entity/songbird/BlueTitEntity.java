@@ -39,7 +39,7 @@ public class BlueTitEntity extends SmallPasserineEntity {
     public static AttributeSupplier.Builder createBlueTitAttributes() {
         return createFlyingBirdAttributes()
                 .add(Attributes.MAX_HEALTH, 3.0)
-                .add(Attributes.MOVEMENT_SPEED, 0.25)
+                .add(Attributes.MOVEMENT_SPEED, 0.18)
                 .add(Attributes.FLYING_SPEED, 0.4);
     }
 

@@ -37,10 +37,10 @@ public abstract class SmallPasserineEntity extends AbstractFlyingBird {
         this.goalSelector.addGoal(3, new PerchingGoal(this, 8, 100, 300));
         this.goalSelector.addGoal(4, new FlutteringFlightGoal(this, 1.0, 3, 10));
         this.goalSelector.addGoal(5, this.foragingGoal);
-        this.goalSelector.addGoal(6, new HoppingMovementGoal(this, 0.3, 0.3));
-        this.goalSelector.addGoal(7, new WaterAvoidingRandomStrollGoal(this, 1.0));
-        this.goalSelector.addGoal(8, new LookAtPlayerGoal(this, Player.class, 6.0f));
-        this.goalSelector.addGoal(9, new RandomLookAroundGoal(this));
+        this.goalSelector.addGoal(6, new HoppingMovementGoal(this, 0.25, 0.3));
+        // No WaterAvoidingRandomStrollGoal — it causes smooth running, overriding hops
+        this.goalSelector.addGoal(7, new LookAtPlayerGoal(this, Player.class, 6.0f));
+        this.goalSelector.addGoal(8, new RandomLookAroundGoal(this));
 
         // Let subclasses add species-specific goals
         registerSpeciesGoals();

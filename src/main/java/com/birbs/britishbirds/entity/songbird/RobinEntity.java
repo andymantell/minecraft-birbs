@@ -27,7 +27,7 @@ public class RobinEntity extends SmallPasserineEntity {
     public static AttributeSupplier.Builder createRobinAttributes() {
         return createFlyingBirdAttributes()
                 .add(Attributes.MAX_HEALTH, 4.0)
-                .add(Attributes.MOVEMENT_SPEED, 0.3)
+                .add(Attributes.MOVEMENT_SPEED, 0.2)
                 .add(Attributes.FLYING_SPEED, 0.35);
     }
 
