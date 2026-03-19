@@ -25,7 +25,7 @@ public class BlueTitRenderer extends MobRenderer<BlueTitEntity, BlueTitRenderSta
     public void extractRenderState(BlueTitEntity entity, BlueTitRenderState state, float partialTick) {
         super.extractRenderState(entity, state, partialTick);
         state.isMale = entity.isMale();
-        state.isFlying = entity.isFlying();
+        state.isFlying = entity.isFlying() || (!entity.onGround() && !entity.isInWater());
         state.isPecking = entity.isPecking();
         state.isHangingUpsideDown = entity.isHangingUpsideDown();
         if (state.isFlying) {

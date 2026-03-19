@@ -27,7 +27,7 @@ public class BarnOwlRenderer extends MobRenderer<BarnOwlEntity, BarnOwlRenderSta
     public void extractRenderState(BarnOwlEntity entity, BarnOwlRenderState state, float partialTick) {
         super.extractRenderState(entity, state, partialTick);
         state.isMale = entity.isMale();
-        state.isFlying = entity.isFlying();
+        state.isFlying = entity.isFlying() || (!entity.onGround() && !entity.isInWater());
         state.isHovering = entity.isHovering();
         if (state.isFlying) {
             // Slow wing flaps for owl

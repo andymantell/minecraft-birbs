@@ -27,7 +27,7 @@ public class PeregrineFalconRenderer extends MobRenderer<PeregrineFalconEntity, 
     public void extractRenderState(PeregrineFalconEntity entity, PeregrineFalconRenderState state, float partialTick) {
         super.extractRenderState(entity, state, partialTick);
         state.isMale = entity.isMale();
-        state.isFlying = entity.isFlying();
+        state.isFlying = entity.isFlying() || (!entity.onGround() && !entity.isInWater());
         state.isStooping = entity.isStooping();
         if (state.isFlying && !state.isStooping) {
             // Stiff shallow wingbeats

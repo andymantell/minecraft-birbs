@@ -29,7 +29,7 @@ public class MallardRenderer extends MobRenderer<MallardEntity, MallardRenderSta
     public void extractRenderState(MallardEntity entity, MallardRenderState state, float partialTick) {
         super.extractRenderState(entity, state, partialTick);
         state.isMale = entity.isMale();
-        state.isFlying = entity.isFlying();
+        state.isFlying = entity.isFlying() || (!entity.onGround() && !entity.isInWater());
         state.isSwimming = entity.isSwimming();
         state.isDabbling = entity.isDabbling();
         state.isWaddling = entity.isWaddling();
