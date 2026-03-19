@@ -148,32 +148,32 @@ public class MallardModel extends EntityModel<MallardRenderState> {
                 PartPose.offsetAndRotation(0.0f, -0.5f, 1.5f,
                         (float) Math.toRadians(-30.0), 0.0f, 0.0f));
 
-        // Left leg: short, set far back 1x3x1
+        // Left leg: set far back 1x4x1, pivot inside body so leg connects
         PartDefinition leftLegPart = partDefinition.addOrReplaceChild("left_leg",
                 CubeListBuilder.create()
                         .texOffs(26, 8)
-                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 3.0f, 1.0f),
-                PartPose.offset(1.5f, 21.0f, 3.0f));
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 4.0f, 1.0f),
+                PartPose.offset(1.5f, 20.0f, 3.0f));
 
         // Left foot: webbed, wide 3x1x3
         leftLegPart.addOrReplaceChild("left_foot",
                 CubeListBuilder.create()
                         .texOffs(30, 8)
-                        .addBox(-1.5f, 2.5f, -2.5f, 3.0f, 1.0f, 3.0f),
+                        .addBox(-1.5f, 3.5f, -2.5f, 3.0f, 1.0f, 3.0f),
                 PartPose.ZERO);
 
-        // Right leg: short, set far back 1x3x1
+        // Right leg: set far back 1x4x1, pivot inside body so leg connects
         PartDefinition rightLegPart = partDefinition.addOrReplaceChild("right_leg",
                 CubeListBuilder.create()
                         .texOffs(26, 8)
-                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 3.0f, 1.0f),
-                PartPose.offset(-1.5f, 21.0f, 3.0f));
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 4.0f, 1.0f),
+                PartPose.offset(-1.5f, 20.0f, 3.0f));
 
         // Right foot: webbed, wide 3x1x3
         rightLegPart.addOrReplaceChild("right_foot",
                 CubeListBuilder.create()
                         .texOffs(30, 8)
-                        .addBox(-1.5f, 2.5f, -2.5f, 3.0f, 1.0f, 3.0f),
+                        .addBox(-1.5f, 3.5f, -2.5f, 3.0f, 1.0f, 3.0f),
                 PartPose.ZERO);
 
         return LayerDefinition.create(meshDefinition, 64, 64);

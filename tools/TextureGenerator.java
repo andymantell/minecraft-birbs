@@ -355,24 +355,40 @@ public class TextureGenerator {
         fillBox(g, 0, 17, 5, 5, 5, goldenBuff, cream, cream, goldenBuff, goldenBuff, goldenBuff);
 
         // Facial disc: texOffs(20,17), w=6, h=5, d=1
+        // UV layout: top face (21,17,6,1), front face (21,18,6,5)
+        // left face (20,18,1,5), right face (27,18,1,5)
         fillBox(g, 20, 17, 6, 5, 1, cream, cream, cream, cream, cream, cream);
-        // Heart shape: buff rim around edges
-        for (int x = 21; x < 27; x++) {
-            img.setRGB(x, 17, buffRim.getRGB());
-        }
-        for (int x = 21; x < 27; x++) {
-            img.setRGB(x, 22, buffRim.getRGB());
-        }
-        img.setRGB(20, 18, buffRim.getRGB());
-        img.setRGB(27, 18, buffRim.getRGB());
-        // Dark eyes centered on facial disc front
-        img.setRGB(23, 20, darkEye.getRGB());
-        img.setRGB(24, 20, darkEye.getRGB());
-        img.setRGB(25, 20, darkEye.getRGB());
-        img.setRGB(26, 20, darkEye.getRGB());
+        // Heart-shaped buff rim on front face (21,18)-(26,22)
+        // Top rim — curved heart top
+        img.setRGB(21, 18, buffRim.getRGB());
+        img.setRGB(22, 18, buffRim.getRGB());
+        img.setRGB(23, 18, cream.getRGB());
+        img.setRGB(24, 18, cream.getRGB());
+        img.setRGB(25, 18, buffRim.getRGB());
+        img.setRGB(26, 18, buffRim.getRGB());
+        // Side rims
+        img.setRGB(21, 19, buffRim.getRGB());
+        img.setRGB(26, 19, buffRim.getRGB());
+        img.setRGB(21, 20, buffRim.getRGB());
+        img.setRGB(26, 20, buffRim.getRGB());
+        img.setRGB(21, 21, buffRim.getRGB());
+        img.setRGB(26, 21, buffRim.getRGB());
         // V-shape at bottom of heart (chin)
+        img.setRGB(21, 22, buffRim.getRGB());
+        img.setRGB(22, 22, buffRim.getRGB());
+        img.setRGB(23, 22, buffRim.getRGB());
         img.setRGB(24, 22, buffRim.getRGB());
         img.setRGB(25, 22, buffRim.getRGB());
+        img.setRGB(26, 22, buffRim.getRGB());
+        // Two separate dark eye spots on front face (row 2, y=20)
+        img.setRGB(22, 20, darkEye.getRGB()); // left eye
+        img.setRGB(25, 20, darkEye.getRGB()); // right eye
+        // Subtle dark around eyes
+        img.setRGB(22, 19, new Color(0x8A, 0x7A, 0x6A).getRGB());
+        img.setRGB(25, 19, new Color(0x8A, 0x7A, 0x6A).getRGB());
+        // Left/right side faces
+        img.setRGB(20, 18, buffRim.getRGB());
+        img.setRGB(27, 18, buffRim.getRGB());
 
         // Beak: texOffs(20,23), 1x1x1
         fillBox(g, 20, 23, 1, 1, 1, paleHorn, paleHorn, paleHorn, paleHorn, paleHorn, paleHorn);
@@ -450,16 +466,27 @@ public class TextureGenerator {
         // Head
         fillBox(g, 0, 17, 5, 5, 5, goldenBuff, cream, cream, goldenBuff, goldenBuff, goldenBuff);
 
-        // Facial disc
+        // Facial disc — same heart-shape as male
         fillBox(g, 20, 17, 6, 5, 1, cream, cream, cream, cream, cream, cream);
-        for (int x = 21; x < 27; x++) {
-            img.setRGB(x, 17, buffRim.getRGB());
-            img.setRGB(x, 22, buffRim.getRGB());
-        }
-        img.setRGB(23, 20, darkEye.getRGB());
-        img.setRGB(24, 20, darkEye.getRGB());
+        // Heart-shaped buff rim on front face (21,18)-(26,22)
+        img.setRGB(21, 18, buffRim.getRGB());
+        img.setRGB(22, 18, buffRim.getRGB());
+        img.setRGB(25, 18, buffRim.getRGB());
+        img.setRGB(26, 18, buffRim.getRGB());
+        img.setRGB(21, 19, buffRim.getRGB());
+        img.setRGB(26, 19, buffRim.getRGB());
+        img.setRGB(21, 20, buffRim.getRGB());
+        img.setRGB(26, 20, buffRim.getRGB());
+        img.setRGB(21, 21, buffRim.getRGB());
+        img.setRGB(26, 21, buffRim.getRGB());
+        for (int x = 21; x <= 26; x++) img.setRGB(x, 22, buffRim.getRGB());
+        // Two separate dark eye spots
+        img.setRGB(22, 20, darkEye.getRGB());
         img.setRGB(25, 20, darkEye.getRGB());
-        img.setRGB(26, 20, darkEye.getRGB());
+        img.setRGB(22, 19, new Color(0x8A, 0x7A, 0x6A).getRGB());
+        img.setRGB(25, 19, new Color(0x8A, 0x7A, 0x6A).getRGB());
+        img.setRGB(20, 18, buffRim.getRGB());
+        img.setRGB(27, 18, buffRim.getRGB());
 
         // Beak
         fillBox(g, 20, 23, 1, 1, 1, paleHorn, paleHorn, paleHorn, paleHorn, paleHorn, paleHorn);
@@ -496,7 +523,7 @@ public class TextureGenerator {
     // L WingOuter: texOffs(14,25), 1x3x5
     // Tail:        texOffs(22,0),  3x1x4
     // TailTip:     texOffs(22,5),  2x1x3
-    // Legs:        texOffs(36,0),  1x3x1
+    // Legs:        texOffs(36,0),  1x5x1
     // Talons:      texOffs(40,0),  2x1x2
 
     static void generatePeregrineAdult(String path) throws Exception {
@@ -610,8 +637,8 @@ public class TextureGenerator {
             img.setRGB(x, 8, darkSlate.getRGB());
         }
 
-        // Legs: texOffs(36,0), w=1, h=3, d=1 — yellow
-        fillBox(g, 36, 0, 1, 3, 1, yellowFeet, yellowFeet, yellowFeet, yellowFeet, yellowFeet, yellowFeet);
+        // Legs: texOffs(36,0), w=1, h=5, d=1 — yellow
+        fillBox(g, 36, 0, 1, 5, 1, yellowFeet, yellowFeet, yellowFeet, yellowFeet, yellowFeet, yellowFeet);
 
         // Talons: texOffs(40,0), w=2, h=1, d=2 — yellow with dark claws
         fillBox(g, 40, 0, 2, 1, 2, yellowFeet, yellowFeet, yellowFeet, yellowFeet, yellowFeet, yellowFeet);
@@ -679,8 +706,8 @@ public class TextureGenerator {
         fillBox(g, 22, 0, 3, 1, 4, brown, brown, brown, brown, brown, brown);
         fillBox(g, 22, 5, 2, 1, 3, brown, brown, brown, brown, brown, brown);
 
-        // Legs/talons
-        fillBox(g, 36, 0, 1, 3, 1, blueGreyFeet, blueGreyFeet, blueGreyFeet, blueGreyFeet, blueGreyFeet, blueGreyFeet);
+        // Legs/talons (1x5x1 to match model)
+        fillBox(g, 36, 0, 1, 5, 1, blueGreyFeet, blueGreyFeet, blueGreyFeet, blueGreyFeet, blueGreyFeet, blueGreyFeet);
         fillBox(g, 40, 0, 2, 1, 2, blueGreyFeet, blueGreyFeet, blueGreyFeet, blueGreyFeet, blueGreyFeet, blueGreyFeet);
 
         g.dispose();
@@ -700,7 +727,7 @@ public class TextureGenerator {
     // L WingTip:  texOffs(16,30), 1x3x3
     // Tail:       texOffs(26,0),  5x1x4
     // TailCurl:   texOffs(26,5),  1x1x2
-    // Legs:       texOffs(26,8),  1x3x1
+    // Legs:       texOffs(26,8),  1x4x1
     // Feet:       texOffs(30,8),  3x1x3
 
     static void generateMallardMale(String path) throws Exception {
@@ -800,8 +827,8 @@ public class TextureGenerator {
         // Tail curl: texOffs(26,5), 1x1x2 — black
         fillBox(g, 26, 5, 1, 1, 2, blackRump, blackRump, blackRump, blackRump, blackRump, blackRump);
 
-        // Legs: texOffs(26,8), w=1, h=3, d=1 — orange
-        fillBox(g, 26, 8, 1, 3, 1, orangeLegs, orangeLegs, orangeLegs, orangeLegs, orangeLegs, orangeLegs);
+        // Legs: texOffs(26,8), w=1, h=4, d=1 — orange
+        fillBox(g, 26, 8, 1, 4, 1, orangeLegs, orangeLegs, orangeLegs, orangeLegs, orangeLegs, orangeLegs);
 
         // Feet: texOffs(30,8), w=3, h=1, d=3 — orange webbed
         fillBox(g, 30, 8, 3, 1, 3, orangeLegs, orangeLegs, orangeLegs, orangeLegs, orangeLegs, orangeLegs);
@@ -872,8 +899,8 @@ public class TextureGenerator {
         // No tail curl visible for female, but fill the UV space
         fillBox(g, 26, 5, 1, 1, 2, mottledBrown, mottledBrown, mottledBrown, mottledBrown, mottledBrown, mottledBrown);
 
-        // Legs/feet
-        fillBox(g, 26, 8, 1, 3, 1, orangeLegs, orangeLegs, orangeLegs, orangeLegs, orangeLegs, orangeLegs);
+        // Legs/feet (1x4x1 to match model)
+        fillBox(g, 26, 8, 1, 4, 1, orangeLegs, orangeLegs, orangeLegs, orangeLegs, orangeLegs, orangeLegs);
         fillBox(g, 30, 8, 3, 1, 3, orangeLegs, orangeLegs, orangeLegs, orangeLegs, orangeLegs, orangeLegs);
 
         g.dispose();
@@ -938,8 +965,8 @@ public class TextureGenerator {
         fillBox(g, 26, 0, 5, 1, 4, darkBack, darkBack, darkBack, darkBack, darkBack, darkBack);
         fillBox(g, 26, 5, 1, 1, 2, darkBack, darkBack, darkBack, darkBack, darkBack, darkBack);
 
-        // Legs/feet: dark grey
-        fillBox(g, 26, 8, 1, 3, 1, greyLegs, greyLegs, greyLegs, greyLegs, greyLegs, greyLegs);
+        // Legs/feet: dark grey (1x4x1 to match model)
+        fillBox(g, 26, 8, 1, 4, 1, greyLegs, greyLegs, greyLegs, greyLegs, greyLegs, greyLegs);
         fillBox(g, 30, 8, 3, 1, 3, greyLegs, greyLegs, greyLegs, greyLegs, greyLegs, greyLegs);
 
         g.dispose();

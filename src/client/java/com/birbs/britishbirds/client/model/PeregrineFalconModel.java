@@ -149,32 +149,32 @@ public class PeregrineFalconModel extends EntityModel<PeregrineFalconRenderState
                         .addBox(-1.0f, -0.5f, 3.5f, 2.0f, 1.0f, 3.0f),
                 PartPose.ZERO);
 
-        // LEFT LEG: short powerful 1x3x1 with large talon
+        // LEFT LEG: 1x5x1, pivot inside body so leg visually connects
         PartDefinition leftLegPart = partDefinition.addOrReplaceChild("left_leg",
                 CubeListBuilder.create()
                         .texOffs(36, 0)
-                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 3.0f, 1.0f),
-                PartPose.offset(1.5f, 20.5f, 0.0f));
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 5.0f, 1.0f),
+                PartPose.offset(1.5f, 19.0f, 0.0f));
 
         // Left talon: large powerful feet 2x1x2 (yellow in texture)
         leftLegPart.addOrReplaceChild("left_talon",
                 CubeListBuilder.create()
                         .texOffs(40, 0)
-                        .addBox(-1.0f, 2.5f, -1.5f, 2.0f, 1.0f, 2.0f),
+                        .addBox(-1.0f, 4.5f, -1.5f, 2.0f, 1.0f, 2.0f),
                 PartPose.ZERO);
 
-        // RIGHT LEG: short powerful 1x3x1
+        // RIGHT LEG: 1x5x1, pivot inside body so leg visually connects
         PartDefinition rightLegPart = partDefinition.addOrReplaceChild("right_leg",
                 CubeListBuilder.create()
                         .texOffs(36, 0)
-                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 3.0f, 1.0f),
-                PartPose.offset(-1.5f, 20.5f, 0.0f));
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 5.0f, 1.0f),
+                PartPose.offset(-1.5f, 19.0f, 0.0f));
 
         // Right talon
         rightLegPart.addOrReplaceChild("right_talon",
                 CubeListBuilder.create()
                         .texOffs(40, 0)
-                        .addBox(-1.0f, 2.5f, -1.5f, 2.0f, 1.0f, 2.0f),
+                        .addBox(-1.0f, 4.5f, -1.5f, 2.0f, 1.0f, 2.0f),
                 PartPose.ZERO);
 
         return LayerDefinition.create(meshDefinition, 64, 64);
