@@ -30,7 +30,8 @@ public class RobinRenderer extends MobRenderer<RobinEntity, RobinRenderState, Ro
         state.isFlying = entity.isFlying() || (!entity.onGround() && !entity.isInWater());
         state.isPecking = entity.isPecking();
         if (state.isFlying) {
-            state.flapAngle = (float) Math.sin(state.ageInTicks * 1.4f) * 1.2f;
+            // Very rapid fluttering — ~15Hz wingbeat
+            state.flapAngle = (float) Math.sin(state.ageInTicks * 1.8f) * 0.9f;
         } else {
             state.flapAngle = 0.0f;
         }

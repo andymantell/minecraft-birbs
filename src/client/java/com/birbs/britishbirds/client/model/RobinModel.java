@@ -79,34 +79,34 @@ public class RobinModel extends EntityModel<RobinRenderState> {
                         .addBox(-1.5f, -4.5f, -1.5f, 3.0f, 1.0f, 3.0f),
                 PartPose.ZERO);
 
-        // Left wing: short rounded, 1x3x4
+        // Left wing: short rounded, 1x4x5 (21cm wingspan on 13cm body)
         PartDefinition leftWingPart = partDefinition.addOrReplaceChild("left_wing",
                 CubeListBuilder.create()
                         .texOffs(20, 0)
-                        .addBox(0.0f, -1.5f, -2.0f, 1.0f, 3.0f, 4.0f),
+                        .addBox(0.0f, -2.0f, -2.5f, 1.0f, 4.0f, 5.0f),
                 PartPose.offset(2.5f, 18.5f, 0.0f));
 
-        // Left wing tip: rounded end 1x2x2
+        // Left wing tip: rounded end 1x3x3
         leftWingPart.addOrReplaceChild("left_wing_tip",
                 CubeListBuilder.create()
-                        .texOffs(30, 0)
-                        .addBox(0.5f, -0.5f, 1.0f, 1.0f, 2.0f, 2.0f),
+                        .texOffs(32, 0)
+                        .addBox(0.5f, -1.0f, 1.0f, 1.0f, 3.0f, 3.0f),
                 PartPose.ZERO);
 
-        // Right wing: short rounded, 1x3x4 (mirrored)
+        // Right wing: short rounded, 1x4x5 (mirrored)
         PartDefinition rightWingPart = partDefinition.addOrReplaceChild("right_wing",
                 CubeListBuilder.create()
                         .texOffs(20, 0)
                         .mirror()
-                        .addBox(-1.0f, -1.5f, -2.0f, 1.0f, 3.0f, 4.0f),
+                        .addBox(-1.0f, -2.0f, -2.5f, 1.0f, 4.0f, 5.0f),
                 PartPose.offset(-2.5f, 18.5f, 0.0f));
 
         // Right wing tip
         rightWingPart.addOrReplaceChild("right_wing_tip",
                 CubeListBuilder.create()
-                        .texOffs(30, 0)
+                        .texOffs(32, 0)
                         .mirror()
-                        .addBox(-1.5f, -0.5f, 1.0f, 1.0f, 2.0f, 2.0f),
+                        .addBox(-1.5f, -1.0f, 1.0f, 1.0f, 3.0f, 3.0f),
                 PartPose.ZERO);
 
         // Tail: short, slightly cocked upward at -15 degrees, 2x1x3
@@ -160,7 +160,12 @@ public class RobinModel extends EntityModel<RobinRenderState> {
         super.setupAnim(renderState);
 
         if (renderState.isFlying) {
-            // Flying animations
+            // Flying: body tilts well forward, rapid fluttering
+            this.body.xRot = -0.6f;
+            this.breast.xRot = -0.6f;
+            this.head.xRot = 0.35f;
+            this.head.zRot = 0.0f;
+
             // Wing flapping
             this.leftWing.zRot = -renderState.flapAngle;
             this.rightWing.zRot = renderState.flapAngle;
@@ -169,9 +174,8 @@ public class RobinModel extends EntityModel<RobinRenderState> {
             this.leftLeg.xRot = 0.5f;
             this.rightLeg.xRot = 0.5f;
 
-            // Tilt body forward
-            this.body.xRot = -0.2f;
-            this.breast.xRot = -0.2f;
+            // Tail extends back
+            this.tail.xRot = -0.4f;
         } else {
             // Ground animations
             // Fold wings against body

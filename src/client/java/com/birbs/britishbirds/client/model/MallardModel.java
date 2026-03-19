@@ -102,34 +102,34 @@ public class MallardModel extends EntityModel<MallardRenderState> {
                         .addBox(-1.5f, -1.5f, -6.0f, 3.0f, 1.0f, 1.0f),
                 PartPose.ZERO);
 
-        // Left wing: 1x5x7
+        // Left wing: 1x7x8 (90cm wingspan on 58cm body)
         PartDefinition leftWingPart = partDefinition.addOrReplaceChild("left_wing",
                 CubeListBuilder.create()
                         .texOffs(0, 30)
-                        .addBox(0.0f, -2.0f, -3.0f, 1.0f, 5.0f, 7.0f),
+                        .addBox(0.0f, -3.0f, -4.0f, 1.0f, 7.0f, 8.0f),
                 PartPose.offset(3.5f, 16.0f, 0.0f));
 
-        // Left wing tip: speculum area 1x3x3
+        // Left wing tip: speculum area 1x4x4
         leftWingPart.addOrReplaceChild("left_wing_tip",
                 CubeListBuilder.create()
-                        .texOffs(16, 30)
-                        .addBox(0.5f, -1.0f, 2.0f, 1.0f, 3.0f, 3.0f),
+                        .texOffs(18, 30)
+                        .addBox(0.5f, -1.5f, 2.0f, 1.0f, 4.0f, 4.0f),
                 PartPose.ZERO);
 
-        // Right wing: 1x5x7 (mirrored)
+        // Right wing: 1x7x8 (mirrored)
         PartDefinition rightWingPart = partDefinition.addOrReplaceChild("right_wing",
                 CubeListBuilder.create()
                         .texOffs(0, 30)
                         .mirror()
-                        .addBox(-1.0f, -2.0f, -3.0f, 1.0f, 5.0f, 7.0f),
+                        .addBox(-1.0f, -3.0f, -4.0f, 1.0f, 7.0f, 8.0f),
                 PartPose.offset(-3.5f, 16.0f, 0.0f));
 
         // Right wing tip
         rightWingPart.addOrReplaceChild("right_wing_tip",
                 CubeListBuilder.create()
-                        .texOffs(16, 30)
+                        .texOffs(18, 30)
                         .mirror()
-                        .addBox(-1.5f, -1.0f, 2.0f, 1.0f, 3.0f, 3.0f),
+                        .addBox(-1.5f, -1.5f, 2.0f, 1.0f, 4.0f, 4.0f),
                 PartPose.ZERO);
 
         // Tail: 5x1x4
@@ -198,16 +198,16 @@ public class MallardModel extends EntityModel<MallardRenderState> {
             this.leftLeg.xRot = 0.3f;
             this.rightLeg.xRot = 0.3f;
         } else if (state.isFlying) {
-            // Flying: rapid stiff wingbeats, feet trailing behind
+            // Flying: body horizontal, neck extended forward, rapid stiff wingbeats
+            this.body.xRot = (float) Math.toRadians(-40.0);
+            this.rearBody.xRot = (float) Math.toRadians(-40.0);
+            this.neck.xRot = (float) Math.toRadians(20.0);
+            this.head.xRot = (float) Math.toRadians(15.0);
             this.leftWing.zRot = -state.flapAngle;
             this.rightWing.zRot = state.flapAngle;
-            this.body.xRot = (float) Math.toRadians(-15.0);
-            this.rearBody.xRot = (float) Math.toRadians(-15.0);
-            this.neck.xRot = (float) Math.toRadians(10.0);
-            this.head.xRot = 0.0f;
-            this.leftLeg.xRot = (float) Math.toRadians(60.0);
-            this.rightLeg.xRot = (float) Math.toRadians(60.0);
-            this.tail.xRot = (float) Math.toRadians(-5.0);
+            this.leftLeg.xRot = (float) Math.toRadians(70.0);
+            this.rightLeg.xRot = (float) Math.toRadians(70.0);
+            this.tail.xRot = (float) Math.toRadians(-15.0);
         } else if (state.isSwimming) {
             // Swimming: body level, legs paddle alternately, gentle bob
             this.body.xRot = 0.0f;

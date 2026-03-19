@@ -30,8 +30,8 @@ public class BarnOwlRenderer extends MobRenderer<BarnOwlEntity, BarnOwlRenderSta
         state.isFlying = entity.isFlying() || (!entity.onGround() && !entity.isInWater());
         state.isHovering = entity.isHovering();
         if (state.isFlying) {
-            // Slow wing flaps for owl
-            state.flapAngle = (float) Math.sin(state.ageInTicks * 0.8f) * 1.0f;
+            // Very slow, deep wing sweeps — silent flight
+            state.flapAngle = (float) Math.sin(state.ageInTicks * 0.35f) * 1.4f;
         } else {
             state.flapAngle = 0.0f;
         }

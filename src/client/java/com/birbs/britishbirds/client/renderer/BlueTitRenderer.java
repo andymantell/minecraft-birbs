@@ -29,7 +29,8 @@ public class BlueTitRenderer extends MobRenderer<BlueTitEntity, BlueTitRenderSta
         state.isPecking = entity.isPecking();
         state.isHangingUpsideDown = entity.isHangingUpsideDown();
         if (state.isFlying) {
-            state.flapAngle = (float) Math.sin(state.ageInTicks * 1.6f) * 1.3f;
+            // Very rapid whirring wingbeats — fastest of all species
+            state.flapAngle = (float) Math.sin(state.ageInTicks * 2.0f) * 0.8f;
         } else {
             state.flapAngle = 0.0f;
         }

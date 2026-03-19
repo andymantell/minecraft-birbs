@@ -78,34 +78,34 @@ public class BarnOwlModel extends EntityModel<BarnOwlRenderState> {
                         .addBox(-0.5f, -2.0f, -4.0f, 1.0f, 1.0f, 1.0f),
                 PartPose.ZERO);
 
-        // Left wing: broad rounded 1x6x8 (large relative to body mass)
+        // Left wing: broad rounded 1x8x8 (huge relative to body — barn owls have 92cm wingspan on 36cm body)
         PartDefinition leftWingPart = partDefinition.addOrReplaceChild("left_wing",
                 CubeListBuilder.create()
                         .texOffs(0, 27)
-                        .addBox(0.0f, -2.5f, -3.5f, 1.0f, 6.0f, 7.0f),
+                        .addBox(0.0f, -3.5f, -4.0f, 1.0f, 8.0f, 8.0f),
                 PartPose.offset(2.5f, 14.5f, 0.0f));
 
-        // Left wing outer: extends the wing broader 1x5x4
+        // Left wing outer: extends the wing broader 1x7x5
         leftWingPart.addOrReplaceChild("left_wing_outer",
                 CubeListBuilder.create()
-                        .texOffs(16, 27)
-                        .addBox(1.0f, -1.5f, -2.5f, 1.0f, 5.0f, 4.0f),
+                        .texOffs(18, 27)
+                        .addBox(1.0f, -2.5f, -3.0f, 1.0f, 7.0f, 5.0f),
                 PartPose.ZERO);
 
-        // Right wing: broad rounded 1x6x7 (mirrored)
+        // Right wing: broad rounded 1x8x8 (mirrored)
         PartDefinition rightWingPart = partDefinition.addOrReplaceChild("right_wing",
                 CubeListBuilder.create()
                         .texOffs(0, 27)
                         .mirror()
-                        .addBox(-1.0f, -2.5f, -3.5f, 1.0f, 6.0f, 7.0f),
+                        .addBox(-1.0f, -3.5f, -4.0f, 1.0f, 8.0f, 8.0f),
                 PartPose.offset(-2.5f, 14.5f, 0.0f));
 
         // Right wing outer
         rightWingPart.addOrReplaceChild("right_wing_outer",
                 CubeListBuilder.create()
-                        .texOffs(16, 27)
+                        .texOffs(18, 27)
                         .mirror()
-                        .addBox(-2.0f, -1.5f, -2.5f, 1.0f, 5.0f, 4.0f),
+                        .addBox(-2.0f, -2.5f, -3.0f, 1.0f, 7.0f, 5.0f),
                 PartPose.ZERO);
 
         // Tail: short square-ended 4x1x3
@@ -152,21 +152,29 @@ public class BarnOwlModel extends EntityModel<BarnOwlRenderState> {
         super.setupAnim(renderState);
 
         if (renderState.isHovering) {
-            // Hovering: rapid wing beats, legs dangling
-            this.leftWing.zRot = -(float) Math.sin(renderState.ageInTicks * 2.0f) * 0.8f;
-            this.rightWing.zRot = (float) Math.sin(renderState.ageInTicks * 2.0f) * 0.8f;
+            // Hovering: moderately rapid wing beats, body angled, legs dangling to strike
+            this.body.xRot = -0.5f;
+            this.lowerBody.xRot = -0.5f;
+            this.head.xRot = 0.3f;
+            this.head.yRot = 0.0f;
+            this.head.zRot = 0.0f;
+            this.leftWing.zRot = -(float) Math.sin(renderState.ageInTicks * 1.5f) * 1.2f;
+            this.rightWing.zRot = (float) Math.sin(renderState.ageInTicks * 1.5f) * 1.2f;
             this.leftLeg.xRot = 0.3f;
             this.rightLeg.xRot = 0.3f;
-            this.body.xRot = -0.1f;
-            this.lowerBody.xRot = -0.1f;
+            this.tail.xRot = -0.3f;
         } else if (renderState.isFlying) {
-            // Flying: slow wing flaps, legs dangling back
+            // Flying: slow deep wing flaps, body nearly horizontal, legs trailing
+            this.body.xRot = -0.8f;
+            this.lowerBody.xRot = -0.8f;
+            this.head.xRot = 0.5f;
+            this.head.yRot = 0.0f;
+            this.head.zRot = 0.0f;
             this.leftWing.zRot = -renderState.flapAngle;
             this.rightWing.zRot = renderState.flapAngle;
-            this.leftLeg.xRot = 0.6f;
-            this.rightLeg.xRot = 0.6f;
-            this.body.xRot = -0.15f;
-            this.lowerBody.xRot = -0.15f;
+            this.leftLeg.xRot = 0.8f;
+            this.rightLeg.xRot = 0.8f;
+            this.tail.xRot = -0.5f;
         } else {
             // Ground: upright perch posture — tall and slim
             this.leftWing.zRot = 0.0f;

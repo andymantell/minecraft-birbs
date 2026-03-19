@@ -30,8 +30,8 @@ public class PeregrineFalconRenderer extends MobRenderer<PeregrineFalconEntity, 
         state.isFlying = entity.isFlying() || (!entity.onGround() && !entity.isInWater());
         state.isStooping = entity.isStooping();
         if (state.isFlying && !state.isStooping) {
-            // Stiff shallow wingbeats
-            state.flapAngle = (float) Math.sin(state.ageInTicks * 1.2f) * 0.8f;
+            // Stiff, snappy shallow wingbeats
+            state.flapAngle = (float) Math.sin(state.ageInTicks * 1.0f) * 0.7f;
         } else {
             state.flapAngle = 0.0f;
         }

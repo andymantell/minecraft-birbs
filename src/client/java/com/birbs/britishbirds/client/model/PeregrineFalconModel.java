@@ -103,19 +103,19 @@ public class PeregrineFalconModel extends EntityModel<PeregrineFalconRenderState
                         .addBox(-2.0f, -2.5f, -1.5f, 1.0f, 2.0f, 2.0f),
                 PartPose.ZERO);
 
-        // LEFT WING: LONG, NARROW, POINTED — sickle-shaped
-        // Inner wing: 1x4x6
+        // LEFT WING: LONG, NARROW, POINTED — sickle-shaped (100cm wingspan on 42cm body)
+        // Inner wing: 1x6x7
         PartDefinition leftWingPart = partDefinition.addOrReplaceChild("left_wing",
                 CubeListBuilder.create()
                         .texOffs(0, 25)
-                        .addBox(0.0f, -1.0f, -2.5f, 1.0f, 4.0f, 6.0f),
+                        .addBox(0.0f, -2.5f, -3.5f, 1.0f, 6.0f, 7.0f),
                 PartPose.offset(3.0f, 15.0f, 0.0f));
 
-        // Left wing outer: extends the wing long and narrow — pointed tip 1x3x5
+        // Left wing outer: extends the wing long and narrow — pointed tip 1x5x5
         leftWingPart.addOrReplaceChild("left_wing_outer",
                 CubeListBuilder.create()
-                        .texOffs(14, 25)
-                        .addBox(1.0f, -0.5f, -1.5f, 1.0f, 3.0f, 5.0f),
+                        .texOffs(16, 25)
+                        .addBox(1.0f, -1.5f, -2.0f, 1.0f, 5.0f, 5.0f),
                 PartPose.ZERO);
 
         // RIGHT WING: LONG, NARROW, POINTED (mirrored)
@@ -123,15 +123,15 @@ public class PeregrineFalconModel extends EntityModel<PeregrineFalconRenderState
                 CubeListBuilder.create()
                         .texOffs(0, 25)
                         .mirror()
-                        .addBox(-1.0f, -1.0f, -2.5f, 1.0f, 4.0f, 6.0f),
+                        .addBox(-1.0f, -2.5f, -3.5f, 1.0f, 6.0f, 7.0f),
                 PartPose.offset(-3.0f, 15.0f, 0.0f));
 
         // Right wing outer
         rightWingPart.addOrReplaceChild("right_wing_outer",
                 CubeListBuilder.create()
-                        .texOffs(14, 25)
+                        .texOffs(16, 25)
                         .mirror()
-                        .addBox(-2.0f, -0.5f, -1.5f, 1.0f, 3.0f, 5.0f),
+                        .addBox(-2.0f, -1.5f, -2.0f, 1.0f, 5.0f, 5.0f),
                 PartPose.ZERO);
 
         // TAIL: medium-long, narrow — continues the taper 3x1x4
@@ -202,26 +202,26 @@ public class PeregrineFalconModel extends EntityModel<PeregrineFalconRenderState
             this.leftLeg.xRot = (float) Math.toRadians(60.0);
             this.rightLeg.xRot = (float) Math.toRadians(60.0);
         } else if (renderState.isFlying) {
-            // Active flight: stiff shallow wingbeats
-            this.leftWing.zRot = -renderState.flapAngle * 0.6f;
-            this.rightWing.zRot = renderState.flapAngle * 0.6f;
+            // Active flight: body streamlined horizontal, stiff shallow wingbeats
+            this.chest.xRot = -0.6f;
+            this.rearBody.xRot = -0.6f;
+            this.head.xRot = 0.35f;
+            this.leftWing.zRot = -renderState.flapAngle * 0.5f;
+            this.rightWing.zRot = renderState.flapAngle * 0.5f;
             this.leftWing.xRot = 0.0f;
             this.rightWing.xRot = 0.0f;
             this.leftWing.yRot = 0.0f;
             this.rightWing.yRot = 0.0f;
-            this.chest.xRot = (float) Math.toRadians(5.0);
-            this.rearBody.xRot = 0.0f;
-            this.head.xRot = 0.0f;
-            this.tail.xRot = (float) Math.toRadians(-5.0);
-            // Legs tucked back
-            this.leftLeg.xRot = 0.7f;
-            this.rightLeg.xRot = 0.7f;
+            this.tail.xRot = -0.3f;
+            // Legs tucked tight against body
+            this.leftLeg.xRot = 0.8f;
+            this.rightLeg.xRot = 0.8f;
 
             // Soaring detection: if flapAngle is very small, wings spread wide and flat
             if (Math.abs(renderState.flapAngle) < 0.1f) {
-                // Soaring: wings spread wide, tail fanned
-                this.leftWing.zRot = -1.2f;
-                this.rightWing.zRot = 1.2f;
+                // Soaring: wings spread very wide, tail fanned
+                this.leftWing.zRot = -1.4f;
+                this.rightWing.zRot = 1.4f;
                 this.tail.xRot = (float) Math.toRadians(-15.0);
             }
         } else {

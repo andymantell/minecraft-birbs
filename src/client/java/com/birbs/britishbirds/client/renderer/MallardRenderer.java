@@ -35,8 +35,8 @@ public class MallardRenderer extends MobRenderer<MallardEntity, MallardRenderSta
         state.isWaddling = entity.isWaddling();
         state.isBaby = entity.isBaby();
         if (state.isFlying) {
-            // Rapid stiff wingbeats
-            state.flapAngle = (float) Math.sin(state.ageInTicks * 1.5f) * 0.9f;
+            // Rapid stiff continuous wingbeats — characteristic whistling flight
+            state.flapAngle = (float) Math.sin(state.ageInTicks * 1.6f) * 1.0f;
         } else {
             state.flapAngle = 0.0f;
         }

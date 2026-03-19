@@ -92,34 +92,34 @@ public class BlueTitModel extends EntityModel<BlueTitRenderState> {
                         .addBox(-2.5f, -3.0f, -1.5f, 1.0f, 2.0f, 2.0f),
                 PartPose.ZERO);
 
-        // Left wing: short 1x3x3
+        // Left wing: 1x4x4 (19cm wingspan on 11cm body)
         PartDefinition leftWingPart = partDefinition.addOrReplaceChild("left_wing",
                 CubeListBuilder.create()
                         .texOffs(16, 0)
-                        .addBox(0.0f, -1.0f, -1.5f, 1.0f, 3.0f, 3.0f),
+                        .addBox(0.0f, -1.5f, -2.0f, 1.0f, 4.0f, 4.0f),
                 PartPose.offset(2.0f, 19.5f, 0.0f));
 
-        // Left wing tip 1x2x2
+        // Left wing tip 1x3x2
         leftWingPart.addOrReplaceChild("left_wing_tip",
                 CubeListBuilder.create()
-                        .texOffs(24, 0)
-                        .addBox(0.5f, -0.5f, 0.5f, 1.0f, 2.0f, 2.0f),
+                        .texOffs(26, 0)
+                        .addBox(0.5f, -1.0f, 0.5f, 1.0f, 3.0f, 2.0f),
                 PartPose.ZERO);
 
-        // Right wing: short 1x3x3 (mirrored)
+        // Right wing: 1x4x4 (mirrored)
         PartDefinition rightWingPart = partDefinition.addOrReplaceChild("right_wing",
                 CubeListBuilder.create()
                         .texOffs(16, 0)
                         .mirror()
-                        .addBox(-1.0f, -1.0f, -1.5f, 1.0f, 3.0f, 3.0f),
+                        .addBox(-1.0f, -1.5f, -2.0f, 1.0f, 4.0f, 4.0f),
                 PartPose.offset(-2.0f, 19.5f, 0.0f));
 
         // Right wing tip
         rightWingPart.addOrReplaceChild("right_wing_tip",
                 CubeListBuilder.create()
-                        .texOffs(24, 0)
+                        .texOffs(26, 0)
                         .mirror()
-                        .addBox(-1.5f, -0.5f, 0.5f, 1.0f, 2.0f, 2.0f),
+                        .addBox(-1.5f, -1.0f, 0.5f, 1.0f, 3.0f, 2.0f),
                 PartPose.ZERO);
 
         // Tail: moderately short, slightly notched 3x1x3
@@ -179,7 +179,12 @@ public class BlueTitModel extends EntityModel<BlueTitRenderState> {
             // Tail hangs down
             this.tail.xRot = (float) Math.PI + (float) Math.toRadians(15.0);
         } else if (renderState.isFlying) {
-            // Flying animations
+            // Flying: body well forward, rapid whirring wingbeats
+            this.body.xRot = -0.6f;
+            this.belly.xRot = -0.6f;
+            this.head.xRot = 0.35f;
+            this.head.zRot = 0.0f;
+
             this.leftWing.zRot = -renderState.flapAngle;
             this.rightWing.zRot = renderState.flapAngle;
 
@@ -187,9 +192,8 @@ public class BlueTitModel extends EntityModel<BlueTitRenderState> {
             this.leftLeg.xRot = 0.5f;
             this.rightLeg.xRot = 0.5f;
 
-            // Tilt body forward
-            this.body.xRot = -0.2f;
-            this.belly.xRot = -0.2f;
+            // Tail extends back
+            this.tail.xRot = -0.4f;
         } else {
             // Ground animations
             this.leftWing.zRot = 0.0f;

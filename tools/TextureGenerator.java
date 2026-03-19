@@ -44,8 +44,8 @@ public class TextureGenerator {
     // Head:      texOffs(0,15),  4x4x4
     // Beak:      texOffs(16,15), 1x1x2
     // Crown:     texOffs(22,15), 3x1x3
-    // L Wing:    texOffs(20,0),  1x3x4
-    // L WingTip: texOffs(30,0),  1x2x2
+    // L Wing:    texOffs(20,0),  1x4x5
+    // L WingTip: texOffs(32,0),  1x3x3
     // Tail:      texOffs(0,23),  3x1x3
     // TailTip:   texOffs(12,23), 2x1x2
     // Legs:      texOffs(0,27),  1x4x1
@@ -104,21 +104,21 @@ public class TextureGenerator {
         // Crown: texOffs(22,15), 3x1x3
         fillBox(g, 22, 15, 3, 1, 3, oliveLight, oliveBrown, oliveBrown, oliveBrown, oliveBrown, oliveBrown);
 
-        // Wings: texOffs(20,0), w=1, h=3, d=4 — dark brown with olive fringes
-        fillBox(g, 20, 0, 1, 3, 4, darkBrown, darkBrown, darkBrown, darkBrown, darkBrown, darkBrown);
+        // Wings: texOffs(20,0), w=1, h=4, d=5 — dark brown with olive fringes
+        fillBox(g, 20, 0, 1, 4, 5, darkBrown, darkBrown, darkBrown, darkBrown, darkBrown, darkBrown);
         // Olive fringes on top edge
-        for (int x = 24; x < 25; x++) {
+        for (int x = 25; x < 26; x++) {
             img.setRGB(x, 0, oliveBrown.getRGB());
             img.setRGB(x, 1, oliveBrown.getRGB());
             img.setRGB(x, 2, oliveLight.getRGB());
         }
         // Wing bar detail
-        for (int x = 24; x < 25; x++) {
-            img.setRGB(x, 5, warmBuff.getRGB());
+        for (int x = 25; x < 26; x++) {
+            img.setRGB(x, 6, warmBuff.getRGB());
         }
 
-        // Wing tip: texOffs(30,0), 1x2x2
-        fillBox(g, 30, 0, 1, 2, 2, darkBrown, darkBrown, darkBrown, darkBrown, darkBrown, darkBrown);
+        // Wing tip: texOffs(32,0), 1x3x3
+        fillBox(g, 32, 0, 1, 3, 3, darkBrown, darkBrown, darkBrown, darkBrown, darkBrown, darkBrown);
 
         // Tail: texOffs(0,23), w=3, h=1, d=3
         fillBox(g, 0, 23, 3, 1, 3, darkBrown, darkBrown, darkBrown, darkBrown, darkBrown, darkBrown);
@@ -174,9 +174,9 @@ public class TextureGenerator {
         // Crown
         fillBox(g, 22, 15, 3, 1, 3, speckledBrown, speckledBrown, speckledBrown, speckledBrown, speckledBrown, speckledBrown);
 
-        // Wings
-        fillBox(g, 20, 0, 1, 3, 4, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle);
-        fillBox(g, 30, 0, 1, 2, 2, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle);
+        // Wings (1x4x5 + 1x3x3)
+        fillBox(g, 20, 0, 1, 4, 5, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle);
+        fillBox(g, 32, 0, 1, 3, 3, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle);
 
         // Tail
         fillBox(g, 0, 23, 3, 1, 3, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle);
@@ -198,8 +198,8 @@ public class TextureGenerator {
     // Crown:      texOffs(16,13), 3x1x3
     // Beak:       texOffs(16,17), 1x1x1
     // Cheeks:     texOffs(20,17), 1x2x2
-    // L Wing:     texOffs(16,0),  1x3x3
-    // L WingTip:  texOffs(24,0),  1x2x2
+    // L Wing:     texOffs(16,0),  1x4x4
+    // L WingTip:  texOffs(26,0),  1x3x2
     // Tail:       texOffs(0,21),  3x1x3
     // Legs:       texOffs(0,25),  1x2x1
     // Feet:       texOffs(4,25),  1x1x1
@@ -279,16 +279,16 @@ public class TextureGenerator {
         // Cheeks: texOffs(20,17), 1x2x2 — white bulge
         fillBox(g, 20, 17, 1, 2, 2, white, white, white, white, white, white);
 
-        // Wings: texOffs(16,0), w=1, h=3, d=3 — blue with white wing bar
-        fillBox(g, 16, 0, 1, 3, 3, blueWing, blueWing, blueWing, blueWing, blueWing, blueWing);
+        // Wings: texOffs(16,0), w=1, h=4, d=4 — blue with white wing bar
+        fillBox(g, 16, 0, 1, 4, 4, blueWing, blueWing, blueWing, blueWing, blueWing, blueWing);
         // White wing bar
-        for (int x = 19; x < 20; x++) {
-            img.setRGB(x, 3, wingBar.getRGB());
+        for (int x = 20; x < 21; x++) {
             img.setRGB(x, 4, wingBar.getRGB());
+            img.setRGB(x, 5, wingBar.getRGB());
         }
 
-        // Wing tip: texOffs(24,0), 1x2x2
-        fillBox(g, 24, 0, 1, 2, 2, blueWing, blueWing, blueWing, blueWing, blueWing, blueWing);
+        // Wing tip: texOffs(26,0), 1x3x2
+        fillBox(g, 26, 0, 1, 3, 2, blueWing, blueWing, blueWing, blueWing, blueWing, blueWing);
 
         // Tail: texOffs(0,21), w=3, h=1, d=3 — grey-blue
         fillBox(g, 0, 21, 3, 1, 3, greyBlue, greyBlue, greyBlue, greyBlue, greyBlue, greyBlue);
@@ -313,8 +313,8 @@ public class TextureGenerator {
     // Head:       texOffs(0,17),  5x5x5
     // FacialDisc: texOffs(20,17), 6x5x1
     // Beak:       texOffs(20,23), 1x1x1
-    // L Wing:     texOffs(0,27),  1x6x7
-    // L WingOut:  texOffs(16,27), 1x5x4
+    // L Wing:     texOffs(0,27),  1x8x8
+    // L WingOut:  texOffs(18,27), 1x7x5
     // Tail:       texOffs(20,0),  4x1x3
     // Legs:       texOffs(32,0),  1x5x1
     // Talons:     texOffs(36,0),  2x1x2
@@ -393,25 +393,25 @@ public class TextureGenerator {
         // Beak: texOffs(20,23), 1x1x1
         fillBox(g, 20, 23, 1, 1, 1, paleHorn, paleHorn, paleHorn, paleHorn, paleHorn, paleHorn);
 
-        // Wings: texOffs(0,27), w=1, h=6, d=7
-        fillBox(g, 0, 27, 1, 6, 7, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
+        // Wings: texOffs(0,27), w=1, h=8, d=8 — huge broad rounded owl wings
+        fillBox(g, 0, 27, 1, 8, 8, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
         // Add barring on wings
-        for (int y = 34; y < 40; y += 2) {
-            for (int x = 1; x < 8; x++) {
+        for (int y = 35; y < 43; y += 2) {
+            for (int x = 1; x < 9; x++) {
                 if (x < SIZE && y < SIZE) img.setRGB(x, y, tawnyOrange.getRGB());
             }
         }
         // Lighter feather edges
-        for (int y = 34; y < 40; y++) {
+        for (int y = 35; y < 43; y++) {
             if (y % 3 == 0) {
-                for (int x = 1; x < 8; x++) {
+                for (int x = 1; x < 9; x++) {
                     if (x < SIZE && y < SIZE) img.setRGB(x, y, goldenLight.getRGB());
                 }
             }
         }
 
-        // Wing outer: texOffs(16,27), w=1, h=5, d=4
-        fillBox(g, 16, 27, 1, 5, 4, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
+        // Wing outer: texOffs(18,27), w=1, h=7, d=5
+        fillBox(g, 18, 27, 1, 7, 5, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
 
         // Tail: texOffs(20,0), w=4, h=1, d=3
         fillBox(g, 20, 0, 4, 1, 3, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
@@ -491,14 +491,14 @@ public class TextureGenerator {
         // Beak
         fillBox(g, 20, 23, 1, 1, 1, paleHorn, paleHorn, paleHorn, paleHorn, paleHorn, paleHorn);
 
-        // Wings
-        fillBox(g, 0, 27, 1, 6, 7, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
-        for (int y = 34; y < 40; y += 2) {
-            for (int x = 1; x < 8; x++) {
+        // Wings (1x8x8 + 1x7x5 — same huge proportions as male)
+        fillBox(g, 0, 27, 1, 8, 8, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
+        for (int y = 35; y < 43; y += 2) {
+            for (int x = 1; x < 9; x++) {
                 if (x < SIZE && y < SIZE) img.setRGB(x, y, tawnyOrange.getRGB());
             }
         }
-        fillBox(g, 16, 27, 1, 5, 4, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
+        fillBox(g, 18, 27, 1, 7, 5, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
 
         // Tail
         fillBox(g, 20, 0, 4, 1, 3, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
@@ -519,8 +519,8 @@ public class TextureGenerator {
     // Beak:        texOffs(12,19), 1x1x2
     // BeakHook:    texOffs(18,19), 1x1x1
     // Malar:       texOffs(22,19), 1x2x2
-    // L Wing:      texOffs(0,25),  1x4x6
-    // L WingOuter: texOffs(14,25), 1x3x5
+    // L Wing:      texOffs(0,25),  1x6x7
+    // L WingOuter: texOffs(16,25), 1x5x5
     // Tail:        texOffs(22,0),  3x1x4
     // TailTip:     texOffs(22,5),  2x1x3
     // Legs:        texOffs(36,0),  1x5x1
@@ -597,24 +597,24 @@ public class TextureGenerator {
         // Malar stripe: texOffs(22,19), 1x2x2
         fillBox(g, 22, 19, 1, 2, 2, blackHead, blackHead, blackHead, blackHead, blackHead, blackHead);
 
-        // Wings: texOffs(0,25), w=1, h=4, d=6 — dark slate-grey
-        fillBox(g, 0, 25, 1, 4, 6, slateGrey, slateGrey, slateGrey, slateGrey, slateGrey, slateGrey);
+        // Wings: texOffs(0,25), w=1, h=6, d=7 — long narrow sickle-shaped
+        fillBox(g, 0, 25, 1, 6, 7, slateGrey, slateGrey, slateGrey, slateGrey, slateGrey, slateGrey);
         // Darker wingtips
-        for (int x = 5; x < 7; x++) {
-            for (int y = 31; y < 35; y++) {
+        for (int x = 6; x < 8; x++) {
+            for (int y = 32; y < 38; y++) {
                 if (x < SIZE && y < SIZE) img.setRGB(x, y, darkSlate.getRGB());
             }
         }
         // Subtle barring on wing underside
-        for (int y = 31; y < 35; y += 2) {
+        for (int y = 32; y < 38; y += 2) {
             img.setRGB(1, y, slateLight.getRGB());
         }
 
-        // Wing outer: texOffs(14,25), w=1, h=3, d=5 — pointed tip darker
-        fillBox(g, 14, 25, 1, 3, 5, slateGrey, slateGrey, slateGrey, slateGrey, slateGrey, slateGrey);
+        // Wing outer: texOffs(16,25), w=1, h=5, d=5 — pointed tip darker
+        fillBox(g, 16, 25, 1, 5, 5, slateGrey, slateGrey, slateGrey, slateGrey, slateGrey, slateGrey);
         // Darker tips
-        for (int x = 19; x < 20; x++) {
-            for (int y = 30; y < 33; y++) {
+        for (int x = 21; x < 22; x++) {
+            for (int y = 30; y < 35; y++) {
                 if (x < SIZE && y < SIZE) img.setRGB(x, y, darkSlate.getRGB());
             }
         }
@@ -698,9 +698,9 @@ public class TextureGenerator {
         fillBox(g, 18, 19, 1, 1, 1, darkBeak, darkBeak, darkBeak, darkBeak, darkBeak, darkBeak);
         fillBox(g, 22, 19, 1, 2, 2, darkHead, darkHead, darkHead, darkHead, darkHead, darkHead);
 
-        // Wings
-        fillBox(g, 0, 25, 1, 4, 6, brown, brown, brown, brown, brown, brown);
-        fillBox(g, 14, 25, 1, 3, 5, brown, brown, brown, brown, brown, brown);
+        // Wings (1x6x7 + 1x5x5)
+        fillBox(g, 0, 25, 1, 6, 7, brown, brown, brown, brown, brown, brown);
+        fillBox(g, 16, 25, 1, 5, 5, brown, brown, brown, brown, brown, brown);
 
         // Tail
         fillBox(g, 22, 0, 3, 1, 4, brown, brown, brown, brown, brown, brown);
@@ -723,8 +723,8 @@ public class TextureGenerator {
     // Crown:      texOffs(16,22), 3x1x3
     // Bill:       texOffs(16,26), 3x1x3
     // BillTip:    texOffs(28,26), 3x1x1
-    // L Wing:     texOffs(0,30),  1x5x7
-    // L WingTip:  texOffs(16,30), 1x3x3
+    // L Wing:     texOffs(0,30),  1x7x8
+    // L WingTip:  texOffs(18,30), 1x4x4
     // Tail:       texOffs(26,0),  5x1x4
     // TailCurl:   texOffs(26,5),  1x1x2
     // Legs:       texOffs(26,8),  1x4x1
@@ -810,15 +810,15 @@ public class TextureGenerator {
         // Black nail
         img.setRGB(29, 27, new Color(0x1A, 0x1A, 0x1A).getRGB());
 
-        // Wings: texOffs(0,30), w=1, h=5, d=7
-        fillBox(g, 0, 30, 1, 5, 7, greyBrown, greyBrown, greyBrown, greyBrown, greyBrown, greyBrown);
+        // Wings: texOffs(0,30), w=1, h=7, d=8
+        fillBox(g, 0, 30, 1, 7, 8, greyBrown, greyBrown, greyBrown, greyBrown, greyBrown, greyBrown);
 
-        // Wing tip (speculum area): texOffs(16,30), w=1, h=3, d=3
-        fillBox(g, 16, 30, 1, 3, 3, speculum, speculum, speculum, speculum, speculum, speculum);
+        // Wing tip (speculum area): texOffs(18,30), w=1, h=4, d=4
+        fillBox(g, 18, 30, 1, 4, 4, speculum, speculum, speculum, speculum, speculum, speculum);
         // White borders on speculum
-        for (int y = 33; y < 36; y++) {
-            img.setRGB(17, y, speculumWhite.getRGB());
-            img.setRGB(20, y, speculumWhite.getRGB());
+        for (int y = 34; y < 38; y++) {
+            img.setRGB(19, y, speculumWhite.getRGB());
+            img.setRGB(22, y, speculumWhite.getRGB());
         }
 
         // Tail: texOffs(26,0), w=5, h=1, d=4
@@ -886,12 +886,12 @@ public class TextureGenerator {
         fillBox(g, 16, 26, 3, 1, 3, orangeBill, orangeBill, orangeBill, orangeBill, orangeBill, orangeBill);
         fillBox(g, 28, 26, 3, 1, 1, orangeBill, orangeBill, orangeBill, orangeBill, orangeBill, orangeBill);
 
-        // Wings: brown with speculum
-        fillBox(g, 0, 30, 1, 5, 7, mottledBrown, mottledBrown, mottledBrown, mottledBrown, mottledBrown, mottledBrown);
-        fillBox(g, 16, 30, 1, 3, 3, speculum, speculum, speculum, speculum, speculum, speculum);
-        for (int y = 33; y < 36; y++) {
-            img.setRGB(17, y, speculumWhite.getRGB());
-            img.setRGB(20, y, speculumWhite.getRGB());
+        // Wings: brown with speculum (1x7x8 + 1x4x4)
+        fillBox(g, 0, 30, 1, 7, 8, mottledBrown, mottledBrown, mottledBrown, mottledBrown, mottledBrown, mottledBrown);
+        fillBox(g, 18, 30, 1, 4, 4, speculum, speculum, speculum, speculum, speculum, speculum);
+        for (int y = 34; y < 38; y++) {
+            img.setRGB(19, y, speculumWhite.getRGB());
+            img.setRGB(22, y, speculumWhite.getRGB());
         }
 
         // Tail
@@ -957,9 +957,9 @@ public class TextureGenerator {
         fillBox(g, 16, 26, 3, 1, 3, greyBill, greyBill, greyBill, greyBill, greyBill, greyBill);
         fillBox(g, 28, 26, 3, 1, 1, greyBill, greyBill, greyBill, greyBill, greyBill, greyBill);
 
-        // Wings: dark
-        fillBox(g, 0, 30, 1, 5, 7, darkBack, darkBack, darkBack, darkBack, darkBack, darkBack);
-        fillBox(g, 16, 30, 1, 3, 3, darkBack, darkBack, darkBack, darkBack, darkBack, darkBack);
+        // Wings: dark (1x7x8 + 1x4x4)
+        fillBox(g, 0, 30, 1, 7, 8, darkBack, darkBack, darkBack, darkBack, darkBack, darkBack);
+        fillBox(g, 18, 30, 1, 4, 4, darkBack, darkBack, darkBack, darkBack, darkBack, darkBack);
 
         // Tail
         fillBox(g, 26, 0, 5, 1, 4, darkBack, darkBack, darkBack, darkBack, darkBack, darkBack);
