@@ -18,6 +18,7 @@ public class BirdSpawnRules {
     public static void initialize() {
         BritishBirdsMod.LOGGER.info("Registering British Birds spawn rules...");
         registerRobinSpawns();
+        registerBlueTitSpawns();
     }
 
     private static void registerRobinSpawns() {
@@ -44,6 +45,30 @@ public class BirdSpawnRules {
         // Register spawn placement rules
         net.minecraft.world.entity.SpawnPlacements.register(
                 ModEntities.ROBIN,
+                SpawnPlacementTypes.ON_GROUND,
+                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                Animal::checkAnimalSpawnRules
+        );
+    }
+
+    private static void registerBlueTitSpawns() {
+        BiomeModifications.addSpawn(
+                BiomeSelectors.includeByKey(
+                        Biomes.FOREST,
+                        Biomes.BIRCH_FOREST,
+                        Biomes.FLOWER_FOREST,
+                        Biomes.PLAINS,
+                        Biomes.MEADOW
+                ),
+                MobCategory.CREATURE,
+                ModEntities.BLUE_TIT,
+                12,  // weight (slightly more common than Robin)
+                2,   // min group size
+                4    // max group size
+        );
+
+        net.minecraft.world.entity.SpawnPlacements.register(
+                ModEntities.BLUE_TIT,
                 SpawnPlacementTypes.ON_GROUND,
                 Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
                 Animal::checkAnimalSpawnRules

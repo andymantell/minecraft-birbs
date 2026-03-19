@@ -5,5 +5,12 @@
     "subtitles.entity.robin.call": "Robin calls",
     "subtitles.entity.robin.alarm": "Robin alarm call",
     "subtitles.entity.robin.hurt": "Robin hurts",
-    "subtitles.entity.robin.death": "Robin dies"
+    "subtitles.entity.robin.death": "Robin dies",
+    "entity.britishbirds.blue_tit": "Blue Tit",
+    "item.britishbirds.blue_tit_spawn_egg": "Blue Tit Spawn Egg",
+    "subtitles.entity.blue_tit.song": "Blue Tit sings",
+    "subtitles.entity.blue_tit.call": "Blue Tit calls",
+    "subtitles.entity.blue_tit.alarm": "Blue Tit alarm call",
+    "subtitles.entity.blue_tit.hurt": "Blue Tit hurts",
+    "subtitles.entity.blue_tit.death": "Blue Tit dies"
 }

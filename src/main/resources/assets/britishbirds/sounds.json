@@ -41,5 +41,48 @@
                 "stream": false
             }
         ]
+    },
+    "entity.blue_tit.song": {
+        "subtitle": "subtitles.britishbirds.entity.blue_tit.song",
+        "sounds": [
+            "britishbirds:blue_tit/song1",
+            "britishbirds:blue_tit/song2"
+        ]
+    },
+    "entity.blue_tit.call": {
+        "subtitle": "subtitles.britishbirds.entity.blue_tit.call",
+        "sounds": [
+            {
+                "name": "britishbirds:blue_tit/call",
+                "stream": false
+            }
+        ]
+    },
+    "entity.blue_tit.alarm": {
+        "subtitle": "subtitles.britishbirds.entity.blue_tit.alarm",
+        "sounds": [
+            {
+                "name": "britishbirds:blue_tit/alarm",
+                "stream": false
+            }
+        ]
+    },
+    "entity.blue_tit.hurt": {
+        "subtitle": "subtitles.britishbirds.entity.blue_tit.hurt",
+        "sounds": [
+            {
+                "name": "britishbirds:blue_tit/hurt",
+                "stream": false
+            }
+        ]
+    },
+    "entity.blue_tit.death": {
+        "subtitle": "subtitles.britishbirds.entity.blue_tit.death",
+        "sounds": [
+            {
+                "name": "britishbirds:blue_tit/death",
+                "stream": false
+            }
+        ]
     }
 }
