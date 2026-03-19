@@ -5,6 +5,7 @@ import com.birbs.britishbirds.ai.flight.FlutteringFlightGoal;
 import com.birbs.britishbirds.ai.movement.HoppingMovementGoal;
 import com.birbs.britishbirds.ai.movement.PerchingGoal;
 import com.birbs.britishbirds.entity.base.AbstractFlyingBird;
+import com.birbs.britishbirds.entity.raptor.RaptorEntity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.animal.Animal;
@@ -28,7 +29,8 @@ public abstract class SmallPasserineEntity extends AbstractFlyingBird {
     protected void registerGoals() {
         // Shared songbird goals
         this.goalSelector.addGoal(0, new FloatGoal(this));
-        this.goalSelector.addGoal(1, new PanicGoal(this, 1.5));
+        this.goalSelector.addGoal(1, new AvoidEntityGoal<>(this, RaptorEntity.class, 12.0f, 1.2, 1.5));
+        this.goalSelector.addGoal(2, new PanicGoal(this, 1.5));
         this.goalSelector.addGoal(3, new PerchingGoal(this, 8, 100, 300));
         this.goalSelector.addGoal(4, new FlutteringFlightGoal(this, 1.0, 3, 10));
         this.goalSelector.addGoal(5, this.foragingGoal);

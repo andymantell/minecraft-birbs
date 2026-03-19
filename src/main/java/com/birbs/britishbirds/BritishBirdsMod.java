@@ -1,5 +1,6 @@
 package com.birbs.britishbirds;
 
+import com.birbs.britishbirds.registry.ModCreativeTab;
 import com.birbs.britishbirds.registry.ModEntities;
 import com.birbs.britishbirds.registry.ModItems;
 import com.birbs.britishbirds.registry.ModSounds;
@@ -18,6 +19,7 @@ public class BritishBirdsMod implements ModInitializer {
         ModSounds.initialize();
         ModEntities.initialize();
         ModItems.initialize();
+        ModCreativeTab.initialize();
         BirdSpawnRules.initialize();
     }
 }
