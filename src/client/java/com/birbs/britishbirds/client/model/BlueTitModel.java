@@ -92,34 +92,34 @@ public class BlueTitModel extends EntityModel<BlueTitRenderState> {
                         .addBox(-2.5f, -3.0f, -1.5f, 1.0f, 2.0f, 2.0f),
                 PartPose.ZERO);
 
-        // Left wing: 1x4x4 (19cm wingspan on 11cm body)
+        // Left wing: 1x4x4 — pivots from shoulder (y=0 = top)
         PartDefinition leftWingPart = partDefinition.addOrReplaceChild("left_wing",
                 CubeListBuilder.create()
                         .texOffs(16, 0)
-                        .addBox(0.0f, -1.5f, -2.0f, 1.0f, 4.0f, 4.0f),
-                PartPose.offset(2.0f, 19.5f, 0.0f));
+                        .addBox(0.0f, 0.0f, -2.0f, 1.0f, 4.0f, 4.0f),
+                PartPose.offset(2.0f, 18.0f, 0.0f));
 
         // Left wing tip 1x3x2
         leftWingPart.addOrReplaceChild("left_wing_tip",
                 CubeListBuilder.create()
                         .texOffs(26, 0)
-                        .addBox(0.5f, -1.0f, 0.5f, 1.0f, 3.0f, 2.0f),
+                        .addBox(0.5f, 0.5f, 0.5f, 1.0f, 3.0f, 2.0f),
                 PartPose.ZERO);
 
-        // Right wing: 1x4x4 (mirrored)
+        // Right wing: 1x4x4 (mirrored) — pivots from shoulder
         PartDefinition rightWingPart = partDefinition.addOrReplaceChild("right_wing",
                 CubeListBuilder.create()
                         .texOffs(16, 0)
                         .mirror()
-                        .addBox(-1.0f, -1.5f, -2.0f, 1.0f, 4.0f, 4.0f),
-                PartPose.offset(-2.0f, 19.5f, 0.0f));
+                        .addBox(-1.0f, 0.0f, -2.0f, 1.0f, 4.0f, 4.0f),
+                PartPose.offset(-2.0f, 18.0f, 0.0f));
 
         // Right wing tip
         rightWingPart.addOrReplaceChild("right_wing_tip",
                 CubeListBuilder.create()
                         .texOffs(26, 0)
                         .mirror()
-                        .addBox(-1.5f, -1.0f, 0.5f, 1.0f, 3.0f, 2.0f),
+                        .addBox(-1.5f, 0.5f, 0.5f, 1.0f, 3.0f, 2.0f),
                 PartPose.ZERO);
 
         // Tail: moderately short, slightly notched 3x1x3

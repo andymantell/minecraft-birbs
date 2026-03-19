@@ -103,35 +103,34 @@ public class PeregrineFalconModel extends EntityModel<PeregrineFalconRenderState
                         .addBox(-2.0f, -2.5f, -1.5f, 1.0f, 2.0f, 2.0f),
                 PartPose.ZERO);
 
-        // LEFT WING: LONG, NARROW, POINTED — sickle-shaped (100cm wingspan on 42cm body)
-        // High aspect ratio: long span (8), narrow chord (5)
+        // LEFT WING: LONG, NARROW, POINTED — pivots from shoulder (y=0 = top)
         PartDefinition leftWingPart = partDefinition.addOrReplaceChild("left_wing",
                 CubeListBuilder.create()
                         .texOffs(0, 25)
-                        .addBox(0.0f, -3.5f, -2.5f, 1.0f, 8.0f, 5.0f),
-                PartPose.offset(3.0f, 15.0f, 0.0f));
+                        .addBox(0.0f, 0.0f, -2.5f, 1.0f, 8.0f, 5.0f),
+                PartPose.offset(3.0f, 11.5f, 0.0f));
 
         // Left wing outer: long narrow pointed tip 1x7x3
         leftWingPart.addOrReplaceChild("left_wing_outer",
                 CubeListBuilder.create()
                         .texOffs(12, 25)
-                        .addBox(1.0f, -2.5f, -1.5f, 1.0f, 7.0f, 3.0f),
+                        .addBox(1.0f, 1.0f, -1.5f, 1.0f, 7.0f, 3.0f),
                 PartPose.ZERO);
 
-        // RIGHT WING: LONG, NARROW, POINTED (mirrored)
+        // RIGHT WING: LONG, NARROW, POINTED (mirrored) — pivots from shoulder
         PartDefinition rightWingPart = partDefinition.addOrReplaceChild("right_wing",
                 CubeListBuilder.create()
                         .texOffs(0, 25)
                         .mirror()
-                        .addBox(-1.0f, -3.5f, -2.5f, 1.0f, 8.0f, 5.0f),
-                PartPose.offset(-3.0f, 15.0f, 0.0f));
+                        .addBox(-1.0f, 0.0f, -2.5f, 1.0f, 8.0f, 5.0f),
+                PartPose.offset(-3.0f, 11.5f, 0.0f));
 
         // Right wing outer
         rightWingPart.addOrReplaceChild("right_wing_outer",
                 CubeListBuilder.create()
                         .texOffs(12, 25)
                         .mirror()
-                        .addBox(-2.0f, -2.5f, -1.5f, 1.0f, 7.0f, 3.0f),
+                        .addBox(-2.0f, 1.0f, -1.5f, 1.0f, 7.0f, 3.0f),
                 PartPose.ZERO);
 
         // TAIL: medium-long, narrow — continues the taper 3x1x4

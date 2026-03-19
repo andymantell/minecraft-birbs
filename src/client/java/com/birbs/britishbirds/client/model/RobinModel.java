@@ -79,34 +79,34 @@ public class RobinModel extends EntityModel<RobinRenderState> {
                         .addBox(-1.5f, -4.5f, -1.5f, 3.0f, 1.0f, 3.0f),
                 PartPose.ZERO);
 
-        // Left wing: short rounded, 1x4x5 (21cm wingspan on 13cm body)
+        // Left wing: short rounded, 1x4x5 — pivots from shoulder (y=0 = top)
         PartDefinition leftWingPart = partDefinition.addOrReplaceChild("left_wing",
                 CubeListBuilder.create()
                         .texOffs(20, 0)
-                        .addBox(0.0f, -2.0f, -2.5f, 1.0f, 4.0f, 5.0f),
-                PartPose.offset(2.5f, 18.5f, 0.0f));
+                        .addBox(0.0f, 0.0f, -2.5f, 1.0f, 4.0f, 5.0f),
+                PartPose.offset(2.5f, 16.5f, 0.0f));
 
         // Left wing tip: rounded end 1x3x3
         leftWingPart.addOrReplaceChild("left_wing_tip",
                 CubeListBuilder.create()
                         .texOffs(32, 0)
-                        .addBox(0.5f, -1.0f, 1.0f, 1.0f, 3.0f, 3.0f),
+                        .addBox(0.5f, 1.0f, 1.0f, 1.0f, 3.0f, 3.0f),
                 PartPose.ZERO);
 
-        // Right wing: short rounded, 1x4x5 (mirrored)
+        // Right wing: short rounded, 1x4x5 (mirrored) — pivots from shoulder
         PartDefinition rightWingPart = partDefinition.addOrReplaceChild("right_wing",
                 CubeListBuilder.create()
                         .texOffs(20, 0)
                         .mirror()
-                        .addBox(-1.0f, -2.0f, -2.5f, 1.0f, 4.0f, 5.0f),
-                PartPose.offset(-2.5f, 18.5f, 0.0f));
+                        .addBox(-1.0f, 0.0f, -2.5f, 1.0f, 4.0f, 5.0f),
+                PartPose.offset(-2.5f, 16.5f, 0.0f));
 
         // Right wing tip
         rightWingPart.addOrReplaceChild("right_wing_tip",
                 CubeListBuilder.create()
                         .texOffs(32, 0)
                         .mirror()
-                        .addBox(-1.5f, -1.0f, 1.0f, 1.0f, 3.0f, 3.0f),
+                        .addBox(-1.5f, 1.0f, 1.0f, 1.0f, 3.0f, 3.0f),
                 PartPose.ZERO);
 
         // Tail: short, slightly cocked upward at -15 degrees, 2x1x3

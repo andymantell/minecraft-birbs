@@ -102,34 +102,34 @@ public class MallardModel extends EntityModel<MallardRenderState> {
                         .addBox(-1.5f, -1.5f, -6.0f, 3.0f, 1.0f, 1.0f),
                 PartPose.ZERO);
 
-        // Left wing: 1x7x8 (90cm wingspan on 58cm body)
+        // Left wing: 1x7x8 — pivots from shoulder (y=0 = top)
         PartDefinition leftWingPart = partDefinition.addOrReplaceChild("left_wing",
                 CubeListBuilder.create()
                         .texOffs(0, 30)
-                        .addBox(0.0f, -3.0f, -4.0f, 1.0f, 7.0f, 8.0f),
-                PartPose.offset(3.5f, 16.0f, 0.0f));
+                        .addBox(0.0f, 0.0f, -4.0f, 1.0f, 7.0f, 8.0f),
+                PartPose.offset(3.5f, 13.0f, 0.0f));
 
         // Left wing tip: speculum area 1x4x4
         leftWingPart.addOrReplaceChild("left_wing_tip",
                 CubeListBuilder.create()
                         .texOffs(18, 30)
-                        .addBox(0.5f, -1.5f, 2.0f, 1.0f, 4.0f, 4.0f),
+                        .addBox(0.5f, 1.5f, 2.0f, 1.0f, 4.0f, 4.0f),
                 PartPose.ZERO);
 
-        // Right wing: 1x7x8 (mirrored)
+        // Right wing: 1x7x8 (mirrored) — pivots from shoulder
         PartDefinition rightWingPart = partDefinition.addOrReplaceChild("right_wing",
                 CubeListBuilder.create()
                         .texOffs(0, 30)
                         .mirror()
-                        .addBox(-1.0f, -3.0f, -4.0f, 1.0f, 7.0f, 8.0f),
-                PartPose.offset(-3.5f, 16.0f, 0.0f));
+                        .addBox(-1.0f, 0.0f, -4.0f, 1.0f, 7.0f, 8.0f),
+                PartPose.offset(-3.5f, 13.0f, 0.0f));
 
         // Right wing tip
         rightWingPart.addOrReplaceChild("right_wing_tip",
                 CubeListBuilder.create()
                         .texOffs(18, 30)
                         .mirror()
-                        .addBox(-1.5f, -1.5f, 2.0f, 1.0f, 4.0f, 4.0f),
+                        .addBox(-1.5f, 1.5f, 2.0f, 1.0f, 4.0f, 4.0f),
                 PartPose.ZERO);
 
         // Tail: 5x1x4
