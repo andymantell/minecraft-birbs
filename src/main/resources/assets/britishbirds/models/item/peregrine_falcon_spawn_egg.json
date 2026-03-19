@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "britishbirds:item/peregrine_falcon_spawn_egg"
+  }
+}

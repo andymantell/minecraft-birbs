@@ -35,6 +35,19 @@ public class TextureGenerator {
         generateMallardFemale(basePath + "/mallard/mallard_female.png");
         generateMallardDuckling(basePath + "/mallard/mallard_duckling.png");
 
+        // Spawn egg textures (16x16)
+        String itemPath = "src/main/resources/assets/britishbirds/textures/item";
+        generateSpawnEgg(itemPath + "/robin_spawn_egg.png",
+                new Color(0x6B, 0x6B, 0x3A), new Color(0xD4, 0x60, 0x2A)); // olive + orange breast
+        generateSpawnEgg(itemPath + "/blue_tit_spawn_egg.png",
+                new Color(0xFF, 0xE0, 0x20), new Color(0x2A, 0x7A, 0xC4)); // yellow + blue cap
+        generateSpawnEgg(itemPath + "/barn_owl_spawn_egg.png",
+                new Color(0xC4, 0xA0, 0x55), new Color(0xF0, 0xE8, 0xD0)); // golden buff + cream face
+        generateSpawnEgg(itemPath + "/peregrine_falcon_spawn_egg.png",
+                new Color(0x4A, 0x55, 0x68), new Color(0xE8, 0xE0, 0xD5)); // slate grey + pale barred
+        generateSpawnEgg(itemPath + "/mallard_spawn_egg.png",
+                new Color(0x2D, 0x6B, 0x33), new Color(0x8B, 0x45, 0x13)); // iridescent green + chestnut
+
         System.out.println("All textures generated!");
     }
 
@@ -964,6 +977,97 @@ public class TextureGenerator {
         // Legs/feet: dark grey (1x4x1 to match model)
         fillBox(g, 26, 8, 1, 4, 1, greyLegs, greyLegs, greyLegs, greyLegs, greyLegs, greyLegs);
         fillBox(g, 30, 8, 3, 1, 3, greyLegs, greyLegs, greyLegs, greyLegs, greyLegs, greyLegs);
+
+        g.dispose();
+        save(img, path);
+        System.out.println("Generated: " + path);
+    }
+
+    // === SPAWN EGG TEXTURES (16x16) ===
+
+    /**
+     * Generate a spawn egg texture with species-specific base and spot colours.
+     * Draws the classic Minecraft egg oval shape with spotted overlay.
+     */
+    static void generateSpawnEgg(String path, Color base, Color spots) throws Exception {
+        BufferedImage img = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+
+        // Clear to transparent
+        g.setComposite(AlphaComposite.Clear);
+        g.fillRect(0, 0, 16, 16);
+        g.setComposite(AlphaComposite.SrcOver);
+
+        // Egg shape mask (hand-crafted oval, matches vanilla egg silhouette)
+        int[][] eggRows = {
+            // {startX, endX} for each row (y=0..15). -1 = no pixels
+            {-1, -1},  // y=0
+            {6, 9},     // y=1  narrow top
+            {5, 10},    // y=2
+            {4, 11},    // y=3
+            {4, 11},    // y=4
+            {3, 12},    // y=5
+            {3, 12},    // y=6
+            {3, 12},    // y=7  widest
+            {3, 12},    // y=8
+            {3, 12},    // y=9
+            {4, 11},    // y=10
+            {4, 11},    // y=11
+            {5, 10},    // y=12
+            {5, 10},    // y=13
+            {6, 9},     // y=14 bottom
+            {-1, -1},   // y=15
+        };
+
+        // Fill egg shape with base colour
+        for (int y = 0; y < 16; y++) {
+            if (eggRows[y][0] == -1) continue;
+            for (int x = eggRows[y][0]; x < eggRows[y][1]; x++) {
+                img.setRGB(x, y, base.getRGB());
+            }
+        }
+
+        // Add spot pattern (secondary colour) — scattered dots in the middle band
+        int[][] spotPositions = {
+            {6, 3}, {9, 3},
+            {5, 5}, {8, 5}, {10, 5},
+            {7, 6}, {4, 7}, {10, 7},
+            {6, 8}, {9, 9},
+            {5, 10}, {8, 10}, {11, 10},
+            {7, 11}, {4, 12}, {9, 12},
+        };
+        for (int[] pos : spotPositions) {
+            int x = pos[0], y = pos[1];
+            if (y < 16 && eggRows[y][0] != -1 && x >= eggRows[y][0] && x < eggRows[y][1]) {
+                img.setRGB(x, y, spots.getRGB());
+            }
+        }
+
+        // Subtle highlight on top-left for 3D look
+        Color highlight = new Color(
+                Math.min(255, base.getRed() + 40),
+                Math.min(255, base.getGreen() + 40),
+                Math.min(255, base.getBlue() + 40));
+        int[][] highlightPixels = {{6, 2}, {7, 2}, {5, 3}, {6, 3}, {5, 4}, {4, 5}};
+        for (int[] pos : highlightPixels) {
+            int x = pos[0], y = pos[1];
+            if (y < 16 && eggRows[y][0] != -1 && x >= eggRows[y][0] && x < eggRows[y][1]) {
+                img.setRGB(x, y, highlight.getRGB());
+            }
+        }
+
+        // Dark edge on bottom-right for shadow
+        Color shadow = new Color(
+                Math.max(0, base.getRed() - 30),
+                Math.max(0, base.getGreen() - 30),
+                Math.max(0, base.getBlue() - 30));
+        int[][] shadowPixels = {{10, 10}, {10, 11}, {9, 12}, {9, 13}, {8, 13}};
+        for (int[] pos : shadowPixels) {
+            int x = pos[0], y = pos[1];
+            if (y < 16 && eggRows[y][0] != -1 && x >= eggRows[y][0] && x < eggRows[y][1]) {
+                img.setRGB(x, y, shadow.getRGB());
+            }
+        }
 
         g.dispose();
         save(img, path);
