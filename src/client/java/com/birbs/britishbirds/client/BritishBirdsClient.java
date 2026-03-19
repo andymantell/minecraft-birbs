@@ -1,8 +1,10 @@
 package com.birbs.britishbirds.client;
 
+import com.birbs.britishbirds.client.model.BarnOwlModel;
 import com.birbs.britishbirds.client.model.BirdModelLayers;
 import com.birbs.britishbirds.client.model.BlueTitModel;
 import com.birbs.britishbirds.client.model.RobinModel;
+import com.birbs.britishbirds.client.renderer.BarnOwlRenderer;
 import com.birbs.britishbirds.client.renderer.BlueTitRenderer;
 import com.birbs.britishbirds.client.renderer.RobinRenderer;
 import com.birbs.britishbirds.registry.ModEntities;
@@ -18,5 +20,8 @@ public class BritishBirdsClient implements ClientModInitializer {
 
         EntityRendererRegistry.register(ModEntities.BLUE_TIT, BlueTitRenderer::new);
         ModelLayerRegistry.registerModelLayer(BirdModelLayers.BLUE_TIT, BlueTitModel::createBodyLayer);
+
+        EntityRendererRegistry.register(ModEntities.BARN_OWL, BarnOwlRenderer::new);
+        ModelLayerRegistry.registerModelLayer(BirdModelLayers.BARN_OWL, BarnOwlModel::createBodyLayer);
     }
 }

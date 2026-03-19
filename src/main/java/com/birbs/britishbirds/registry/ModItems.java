@@ -20,6 +20,12 @@ public class ModItems {
             new SpawnEggItem(new Item.Properties().spawnEgg(ModEntities.BLUE_TIT))
     );
 
+    public static final Item BARN_OWL_SPAWN_EGG = Registry.register(
+            BuiltInRegistries.ITEM,
+            Identifier.fromNamespaceAndPath(BritishBirdsMod.MOD_ID, "barn_owl_spawn_egg"),
+            new SpawnEggItem(new Item.Properties().spawnEgg(ModEntities.BARN_OWL))
+    );
+
     public static void initialize() {
         BritishBirdsMod.LOGGER.info("Registering British Birds items...");
     }

@@ -84,5 +84,50 @@
                 "stream": false
             }
         ]
+    },
+    "entity.barn_owl.screech": {
+        "subtitle": "subtitles.britishbirds.entity.barn_owl.screech",
+        "sounds": [
+            {
+                "name": "britishbirds:barn_owl/screech",
+                "stream": false
+            }
+        ]
+    },
+    "entity.barn_owl.hiss": {
+        "subtitle": "subtitles.britishbirds.entity.barn_owl.hiss",
+        "sounds": [
+            {
+                "name": "britishbirds:barn_owl/hiss",
+                "stream": false
+            }
+        ]
+    },
+    "entity.barn_owl.chirrup": {
+        "subtitle": "subtitles.britishbirds.entity.barn_owl.chirrup",
+        "sounds": [
+            {
+                "name": "britishbirds:barn_owl/chirrup",
+                "stream": false
+            }
+        ]
+    },
+    "entity.barn_owl.hurt": {
+        "subtitle": "subtitles.britishbirds.entity.barn_owl.hurt",
+        "sounds": [
+            {
+                "name": "britishbirds:barn_owl/hurt",
+                "stream": false
+            }
+        ]
+    },
+    "entity.barn_owl.death": {
+        "subtitle": "subtitles.britishbirds.entity.barn_owl.death",
+        "sounds": [
+            {
+                "name": "britishbirds:barn_owl/death",
+                "stream": false
+            }
+        ]
     }
 }

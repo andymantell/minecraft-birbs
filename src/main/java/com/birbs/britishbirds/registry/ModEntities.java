@@ -1,6 +1,7 @@
 package com.birbs.britishbirds.registry;
 
 import com.birbs.britishbirds.BritishBirdsMod;
+import com.birbs.britishbirds.entity.raptor.BarnOwlEntity;
 import com.birbs.britishbirds.entity.songbird.BlueTitEntity;
 import com.birbs.britishbirds.entity.songbird.RobinEntity;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
@@ -37,9 +38,22 @@ public class ModEntities {
                     .build(BLUE_TIT_KEY)
     );
 
+    public static final ResourceKey<EntityType<?>> BARN_OWL_KEY = ResourceKey.create(
+            Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(BritishBirdsMod.MOD_ID, "barn_owl"));
+
+    public static final EntityType<BarnOwlEntity> BARN_OWL = Registry.register(
+            BuiltInRegistries.ENTITY_TYPE,
+            Identifier.fromNamespaceAndPath(BritishBirdsMod.MOD_ID, "barn_owl"),
+            EntityType.Builder.<BarnOwlEntity>of(BarnOwlEntity::new, MobCategory.CREATURE)
+                    .sized(0.5f, 0.5f)
+                    .clientTrackingRange(10)
+                    .build(BARN_OWL_KEY)
+    );
+
     public static void initialize() {
         BritishBirdsMod.LOGGER.info("Registering British Birds entities...");
         FabricDefaultAttributeRegistry.register(ROBIN, RobinEntity.createRobinAttributes());
         FabricDefaultAttributeRegistry.register(BLUE_TIT, BlueTitEntity.createBlueTitAttributes());
+        FabricDefaultAttributeRegistry.register(BARN_OWL, BarnOwlEntity.createBarnOwlAttributes());
     }
 }

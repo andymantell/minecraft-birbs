@@ -19,6 +19,12 @@ public class ModSounds {
     public static final SoundEvent BLUE_TIT_HURT = registerSound("entity.blue_tit.hurt");
     public static final SoundEvent BLUE_TIT_DEATH = registerSound("entity.blue_tit.death");
 
+    public static final SoundEvent BARN_OWL_SCREECH = registerSound("entity.barn_owl.screech");
+    public static final SoundEvent BARN_OWL_HISS = registerSound("entity.barn_owl.hiss");
+    public static final SoundEvent BARN_OWL_CHIRRUP = registerSound("entity.barn_owl.chirrup");
+    public static final SoundEvent BARN_OWL_HURT = registerSound("entity.barn_owl.hurt");
+    public static final SoundEvent BARN_OWL_DEATH = registerSound("entity.barn_owl.death");
+
     private static SoundEvent registerSound(String id) {
         Identifier identifier = Identifier.fromNamespaceAndPath(BritishBirdsMod.MOD_ID, id);
         return Registry.register(BuiltInRegistries.SOUND_EVENT, identifier,

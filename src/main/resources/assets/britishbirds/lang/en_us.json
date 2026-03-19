@@ -12,5 +12,12 @@
     "subtitles.entity.blue_tit.call": "Blue Tit calls",
     "subtitles.entity.blue_tit.alarm": "Blue Tit alarm call",
     "subtitles.entity.blue_tit.hurt": "Blue Tit hurts",
-    "subtitles.entity.blue_tit.death": "Blue Tit dies"
+    "subtitles.entity.blue_tit.death": "Blue Tit dies",
+    "entity.britishbirds.barn_owl": "Barn Owl",
+    "item.britishbirds.barn_owl_spawn_egg": "Barn Owl Spawn Egg",
+    "subtitles.entity.barn_owl.screech": "Barn Owl screeches",
+    "subtitles.entity.barn_owl.hiss": "Barn Owl hisses",
+    "subtitles.entity.barn_owl.chirrup": "Barn Owl chirrups",
+    "subtitles.entity.barn_owl.hurt": "Barn Owl hurts",
+    "subtitles.entity.barn_owl.death": "Barn Owl dies"
 }
