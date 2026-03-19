@@ -104,18 +104,18 @@ public class PeregrineFalconModel extends EntityModel<PeregrineFalconRenderState
                 PartPose.ZERO);
 
         // LEFT WING: LONG, NARROW, POINTED — sickle-shaped (100cm wingspan on 42cm body)
-        // Inner wing: 1x6x7
+        // High aspect ratio: long span (8), narrow chord (5)
         PartDefinition leftWingPart = partDefinition.addOrReplaceChild("left_wing",
                 CubeListBuilder.create()
                         .texOffs(0, 25)
-                        .addBox(0.0f, -2.5f, -3.5f, 1.0f, 6.0f, 7.0f),
+                        .addBox(0.0f, -3.5f, -2.5f, 1.0f, 8.0f, 5.0f),
                 PartPose.offset(3.0f, 15.0f, 0.0f));
 
-        // Left wing outer: extends the wing long and narrow — pointed tip 1x5x5
+        // Left wing outer: long narrow pointed tip 1x7x3
         leftWingPart.addOrReplaceChild("left_wing_outer",
                 CubeListBuilder.create()
-                        .texOffs(16, 25)
-                        .addBox(1.0f, -1.5f, -2.0f, 1.0f, 5.0f, 5.0f),
+                        .texOffs(12, 25)
+                        .addBox(1.0f, -2.5f, -1.5f, 1.0f, 7.0f, 3.0f),
                 PartPose.ZERO);
 
         // RIGHT WING: LONG, NARROW, POINTED (mirrored)
@@ -123,15 +123,15 @@ public class PeregrineFalconModel extends EntityModel<PeregrineFalconRenderState
                 CubeListBuilder.create()
                         .texOffs(0, 25)
                         .mirror()
-                        .addBox(-1.0f, -2.5f, -3.5f, 1.0f, 6.0f, 7.0f),
+                        .addBox(-1.0f, -3.5f, -2.5f, 1.0f, 8.0f, 5.0f),
                 PartPose.offset(-3.0f, 15.0f, 0.0f));
 
         // Right wing outer
         rightWingPart.addOrReplaceChild("right_wing_outer",
                 CubeListBuilder.create()
-                        .texOffs(16, 25)
+                        .texOffs(12, 25)
                         .mirror()
-                        .addBox(-2.0f, -1.5f, -2.0f, 1.0f, 5.0f, 5.0f),
+                        .addBox(-2.0f, -2.5f, -1.5f, 1.0f, 7.0f, 3.0f),
                 PartPose.ZERO);
 
         // TAIL: medium-long, narrow — continues the taper 3x1x4
