@@ -1,5 +1,6 @@
 package com.birbs.britishbirds.ai.social;
 
+import com.birbs.britishbirds.ai.BirdAIUtils;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.phys.Vec3;
@@ -89,7 +90,7 @@ public class FlockingGoal extends Goal {
         for (PathfinderMob mate : flockMates) {
             double distSq = this.bird.distanceToSqr(mate);
             if (distSq < minSepSq && distSq > 0.01) {
-                Vec3 away = birdPos.subtract(mate.position()).normalize();
+                Vec3 away = BirdAIUtils.safeDirection(mate.position(), birdPos);
                 double strength = 1.0 - (Math.sqrt(distSq) / this.minSeparation);
                 sepX += away.x * strength;
                 sepY += away.y * strength;
