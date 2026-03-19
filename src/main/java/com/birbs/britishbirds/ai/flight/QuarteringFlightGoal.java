@@ -1,5 +1,6 @@
 package com.birbs.britishbirds.ai.flight;
 
+import com.birbs.britishbirds.ai.BirdAIUtils;
 import com.birbs.britishbirds.entity.base.AbstractFlyingBird;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.LivingEntity;
@@ -88,14 +89,15 @@ public class QuarteringFlightGoal extends Goal {
 
             if (this.hoverTicks >= 15 && this.preyTarget != null && this.preyTarget.isAlive()) {
                 // Dive toward prey — direct velocity
-                Vec3 toTarget = this.preyTarget.position().subtract(this.bird.position()).normalize();
+                Vec3 toTarget = BirdAIUtils.safeDirection(this.bird.position(), this.preyTarget.position());
                 this.bird.setDeltaMovement(toTarget.x * 0.8, toTarget.y * 0.8, toTarget.z * 0.8);
             }
             return;
         }
 
         // Calculate direction to current waypoint target
-        Vec3 direction = this.target.subtract(this.bird.position()).normalize();
+        if (this.target == null) return;
+        Vec3 direction = BirdAIUtils.safeDirection(this.bird.position(), this.target);
         double flightSpeed = 0.25; // Slow quartering flight
 
         // Wavering flight path: sinusoidal lateral drift

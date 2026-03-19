@@ -1,5 +1,6 @@
 package com.birbs.britishbirds.ai.flight;
 
+import com.birbs.britishbirds.ai.BirdAIUtils;
 import com.birbs.britishbirds.entity.base.AbstractBritishBird;
 import com.birbs.britishbirds.entity.raptor.PeregrineFalconEntity;
 import net.minecraft.core.BlockPos;
@@ -100,7 +101,7 @@ public class StoopingFlightGoal extends Goal {
 
     private void tickClimbing() {
         // Fly upward toward climb target using direct velocity
-        Vec3 direction = this.climbTarget.subtract(this.falcon.position()).normalize();
+        Vec3 direction = BirdAIUtils.safeDirection(this.falcon.position(), this.climbTarget);
         double speed = 0.4;
 
         this.falcon.setDeltaMovement(
@@ -170,7 +171,7 @@ public class StoopingFlightGoal extends Goal {
         this.falcon.getLookControl().setLookAt(this.prey, 60.0f, 60.0f);
 
         // Calculate dive vector toward prey
-        Vec3 toTarget = this.prey.position().subtract(this.falcon.position()).normalize();
+        Vec3 toTarget = BirdAIUtils.safeDirection(this.falcon.position(), this.prey.position());
 
         // Apply large downward velocity: -1.5 to -2.0 per tick (scaled)
         double speed = -1.5 - this.falcon.getRandom().nextDouble() * 0.5;

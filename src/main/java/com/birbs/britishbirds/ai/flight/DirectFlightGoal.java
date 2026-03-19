@@ -1,5 +1,6 @@
 package com.birbs.britishbirds.ai.flight;
 
+import com.birbs.britishbirds.ai.BirdAIUtils;
 import com.birbs.britishbirds.entity.base.AbstractWaterBird;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.util.LandRandomPos;
@@ -86,7 +87,7 @@ public class DirectFlightGoal extends Goal {
         this.flightTicks++;
 
         // Calculate direction vector toward target
-        Vec3 direction = this.target.subtract(this.bird.position()).normalize();
+        Vec3 direction = BirdAIUtils.safeDirection(this.bird.position(), this.target);
         double flightSpeed = 0.5 * this.speed; // Strong, fast flight
 
         // Direct line to target — no undulation for ducks

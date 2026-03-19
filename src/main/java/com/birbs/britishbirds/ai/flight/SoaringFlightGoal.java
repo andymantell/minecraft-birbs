@@ -1,5 +1,6 @@
 package com.birbs.britishbirds.ai.flight;
 
+import com.birbs.britishbirds.ai.BirdAIUtils;
 import com.birbs.britishbirds.entity.base.AbstractFlyingBird;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.ai.goal.Goal;
@@ -96,7 +97,7 @@ public class SoaringFlightGoal extends Goal {
         // Calculate direction toward the next circle point
         Vec3 currentPos = this.bird.position();
         Vec3 targetPos = new Vec3(targetX, this.desiredAltitude, targetZ);
-        Vec3 direction = targetPos.subtract(currentPos).normalize();
+        Vec3 direction = BirdAIUtils.safeDirection(currentPos, targetPos);
 
         // Altitude correction: gentle vertical adjustment
         double currentY = this.bird.getY();

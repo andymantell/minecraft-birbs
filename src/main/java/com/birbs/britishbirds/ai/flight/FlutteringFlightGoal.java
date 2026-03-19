@@ -1,5 +1,6 @@
 package com.birbs.britishbirds.ai.flight;
 
+import com.birbs.britishbirds.ai.BirdAIUtils;
 import com.birbs.britishbirds.entity.base.AbstractFlyingBird;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.util.LandRandomPos;
@@ -86,7 +87,7 @@ public class FlutteringFlightGoal extends Goal {
         this.flightTicks++;
 
         // Calculate direction vector toward target
-        Vec3 direction = this.target.subtract(this.bird.position()).normalize();
+        Vec3 direction = BirdAIUtils.safeDirection(this.bird.position(), this.target);
         double flightSpeed = 0.3 * this.speed;
 
         // Slight sinusoidal Y for undulation, with a small downward bias so birds don't float up
