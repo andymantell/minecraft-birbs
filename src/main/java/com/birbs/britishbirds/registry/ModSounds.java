@@ -31,6 +31,12 @@ public class ModSounds {
     public static final SoundEvent PEREGRINE_HURT = registerSound("entity.peregrine_falcon.hurt");
     public static final SoundEvent PEREGRINE_DEATH = registerSound("entity.peregrine_falcon.death");
 
+    public static final SoundEvent MALLARD_QUACK = registerSound("entity.mallard.quack");
+    public static final SoundEvent MALLARD_RAEB = registerSound("entity.mallard.raeb");
+    public static final SoundEvent MALLARD_WING_WHISTLE = registerSound("entity.mallard.wing_whistle");
+    public static final SoundEvent MALLARD_HURT = registerSound("entity.mallard.hurt");
+    public static final SoundEvent MALLARD_DEATH = registerSound("entity.mallard.death");
+
     private static SoundEvent registerSound(String id) {
         Identifier identifier = Identifier.fromNamespaceAndPath(BritishBirdsMod.MOD_ID, id);
         return Registry.register(BuiltInRegistries.SOUND_EVENT, identifier,

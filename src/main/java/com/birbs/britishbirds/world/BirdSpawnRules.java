@@ -21,6 +21,7 @@ public class BirdSpawnRules {
         registerBlueTitSpawns();
         registerBarnOwlSpawns();
         registerPeregrineFalconSpawns();
+        registerMallardSpawns();
     }
 
     private static void registerRobinSpawns() {
@@ -117,6 +118,29 @@ public class BirdSpawnRules {
 
         net.minecraft.world.entity.SpawnPlacements.register(
                 ModEntities.PEREGRINE_FALCON,
+                SpawnPlacementTypes.ON_GROUND,
+                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                Animal::checkAnimalSpawnRules
+        );
+    }
+
+    private static void registerMallardSpawns() {
+        // Mallard: rivers and swamps, gregarious.
+        BiomeModifications.addSpawn(
+                BiomeSelectors.includeByKey(
+                        Biomes.RIVER,
+                        Biomes.SWAMP,
+                        Biomes.MANGROVE_SWAMP
+                ),
+                MobCategory.CREATURE,
+                ModEntities.MALLARD,
+                8,   // weight
+                3,   // min group size
+                6    // max group size
+        );
+
+        net.minecraft.world.entity.SpawnPlacements.register(
+                ModEntities.MALLARD,
                 SpawnPlacementTypes.ON_GROUND,
                 Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
                 Animal::checkAnimalSpawnRules

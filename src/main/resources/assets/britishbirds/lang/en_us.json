@@ -26,5 +26,12 @@
     "subtitles.entity.peregrine_falcon.chitter": "Peregrine Falcon chitters",
     "subtitles.entity.peregrine_falcon.eechip": "Peregrine Falcon ee-chips",
     "subtitles.entity.peregrine_falcon.hurt": "Peregrine Falcon hurts",
-    "subtitles.entity.peregrine_falcon.death": "Peregrine Falcon dies"
+    "subtitles.entity.peregrine_falcon.death": "Peregrine Falcon dies",
+    "entity.britishbirds.mallard": "Mallard",
+    "item.britishbirds.mallard_spawn_egg": "Mallard Spawn Egg",
+    "subtitles.entity.mallard.quack": "Mallard quacks",
+    "subtitles.entity.mallard.raeb": "Mallard raebs",
+    "subtitles.entity.mallard.wing_whistle": "Mallard wing whistle",
+    "subtitles.entity.mallard.hurt": "Mallard hurts",
+    "subtitles.entity.mallard.death": "Mallard dies"
 }

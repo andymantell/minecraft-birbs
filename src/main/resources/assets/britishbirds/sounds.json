@@ -174,5 +174,50 @@
                 "stream": false
             }
         ]
+    },
+    "entity.mallard.quack": {
+        "subtitle": "subtitles.britishbirds.entity.mallard.quack",
+        "sounds": [
+            {
+                "name": "britishbirds:mallard/quack",
+                "stream": false
+            }
+        ]
+    },
+    "entity.mallard.raeb": {
+        "subtitle": "subtitles.britishbirds.entity.mallard.raeb",
+        "sounds": [
+            {
+                "name": "britishbirds:mallard/raeb",
+                "stream": false
+            }
+        ]
+    },
+    "entity.mallard.wing_whistle": {
+        "subtitle": "subtitles.britishbirds.entity.mallard.wing_whistle",
+        "sounds": [
+            {
+                "name": "britishbirds:mallard/wing_whistle",
+                "stream": false
+            }
+        ]
+    },
+    "entity.mallard.hurt": {
+        "subtitle": "subtitles.britishbirds.entity.mallard.hurt",
+        "sounds": [
+            {
+                "name": "britishbirds:mallard/hurt",
+                "stream": false
+            }
+        ]
+    },
+    "entity.mallard.death": {
+        "subtitle": "subtitles.britishbirds.entity.mallard.death",
+        "sounds": [
+            {
+                "name": "britishbirds:mallard/death",
+                "stream": false
+            }
+        ]
     }
 }

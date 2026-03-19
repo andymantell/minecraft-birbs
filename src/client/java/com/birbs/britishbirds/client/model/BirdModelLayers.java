@@ -16,4 +16,7 @@ public class BirdModelLayers {
 
     public static final ModelLayerLocation PEREGRINE_FALCON = new ModelLayerLocation(
             Identifier.fromNamespaceAndPath(BritishBirdsMod.MOD_ID, "peregrine_falcon"), "main");
+
+    public static final ModelLayerLocation MALLARD = new ModelLayerLocation(
+            Identifier.fromNamespaceAndPath(BritishBirdsMod.MOD_ID, "mallard"), "main");
 }
