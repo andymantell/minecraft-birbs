@@ -85,6 +85,7 @@ public class StoopingFlightGoal extends Goal {
 
     @Override
     public void tick() {
+        if (this.phase == null) return;
         this.phaseTicks++;
 
         switch (this.phase) {
