@@ -802,13 +802,9 @@ public class TextureGenerator {
 
         // Bill: texOffs(16,26), w=3, h=1, d=3 — yellow
         fillBox(g, 16, 26, 3, 1, 3, yellowBill, yellowBill, yellowBill, yellowBill, yellowBill, yellowBill);
-        // Black nail at tip
-        img.setRGB(22, 27, new Color(0x1A, 0x1A, 0x1A).getRGB());
 
         // Bill tip: texOffs(28,26), 3x1x1
         fillBox(g, 28, 26, 3, 1, 1, yellowBillTip, yellowBillTip, yellowBillTip, yellowBillTip, yellowBillTip, yellowBillTip);
-        // Black nail
-        img.setRGB(29, 27, new Color(0x1A, 0x1A, 0x1A).getRGB());
 
         // Wings: texOffs(0,30), w=1, h=7, d=8
         fillBox(g, 0, 30, 1, 7, 8, greyBrown, greyBrown, greyBrown, greyBrown, greyBrown, greyBrown);
