@@ -1,0 +1,47 @@
+{
+    "entity.robin.song": {
+        "subtitle": "subtitles.entity.robin.song",
+        "sounds": [
+            {
+                "name": "britishbirds:robin/song",
+                "stream": false
+            }
+        ]
+    },
+    "entity.robin.call": {
+        "subtitle": "subtitles.entity.robin.call",
+        "sounds": [
+            {
+                "name": "britishbirds:robin/call",
+                "stream": false
+            }
+        ]
+    },
+    "entity.robin.alarm": {
+        "subtitle": "subtitles.entity.robin.alarm",
+        "sounds": [
+            {
+                "name": "britishbirds:robin/alarm",
+                "stream": false
+            }
+        ]
+    },
+    "entity.robin.hurt": {
+        "subtitle": "subtitles.entity.robin.hurt",
+        "sounds": [
+            {
+                "name": "britishbirds:robin/hurt",
+                "stream": false
+            }
+        ]
+    },
+    "entity.robin.death": {
+        "subtitle": "subtitles.entity.robin.death",
+        "sounds": [
+            {
+                "name": "britishbirds:robin/death",
+                "stream": false
+            }
+        ]
+    }
+}

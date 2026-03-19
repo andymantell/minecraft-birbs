@@ -1,0 +1,9 @@
+{
+    "entity.britishbirds.robin": "Robin",
+    "item.britishbirds.robin_spawn_egg": "Robin Spawn Egg",
+    "subtitles.entity.robin.song": "Robin sings",
+    "subtitles.entity.robin.call": "Robin calls",
+    "subtitles.entity.robin.alarm": "Robin alarm call",
+    "subtitles.entity.robin.hurt": "Robin hurts",
+    "subtitles.entity.robin.death": "Robin dies"
+}

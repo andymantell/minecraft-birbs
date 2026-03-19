@@ -1,0 +1,20 @@
+{
+    "schemaVersion": 1,
+    "id": "britishbirds",
+    "version": "${version}",
+    "name": "British Birds",
+    "description": "Adds 100 British bird species with realistic behaviour to Minecraft",
+    "authors": ["birbs"],
+    "license": "MIT",
+    "environment": "*",
+    "entrypoints": {
+        "main": ["com.birbs.britishbirds.BritishBirdsMod"],
+        "client": ["com.birbs.britishbirds.client.BritishBirdsClient"]
+    },
+    "depends": {
+        "fabricloader": ">=0.18.4",
+        "minecraft": "~26.1",
+        "java": ">=25",
+        "fabric-api": "*"
+    }
+}
