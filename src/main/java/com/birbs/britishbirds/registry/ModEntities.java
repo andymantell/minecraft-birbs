@@ -2,6 +2,7 @@ package com.birbs.britishbirds.registry;
 
 import com.birbs.britishbirds.BritishBirdsMod;
 import com.birbs.britishbirds.entity.raptor.BarnOwlEntity;
+import com.birbs.britishbirds.entity.raptor.PeregrineFalconEntity;
 import com.birbs.britishbirds.entity.songbird.BlueTitEntity;
 import com.birbs.britishbirds.entity.songbird.RobinEntity;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
@@ -50,10 +51,23 @@ public class ModEntities {
                     .build(BARN_OWL_KEY)
     );
 
+    public static final ResourceKey<EntityType<?>> PEREGRINE_FALCON_KEY = ResourceKey.create(
+            Registries.ENTITY_TYPE, Identifier.fromNamespaceAndPath(BritishBirdsMod.MOD_ID, "peregrine_falcon"));
+
+    public static final EntityType<PeregrineFalconEntity> PEREGRINE_FALCON = Registry.register(
+            BuiltInRegistries.ENTITY_TYPE,
+            Identifier.fromNamespaceAndPath(BritishBirdsMod.MOD_ID, "peregrine_falcon"),
+            EntityType.Builder.<PeregrineFalconEntity>of(PeregrineFalconEntity::new, MobCategory.CREATURE)
+                    .sized(0.5f, 0.6f)
+                    .clientTrackingRange(10)
+                    .build(PEREGRINE_FALCON_KEY)
+    );
+
     public static void initialize() {
         BritishBirdsMod.LOGGER.info("Registering British Birds entities...");
         FabricDefaultAttributeRegistry.register(ROBIN, RobinEntity.createRobinAttributes());
         FabricDefaultAttributeRegistry.register(BLUE_TIT, BlueTitEntity.createBlueTitAttributes());
         FabricDefaultAttributeRegistry.register(BARN_OWL, BarnOwlEntity.createBarnOwlAttributes());
+        FabricDefaultAttributeRegistry.register(PEREGRINE_FALCON, PeregrineFalconEntity.createPeregrineAttributes());
     }
 }

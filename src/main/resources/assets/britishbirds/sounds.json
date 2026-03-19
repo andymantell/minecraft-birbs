@@ -129,5 +129,50 @@
                 "stream": false
             }
         ]
+    },
+    "entity.peregrine_falcon.kak": {
+        "subtitle": "subtitles.britishbirds.entity.peregrine_falcon.kak",
+        "sounds": [
+            {
+                "name": "britishbirds:peregrine_falcon/kak",
+                "stream": false
+            }
+        ]
+    },
+    "entity.peregrine_falcon.chitter": {
+        "subtitle": "subtitles.britishbirds.entity.peregrine_falcon.chitter",
+        "sounds": [
+            {
+                "name": "britishbirds:peregrine_falcon/chitter",
+                "stream": false
+            }
+        ]
+    },
+    "entity.peregrine_falcon.eechip": {
+        "subtitle": "subtitles.britishbirds.entity.peregrine_falcon.eechip",
+        "sounds": [
+            {
+                "name": "britishbirds:peregrine_falcon/eechip",
+                "stream": false
+            }
+        ]
+    },
+    "entity.peregrine_falcon.hurt": {
+        "subtitle": "subtitles.britishbirds.entity.peregrine_falcon.hurt",
+        "sounds": [
+            {
+                "name": "britishbirds:peregrine_falcon/hurt",
+                "stream": false
+            }
+        ]
+    },
+    "entity.peregrine_falcon.death": {
+        "subtitle": "subtitles.britishbirds.entity.peregrine_falcon.death",
+        "sounds": [
+            {
+                "name": "britishbirds:peregrine_falcon/death",
+                "stream": false
+            }
+        ]
     }
 }

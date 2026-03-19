@@ -26,6 +26,12 @@ public class ModItems {
             new SpawnEggItem(new Item.Properties().spawnEgg(ModEntities.BARN_OWL))
     );
 
+    public static final Item PEREGRINE_FALCON_SPAWN_EGG = Registry.register(
+            BuiltInRegistries.ITEM,
+            Identifier.fromNamespaceAndPath(BritishBirdsMod.MOD_ID, "peregrine_falcon_spawn_egg"),
+            new SpawnEggItem(new Item.Properties().spawnEgg(ModEntities.PEREGRINE_FALCON))
+    );
+
     public static void initialize() {
         BritishBirdsMod.LOGGER.info("Registering British Birds items...");
     }

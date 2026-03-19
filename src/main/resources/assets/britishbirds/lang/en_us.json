@@ -19,5 +19,12 @@
     "subtitles.entity.barn_owl.hiss": "Barn Owl hisses",
     "subtitles.entity.barn_owl.chirrup": "Barn Owl chirrups",
     "subtitles.entity.barn_owl.hurt": "Barn Owl hurts",
-    "subtitles.entity.barn_owl.death": "Barn Owl dies"
+    "subtitles.entity.barn_owl.death": "Barn Owl dies",
+    "entity.britishbirds.peregrine_falcon": "Peregrine Falcon",
+    "item.britishbirds.peregrine_falcon_spawn_egg": "Peregrine Falcon Spawn Egg",
+    "subtitles.entity.peregrine_falcon.kak": "Peregrine Falcon kaks",
+    "subtitles.entity.peregrine_falcon.chitter": "Peregrine Falcon chitters",
+    "subtitles.entity.peregrine_falcon.eechip": "Peregrine Falcon ee-chips",
+    "subtitles.entity.peregrine_falcon.hurt": "Peregrine Falcon hurts",
+    "subtitles.entity.peregrine_falcon.death": "Peregrine Falcon dies"
 }

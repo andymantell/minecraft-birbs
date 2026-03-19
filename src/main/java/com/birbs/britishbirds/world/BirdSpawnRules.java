@@ -20,6 +20,7 @@ public class BirdSpawnRules {
         registerRobinSpawns();
         registerBlueTitSpawns();
         registerBarnOwlSpawns();
+        registerPeregrineFalconSpawns();
     }
 
     private static void registerRobinSpawns() {
@@ -93,6 +94,29 @@ public class BirdSpawnRules {
 
         net.minecraft.world.entity.SpawnPlacements.register(
                 ModEntities.BARN_OWL,
+                SpawnPlacementTypes.ON_GROUND,
+                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                Animal::checkAnimalSpawnRules
+        );
+    }
+
+    private static void registerPeregrineFalconSpawns() {
+        // Peregrine Falcon: stony peaks, windswept hills. Very rare, solitary.
+        BiomeModifications.addSpawn(
+                BiomeSelectors.includeByKey(
+                        Biomes.STONY_PEAKS,
+                        Biomes.WINDSWEPT_HILLS,
+                        Biomes.WINDSWEPT_GRAVELLY_HILLS
+                ),
+                MobCategory.CREATURE,
+                ModEntities.PEREGRINE_FALCON,
+                2,   // weight (very rare)
+                1,   // min group size (solitary)
+                1    // max group size (solitary)
+        );
+
+        net.minecraft.world.entity.SpawnPlacements.register(
+                ModEntities.PEREGRINE_FALCON,
                 SpawnPlacementTypes.ON_GROUND,
                 Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
                 Animal::checkAnimalSpawnRules

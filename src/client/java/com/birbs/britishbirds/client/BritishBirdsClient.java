@@ -3,9 +3,11 @@ package com.birbs.britishbirds.client;
 import com.birbs.britishbirds.client.model.BarnOwlModel;
 import com.birbs.britishbirds.client.model.BirdModelLayers;
 import com.birbs.britishbirds.client.model.BlueTitModel;
+import com.birbs.britishbirds.client.model.PeregrineFalconModel;
 import com.birbs.britishbirds.client.model.RobinModel;
 import com.birbs.britishbirds.client.renderer.BarnOwlRenderer;
 import com.birbs.britishbirds.client.renderer.BlueTitRenderer;
+import com.birbs.britishbirds.client.renderer.PeregrineFalconRenderer;
 import com.birbs.britishbirds.client.renderer.RobinRenderer;
 import com.birbs.britishbirds.registry.ModEntities;
 import net.fabricmc.api.ClientModInitializer;
@@ -23,5 +25,8 @@ public class BritishBirdsClient implements ClientModInitializer {
 
         EntityRendererRegistry.register(ModEntities.BARN_OWL, BarnOwlRenderer::new);
         ModelLayerRegistry.registerModelLayer(BirdModelLayers.BARN_OWL, BarnOwlModel::createBodyLayer);
+
+        EntityRendererRegistry.register(ModEntities.PEREGRINE_FALCON, PeregrineFalconRenderer::new);
+        ModelLayerRegistry.registerModelLayer(BirdModelLayers.PEREGRINE_FALCON, PeregrineFalconModel::createBodyLayer);
     }
 }
