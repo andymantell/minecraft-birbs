@@ -3,6 +3,7 @@ package com.birbs.britishbirds;
 import com.birbs.britishbirds.registry.ModEntities;
 import com.birbs.britishbirds.registry.ModItems;
 import com.birbs.britishbirds.registry.ModSounds;
+import com.birbs.britishbirds.world.BirdSpawnRules;
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,5 +18,6 @@ public class BritishBirdsMod implements ModInitializer {
         ModSounds.initialize();
         ModEntities.initialize();
         ModItems.initialize();
+        BirdSpawnRules.initialize();
     }
 }

@@ -18,7 +18,12 @@ Each asset entry records:
 
 | Asset | Source URL | Author | Licence | Date Accessed | Notes |
 |-------|-----------|--------|---------|---------------|-------|
-| *(entries will be added as sounds are sourced)* | | | | | |
+| `sounds/robin/song1.ogg` | Placeholder | N/A | N/A | 2026-03-19 | Silent placeholder; candidate: [XC527484](https://xeno-canto.org/527484) by Benoit Van Hecke (CC BY-SA 4.0) |
+| `sounds/robin/song2.ogg` | Placeholder | N/A | N/A | 2026-03-19 | Silent placeholder; candidate: [XC470483](https://xeno-canto.org/470483) by Marie-Lan Tay Pamart (CC BY-SA 4.0) |
+| `sounds/robin/call.ogg` | Placeholder | N/A | N/A | 2026-03-19 | Silent placeholder; no BY-SA call recordings found yet |
+| `sounds/robin/alarm.ogg` | Placeholder | N/A | N/A | 2026-03-19 | Silent placeholder; no BY-SA alarm recordings found yet |
+| `sounds/robin/hurt.ogg` | Placeholder | N/A | N/A | 2026-03-19 | Silent placeholder; synthetic sound to be created |
+| `sounds/robin/death.ogg` | Placeholder | N/A | N/A | 2026-03-19 | Silent placeholder; synthetic sound to be created |
 
 ## Texture References
 

@@ -119,10 +119,16 @@ public class RobinModel extends EntityModel<RobinRenderState> {
             // Gentle tail bob (sinusoidal)
             this.tail.xRot = (float) Math.toRadians(-15.0) + (float) Math.sin(renderState.ageInTicks * 0.15f) * 0.05f;
 
-            // Occasional head tilt
-            if (((int) renderState.ageInTicks % 60) < 15) {
+            // Pecking animation: head dips down
+            if (renderState.isPecking) {
+                this.head.xRot = 0.8f; // Tilt head downward for pecking
+                this.head.zRot = 0.0f;
+            } else if (((int) renderState.ageInTicks % 60) < 15) {
+                // Occasional head tilt
+                this.head.xRot = 0.0f;
                 this.head.zRot = 0.15f;
             } else {
+                this.head.xRot = 0.0f;
                 this.head.zRot = 0.0f;
             }
 

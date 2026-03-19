@@ -28,6 +28,7 @@ public class RobinRenderer extends MobRenderer<RobinEntity, RobinRenderState, Ro
         super.extractRenderState(entity, state, partialTick);
         state.isMale = entity.isMale();
         state.isFlying = entity.isFlying();
+        state.isPecking = entity.isPecking();
         if (state.isFlying) {
             state.flapAngle = (float) Math.sin(state.ageInTicks * 1.4f) * 1.2f;
         } else {
