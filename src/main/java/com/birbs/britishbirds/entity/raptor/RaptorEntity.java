@@ -5,7 +5,10 @@ import com.birbs.britishbirds.entity.base.AbstractFlyingBird;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.control.FlyingMoveControl;
 import net.minecraft.world.entity.ai.goal.*;
+import net.minecraft.world.entity.ai.navigation.FlyingPathNavigation;
+import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -13,11 +16,21 @@ import net.minecraft.world.level.Level;
 /**
  * Base class for raptor species (Barn Owl, Peregrine Falcon, etc.).
  * Raptors are larger, tougher, and have attack capability.
+ * Raptors spend more time in the air, so they use FlyingPathNavigation
+ * (unlike songbirds which use GroundPathNavigation from AbstractFlyingBird).
  */
 public abstract class RaptorEntity extends AbstractFlyingBird {
 
     protected RaptorEntity(EntityType<? extends Animal> entityType, Level level) {
         super(entityType, level);
+        this.moveControl = new FlyingMoveControl(this, 10, false);
+    }
+
+    @Override
+    protected PathNavigation createNavigation(Level level) {
+        FlyingPathNavigation nav = new FlyingPathNavigation(this, level);
+        nav.setCanFloat(true);
+        return nav;
     }
 
     public static AttributeSupplier.Builder createRaptorAttributes() {

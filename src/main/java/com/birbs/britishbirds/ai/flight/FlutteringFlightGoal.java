@@ -10,6 +10,8 @@ import java.util.EnumSet;
 /**
  * Short, low, fluttery flights between nearby positions.
  * Produces a characteristic undulating flight pattern.
+ * Uses direct velocity control (setDeltaMovement) rather than navigation,
+ * since the bird uses GroundPathNavigation which can't route through air.
  */
 public class FlutteringFlightGoal extends Goal {
     private final AbstractFlyingBird bird;
@@ -20,6 +22,7 @@ public class FlutteringFlightGoal extends Goal {
     private Vec3 target;
     private int cooldown;
     private int flightTicks;
+    private static final int MAX_FLIGHT_TICKS = 100;
 
     public FlutteringFlightGoal(AbstractFlyingBird bird, double speed, int minDist, int maxDist) {
         this.bird = bird;
@@ -35,8 +38,8 @@ public class FlutteringFlightGoal extends Goal {
             this.cooldown--;
             return false;
         }
-        // 3% chance per tick, only when on ground
-        if (!this.bird.onGround() || this.bird.getRandom().nextFloat() > 0.03f) {
+        // 1% chance per tick (reduced from 3%), only when on ground
+        if (!this.bird.onGround() || this.bird.getRandom().nextFloat() > 0.01f) {
             return false;
         }
         // Find a random target position
@@ -69,9 +72,8 @@ public class FlutteringFlightGoal extends Goal {
 
     @Override
     public void start() {
-        this.bird.setFlying(true);
+        this.bird.setFlying(true);  // Enables noGravity
         this.flightTicks = 0;
-        this.bird.getNavigation().moveTo(this.target.x, this.target.y, this.target.z, this.speed);
     }
 
     @Override
@@ -82,22 +84,45 @@ public class FlutteringFlightGoal extends Goal {
     @Override
     public void tick() {
         this.flightTicks++;
-        // Add slight sinusoidal undulation to Y movement for fluttery effect
-        Vec3 motion = this.bird.getDeltaMovement();
-        double undulation = Math.sin(this.flightTicks * 0.5) * 0.04;
-        this.bird.setDeltaMovement(motion.x, motion.y + undulation, motion.z);
+
+        // Calculate direction vector toward target
+        Vec3 direction = this.target.subtract(this.bird.position()).normalize();
+        double flightSpeed = 0.3 * this.speed;
+
+        // Slight sinusoidal Y for undulation, with a small downward bias so birds don't float up
+        double undulation = Math.sin(this.flightTicks * 0.3) * 0.03;
+        this.bird.setDeltaMovement(
+                direction.x * flightSpeed,
+                direction.y * flightSpeed + undulation - 0.01,
+                direction.z * flightSpeed
+        );
+
+        // Face movement direction
+        this.bird.setYRot((float) (Math.atan2(-direction.x, direction.z) * (180.0 / Math.PI)));
+        this.bird.yBodyRot = this.bird.getYRot();
     }
 
     @Override
     public boolean canContinueToUse() {
-        return this.bird.isFlying() && !this.bird.onGround() && !this.bird.getNavigation().isDone();
+        // Land if close to target or been flying too long
+        if (this.bird.position().distanceTo(this.target) < 1.5) {
+            return false;
+        }
+        if (this.flightTicks > MAX_FLIGHT_TICKS) {
+            return false;
+        }
+        // Also stop if we've somehow landed
+        if (this.bird.onGround() && this.flightTicks > 5) {
+            return false;
+        }
+        return true;
     }
 
     @Override
     public void stop() {
-        this.bird.setFlying(false);
+        this.bird.setFlying(false);  // Re-enables gravity, bird falls to ground
         this.target = null;
-        // Cooldown: 40-120 ticks
-        this.cooldown = 40 + this.bird.getRandom().nextInt(81);
+        // Cooldown: 100-300 ticks (longer than before — songbirds spend most time on ground)
+        this.cooldown = 100 + this.bird.getRandom().nextInt(201);
     }
 }

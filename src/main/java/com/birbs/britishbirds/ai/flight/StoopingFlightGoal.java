@@ -16,6 +16,7 @@ import java.util.List;
 /**
  * The Peregrine Falcon's signature high-speed dive (stoop).
  * Multi-phase state machine: CLIMBING -> TARGETING -> DIVING -> STRIKING -> PULLOUT
+ * Uses direct velocity control for all phases.
  */
 public class StoopingFlightGoal extends Goal {
     private final PeregrineFalconEntity falcon;
@@ -62,7 +63,7 @@ public class StoopingFlightGoal extends Goal {
 
     @Override
     public void start() {
-        this.falcon.setFlying(true);
+        this.falcon.setFlying(true);  // Enables noGravity
         this.phase = StoopPhase.CLIMBING;
         this.phaseTicks = 0;
         this.prey = null;
@@ -98,12 +99,19 @@ public class StoopingFlightGoal extends Goal {
     }
 
     private void tickClimbing() {
-        // Fly upward toward climb target
-        this.falcon.getNavigation().moveTo(
-                this.climbTarget.x, this.climbTarget.y, this.climbTarget.z, 0.5);
+        // Fly upward toward climb target using direct velocity
+        Vec3 direction = this.climbTarget.subtract(this.falcon.position()).normalize();
+        double speed = 0.4;
 
-        // Add upward velocity boost
-        this.falcon.setDeltaMovement(this.falcon.getDeltaMovement().add(0, 0.06, 0));
+        this.falcon.setDeltaMovement(
+                direction.x * speed,
+                Math.max(direction.y * speed, 0.08), // Always climb
+                direction.z * speed
+        );
+
+        // Face movement direction
+        this.falcon.setYRot((float) (Math.atan2(-direction.x, direction.z) * (180.0 / Math.PI)));
+        this.falcon.yBodyRot = this.falcon.getYRot();
 
         // Transition when high enough or after enough time
         if (this.falcon.getY() >= this.climbTarget.y - 2.0 || this.phaseTicks > 200) {
@@ -172,8 +180,9 @@ public class StoopingFlightGoal extends Goal {
                 toTarget.z * Math.abs(speed) * 0.5
         );
 
-        // Disable navigation during dive
-        this.falcon.getNavigation().stop();
+        // Face dive direction
+        this.falcon.setYRot((float) (Math.atan2(-toTarget.x, toTarget.z) * (180.0 / Math.PI)));
+        this.falcon.yBodyRot = this.falcon.getYRot();
 
         // Check if close enough to strike
         double distSqr = this.falcon.distanceToSqr(this.prey);
@@ -212,7 +221,7 @@ public class StoopingFlightGoal extends Goal {
     }
 
     private void tickPullout() {
-        // Briefly climb back up after strike
+        // Briefly climb back up after strike using direct velocity
         this.falcon.setDeltaMovement(this.falcon.getDeltaMovement().add(0, 0.15, 0));
 
         if (this.phaseTicks > 30) {
@@ -222,6 +231,7 @@ public class StoopingFlightGoal extends Goal {
 
     @Override
     public void stop() {
+        this.falcon.setFlying(false);  // Re-enables gravity
         this.falcon.setStooping(false);
         this.prey = null;
         this.phase = null;

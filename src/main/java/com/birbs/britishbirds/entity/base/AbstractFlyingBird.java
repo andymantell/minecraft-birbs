@@ -3,9 +3,6 @@ package com.birbs.britishbirds.entity.base;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.ai.control.FlyingMoveControl;
-import net.minecraft.world.entity.ai.navigation.FlyingPathNavigation;
-import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -16,16 +13,13 @@ public abstract class AbstractFlyingBird extends AbstractBritishBird {
 
     protected AbstractFlyingBird(EntityType<? extends Animal> entityType, Level level) {
         super(entityType, level);
-        this.moveControl = new FlyingMoveControl(this, 10, false);
+        // Use default GroundPathNavigation and default MoveControl
+        // Birds walk on the ground most of the time.
+        // Flight goals handle air movement directly via setDeltaMovement.
     }
 
-    @Override
-    protected PathNavigation createNavigation(Level level) {
-        FlyingPathNavigation nav = new FlyingPathNavigation(this, level);
-        nav.setCanFloat(true);
-        nav.setCanOpenDoors(true);
-        return nav;
-    }
+    // DO NOT override createNavigation — use the default GroundPathNavigation
+    // DO NOT set FlyingMoveControl — use the default MoveControl
 
     public static AttributeSupplier.Builder createFlyingBirdAttributes() {
         return createBirdAttributes()
@@ -38,16 +32,19 @@ public abstract class AbstractFlyingBird extends AbstractBritishBird {
 
     public void setFlying(boolean flying) {
         this.isFlying = flying;
+        if (flying) {
+            this.setNoGravity(true);  // Disable vanilla gravity when in flight
+        } else {
+            this.setNoGravity(false); // Re-enable gravity when landing
+        }
     }
 
     @Override
     public void tick() {
         super.tick();
-        // Auto-detect flying state: flying when not on ground and not in water
-        if (!this.onGround() && !this.isInWater()) {
-            this.isFlying = true;
-        } else if (this.onGround()) {
-            this.isFlying = false;
+        // Auto-land if flying but on ground (flight goal ended, touched down)
+        if (this.isFlying && this.onGround()) {
+            this.setFlying(false);
         }
     }
 
@@ -61,12 +58,5 @@ public abstract class AbstractFlyingBird extends AbstractBritishBird {
         // Flying birds don't take fall damage - do nothing
     }
 
-    @Override
-    public void travel(Vec3 travelVector) {
-        if (this.isFlying && !this.isInWater()) {
-            // Apply reduced gravity when flying
-            this.setDeltaMovement(this.getDeltaMovement().add(0.0, 0.01, 0.0)); // counteract some gravity
-        }
-        super.travel(travelVector);
-    }
+    // No travel() override — no more upward velocity hack
 }

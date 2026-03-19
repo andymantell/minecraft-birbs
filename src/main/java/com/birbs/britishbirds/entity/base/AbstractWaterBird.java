@@ -3,9 +3,6 @@ package com.birbs.britishbirds.entity.base;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.ai.control.FlyingMoveControl;
-import net.minecraft.world.entity.ai.navigation.FlyingPathNavigation;
-import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.pathfinder.PathType;
@@ -13,7 +10,9 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * Base class for water birds (ducks, geese, swans, etc.).
- * Water birds can swim, walk on land, and fly.
+ * Water birds can swim, walk on land, and rarely fly.
+ * Uses default GroundPathNavigation and MoveControl — ducks walk on land normally.
+ * Flying is very rare and only triggered by DirectFlightGoal.
  */
 public abstract class AbstractWaterBird extends AbstractBritishBird {
 
@@ -22,18 +21,14 @@ public abstract class AbstractWaterBird extends AbstractBritishBird {
 
     protected AbstractWaterBird(EntityType<? extends Animal> entityType, Level level) {
         super(entityType, level);
-        this.moveControl = new FlyingMoveControl(this, 10, false);
+        // Use default GroundPathNavigation — ducks walk on land
+        // Use default MoveControl — ducks don't hover
+        // NO FlyingMoveControl, NO FlyingPathNavigation
         // Make water attractive for pathfinding
         this.setPathfindingMalus(PathType.WATER, 0.0f);
     }
 
-    @Override
-    protected PathNavigation createNavigation(Level level) {
-        FlyingPathNavigation nav = new FlyingPathNavigation(this, level);
-        nav.setCanFloat(true);
-        nav.setCanOpenDoors(false);
-        return nav;
-    }
+    // DO NOT override createNavigation — use the default GroundPathNavigation
 
     public static AttributeSupplier.Builder createWaterBirdAttributes() {
         return createBirdAttributes()
@@ -48,6 +43,11 @@ public abstract class AbstractWaterBird extends AbstractBritishBird {
 
     public void setFlying(boolean flying) {
         this.isFlying = flying;
+        if (flying) {
+            this.setNoGravity(true);
+        } else {
+            this.setNoGravity(false);
+        }
     }
 
     public boolean isSwimming() {
@@ -61,16 +61,19 @@ public abstract class AbstractWaterBird extends AbstractBritishBird {
     @Override
     public void tick() {
         super.tick();
-        // Auto-detect flying state: flying when not on ground and not in water
-        if (!this.onGround() && !this.isInWater()) {
-            this.isFlying = true;
-            this.isSwimming = false;
-        } else if (this.isInWater()) {
+        // Auto-detect swimming state
+        if (this.isInWater()) {
             this.isSwimming = true;
-            this.isFlying = false;
+            // Auto-land if was flying and hit water
+            if (this.isFlying) {
+                this.setFlying(false);
+            }
         } else if (this.onGround()) {
-            this.isFlying = false;
             this.isSwimming = false;
+            // Auto-land if was flying and touched ground
+            if (this.isFlying) {
+                this.setFlying(false);
+            }
         }
     }
 
@@ -100,11 +103,9 @@ public abstract class AbstractWaterBird extends AbstractBritishBird {
             if (this.getFluidHeight(net.minecraft.tags.FluidTags.WATER) > this.getBbHeight() * 0.5) {
                 this.setDeltaMovement(this.getDeltaMovement().add(0.0, 0.02, 0.0));
             }
-        } else if (this.isFlying) {
-            // Apply reduced gravity when flying
-            this.setDeltaMovement(this.getDeltaMovement().add(0.0, 0.01, 0.0));
-            super.travel(travelVector);
         } else {
+            // Normal ground movement (or falling if in air without flying)
+            // When flying, flight goals handle movement via setDeltaMovement directly
             super.travel(travelVector);
         }
     }
