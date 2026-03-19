@@ -330,8 +330,8 @@ Common garden birds (Robin, Blue Tit) have high spawn weights. Scarce species (P
 ```properties
 # Fabric Properties
 minecraft_version=26.1
-yarn_mappings=26.1+build.1
 loader_version=0.18.4
+# No yarn_mappings needed — MC 26.1 is unobfuscated
 fabric_version=0.143.14+26.1
 
 # Mod Properties
@@ -425,6 +425,8 @@ birbs/
     │   │       ├── WaterfowlEntity.java
     │   │       └── MallardEntity.java
     │   │
+    │   # Note: client code lives in src/client/java/ due to Loom's splitEnvironmentSourceSets()
+    │   # The client/ tree below is at src/client/java/com/birbs/britishbirds/client/
     │   ├── client/                       # CLIENT-SIDE ONLY — never import from server code
     │   │   ├── model/
     │   │   │   ├── BirdModelLayers.java  # EntityModelLayer constants
@@ -434,7 +436,9 @@ birbs/
     │   │   │   ├── PeregrineFalconModel.java
     │   │   │   └── MallardModel.java
     │   │   └── renderer/
-    │   │       └── BirdRenderer.java     # Generic parameterized renderer
+    │   │       ├── RobinRenderer.java    # Per-species renderers (not a generic one)
+    │   │       ├── RobinRenderState.java # Per-species render states
+    │   │       └── ...                   # One renderer + render state per species
     │   │
     │   ├── ai/
     │   │   ├── flight/
