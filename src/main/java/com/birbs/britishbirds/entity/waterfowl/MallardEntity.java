@@ -18,8 +18,8 @@ public class MallardEntity extends WaterfowlEntity {
 
     private static final EntityDataAccessor<Boolean> IS_DABBLING =
             SynchedEntityData.defineId(MallardEntity.class, EntityDataSerializers.BOOLEAN);
-
-    private boolean isWaddling = false;
+    private static final EntityDataAccessor<Boolean> IS_WADDLING =
+            SynchedEntityData.defineId(MallardEntity.class, EntityDataSerializers.BOOLEAN);
 
     public MallardEntity(EntityType<? extends Animal> entityType, Level level) {
         super(entityType, level);
@@ -29,6 +29,7 @@ public class MallardEntity extends WaterfowlEntity {
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(IS_DABBLING, false);
+        builder.define(IS_WADDLING, false);
     }
 
     @Override
@@ -57,11 +58,11 @@ public class MallardEntity extends WaterfowlEntity {
     }
 
     public boolean isWaddling() {
-        return this.isWaddling;
+        return this.entityData.get(IS_WADDLING);
     }
 
     public void setWaddling(boolean waddling) {
-        this.isWaddling = waddling;
+        this.entityData.set(IS_WADDLING, waddling);
     }
 
     @Override
