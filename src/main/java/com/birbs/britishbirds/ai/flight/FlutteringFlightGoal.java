@@ -39,8 +39,8 @@ public class FlutteringFlightGoal extends Goal {
             this.cooldown--;
             return false;
         }
-        // 1% chance per tick (reduced from 3%), only when on ground
-        if (!this.bird.onGround() || this.bird.getRandom().nextFloat() > 0.01f) {
+        // 5% chance per tick — songbirds flit between trees frequently
+        if (!this.bird.onGround() || this.bird.getRandom().nextFloat() > 0.05f) {
             return false;
         }
         // Find a random target position
@@ -123,7 +123,7 @@ public class FlutteringFlightGoal extends Goal {
     public void stop() {
         this.bird.setFlying(false);  // Re-enables gravity, bird falls to ground
         this.target = null;
-        // Cooldown: 100-300 ticks (longer than before — songbirds spend most time on ground)
-        this.cooldown = 100 + this.bird.getRandom().nextInt(201);
+        // Cooldown: 40-100 ticks (2-5 seconds) — frequent tree-to-tree flitting
+        this.cooldown = 40 + this.bird.getRandom().nextInt(61);
     }
 }
