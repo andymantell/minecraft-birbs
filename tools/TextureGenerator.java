@@ -313,8 +313,8 @@ public class TextureGenerator {
     // Head:       texOffs(0,17),  5x5x5
     // FacialDisc: texOffs(20,17), 6x5x1
     // Beak:       texOffs(20,23), 1x1x1
-    // L Wing:     texOffs(0,27),  1x8x8
-    // L WingOut:  texOffs(18,27), 1x7x5
+    // L Wing:     texOffs(0,27),  1x10x10
+    // L WingOut:  texOffs(22,27), 1x8x6
     // Tail:       texOffs(20,0),  4x1x3
     // Legs:       texOffs(32,0),  1x5x1
     // Talons:     texOffs(36,0),  2x1x2
@@ -393,25 +393,25 @@ public class TextureGenerator {
         // Beak: texOffs(20,23), 1x1x1
         fillBox(g, 20, 23, 1, 1, 1, paleHorn, paleHorn, paleHorn, paleHorn, paleHorn, paleHorn);
 
-        // Wings: texOffs(0,27), w=1, h=8, d=8 — huge broad rounded owl wings
-        fillBox(g, 0, 27, 1, 8, 8, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
+        // Wings: texOffs(0,27), w=1, h=10, d=10 — enormous broad rounded owl wings
+        fillBox(g, 0, 27, 1, 10, 10, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
         // Add barring on wings
-        for (int y = 35; y < 43; y += 2) {
-            for (int x = 1; x < 9; x++) {
+        for (int y = 37; y < 47; y += 2) {
+            for (int x = 1; x < 11; x++) {
                 if (x < SIZE && y < SIZE) img.setRGB(x, y, tawnyOrange.getRGB());
             }
         }
         // Lighter feather edges
-        for (int y = 35; y < 43; y++) {
+        for (int y = 37; y < 47; y++) {
             if (y % 3 == 0) {
-                for (int x = 1; x < 9; x++) {
+                for (int x = 1; x < 11; x++) {
                     if (x < SIZE && y < SIZE) img.setRGB(x, y, goldenLight.getRGB());
                 }
             }
         }
 
-        // Wing outer: texOffs(18,27), w=1, h=7, d=5
-        fillBox(g, 18, 27, 1, 7, 5, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
+        // Wing outer: texOffs(22,27), w=1, h=8, d=6
+        fillBox(g, 22, 27, 1, 8, 6, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
 
         // Tail: texOffs(20,0), w=4, h=1, d=3
         fillBox(g, 20, 0, 4, 1, 3, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
@@ -491,14 +491,14 @@ public class TextureGenerator {
         // Beak
         fillBox(g, 20, 23, 1, 1, 1, paleHorn, paleHorn, paleHorn, paleHorn, paleHorn, paleHorn);
 
-        // Wings (1x8x8 + 1x7x5 — same huge proportions as male)
-        fillBox(g, 0, 27, 1, 8, 8, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
-        for (int y = 35; y < 43; y += 2) {
-            for (int x = 1; x < 9; x++) {
+        // Wings (1x10x10 + 1x8x6 — same enormous proportions as male)
+        fillBox(g, 0, 27, 1, 10, 10, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
+        for (int y = 37; y < 47; y += 2) {
+            for (int x = 1; x < 11; x++) {
                 if (x < SIZE && y < SIZE) img.setRGB(x, y, tawnyOrange.getRGB());
             }
         }
-        fillBox(g, 18, 27, 1, 7, 5, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
+        fillBox(g, 22, 27, 1, 8, 6, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
 
         // Tail
         fillBox(g, 20, 0, 4, 1, 3, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
