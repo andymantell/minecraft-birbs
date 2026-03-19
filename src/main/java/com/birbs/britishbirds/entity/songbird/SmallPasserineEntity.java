@@ -18,15 +18,18 @@ import net.minecraft.world.level.Level;
  */
 public abstract class SmallPasserineEntity extends AbstractFlyingBird {
 
-    private final GroundForagingGoal foragingGoal;
+    private GroundForagingGoal foragingGoal;
 
     protected SmallPasserineEntity(EntityType<? extends Animal> entityType, Level level) {
         super(entityType, level);
-        this.foragingGoal = new GroundForagingGoal(this);
     }
 
     @Override
     protected void registerGoals() {
+        // Create foraging goal here (not in constructor) because registerGoals()
+        // is called from Mob's super constructor before our fields are initialized
+        this.foragingGoal = new GroundForagingGoal(this);
+
         // Shared songbird goals
         this.goalSelector.addGoal(0, new FloatGoal(this));
         this.goalSelector.addGoal(1, new AvoidEntityGoal<>(this, RaptorEntity.class, 12.0f, 1.2, 1.5));
@@ -53,6 +56,6 @@ public abstract class SmallPasserineEntity extends AbstractFlyingBird {
      * Returns whether this bird is currently pecking at the ground (for animation).
      */
     public boolean isPecking() {
-        return this.foragingGoal.isPecking();
+        return this.foragingGoal != null && this.foragingGoal.isPecking();
     }
 }
