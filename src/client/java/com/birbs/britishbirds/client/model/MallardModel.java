@@ -193,8 +193,7 @@ public class MallardModel extends EntityModel<MallardRenderState> {
             this.neck.xRot = (float) Math.toRadians(90.0);
             this.head.xRot = (float) Math.toRadians(90.0);
             this.tail.xRot = (float) Math.toRadians(-80.0);
-            this.leftWing.zRot = 0.0f;
-            this.rightWing.zRot = 0.0f;
+            BirdAnimations.foldWings(this.leftWing, this.rightWing);
             this.leftLeg.xRot = 0.3f;
             this.rightLeg.xRot = 0.3f;
         } else if (state.isFlying) {
@@ -203,10 +202,8 @@ public class MallardModel extends EntityModel<MallardRenderState> {
             this.rearBody.xRot = (float) Math.toRadians(-40.0);
             this.neck.xRot = (float) Math.toRadians(20.0);
             this.head.xRot = (float) Math.toRadians(15.0);
-            this.leftWing.zRot = -state.flapAngle;
-            this.rightWing.zRot = state.flapAngle;
-            this.leftLeg.xRot = (float) Math.toRadians(70.0);
-            this.rightLeg.xRot = (float) Math.toRadians(70.0);
+            BirdAnimations.animateWingFlap(this.leftWing, this.rightWing, state.flapAngle);
+            BirdAnimations.tuckLegs(this.leftLeg, this.rightLeg, (float) Math.toRadians(70.0));
             this.tail.xRot = (float) Math.toRadians(-15.0);
         } else if (state.isSwimming) {
             // Swimming: body level, legs paddle alternately, gentle bob
@@ -214,8 +211,7 @@ public class MallardModel extends EntityModel<MallardRenderState> {
             this.rearBody.xRot = 0.0f;
             this.neck.xRot = 0.0f;
             this.head.xRot = 0.0f;
-            this.leftWing.zRot = 0.0f;
-            this.rightWing.zRot = 0.0f;
+            BirdAnimations.foldWings(this.leftWing, this.rightWing);
             this.tail.xRot = (float) Math.toRadians(-10.0);
 
             // Legs paddle alternately below waterline
@@ -233,8 +229,7 @@ public class MallardModel extends EntityModel<MallardRenderState> {
             this.rearBody.xRot = 0.0f;
             this.neck.xRot = 0.0f;
             this.head.xRot = 0.0f;
-            this.leftWing.zRot = 0.0f;
-            this.rightWing.zRot = 0.0f;
+            BirdAnimations.foldWings(this.leftWing, this.rightWing);
             this.tail.xRot = (float) Math.toRadians(-10.0);
             this.body.y = 17.0f;
             this.rearBody.y = 17.0f;
@@ -243,9 +238,7 @@ public class MallardModel extends EntityModel<MallardRenderState> {
             float walkSpeed = state.walkAnimationSpeed;
             float walkPos = state.walkAnimationPos;
             if (walkSpeed > 0.01f) {
-                float legSwing = (float) Math.sin(walkPos * 0.6662f) * 1.4f * walkSpeed;
-                this.leftLeg.xRot = legSwing;
-                this.rightLeg.xRot = -legSwing;
+                BirdAnimations.animateWalkingLegs(this.leftLeg, this.rightLeg, walkSpeed, walkPos);
 
                 // Waddle: body rolls side to side
                 this.body.zRot = (float) Math.sin(walkPos * 0.6662f) * 0.15f * walkSpeed;

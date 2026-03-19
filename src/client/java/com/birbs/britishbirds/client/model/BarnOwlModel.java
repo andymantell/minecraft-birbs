@@ -158,8 +158,8 @@ public class BarnOwlModel extends EntityModel<BarnOwlRenderState> {
             this.head.xRot = 0.3f;
             this.head.yRot = 0.0f;
             this.head.zRot = 0.0f;
-            this.leftWing.zRot = -(float) Math.sin(renderState.ageInTicks * 1.5f) * 1.2f;
-            this.rightWing.zRot = (float) Math.sin(renderState.ageInTicks * 1.5f) * 1.2f;
+            float hoverFlap = (float) Math.sin(renderState.ageInTicks * 1.5f) * 1.2f;
+            BirdAnimations.animateWingFlap(this.leftWing, this.rightWing, hoverFlap);
             this.leftLeg.xRot = 0.3f;
             this.rightLeg.xRot = 0.3f;
             this.tail.xRot = -0.3f;
@@ -170,23 +170,19 @@ public class BarnOwlModel extends EntityModel<BarnOwlRenderState> {
             this.head.xRot = 0.5f;
             this.head.yRot = 0.0f;
             this.head.zRot = 0.0f;
-            this.leftWing.zRot = -renderState.flapAngle;
-            this.rightWing.zRot = renderState.flapAngle;
-            this.leftLeg.xRot = 0.8f;
-            this.rightLeg.xRot = 0.8f;
+            BirdAnimations.animateWingFlap(this.leftWing, this.rightWing, renderState.flapAngle);
+            BirdAnimations.tuckLegs(this.leftLeg, this.rightLeg, 0.8f);
             this.tail.xRot = -0.5f;
         } else {
             // Ground: upright perch posture — tall and slim
-            this.leftWing.zRot = 0.0f;
-            this.rightWing.zRot = 0.0f;
+            BirdAnimations.foldWings(this.leftWing, this.rightWing);
             this.body.xRot = (float) Math.toRadians(5.0);
             this.lowerBody.xRot = 0.0f;
             this.leftLeg.xRot = 0.0f;
             this.rightLeg.xRot = 0.0f;
 
-            // Tail slight bob
-            this.tail.xRot = (float) Math.toRadians(-10.0)
-                    + (float) Math.sin(renderState.ageInTicks * 0.1f) * 0.03f;
+            BirdAnimations.animateTailBob(this.tail, (float) Math.toRadians(-10.0),
+                    renderState.ageInTicks, 0.1f, 0.03f);
 
             // Owl head rotation: wide turning
             if (((int) renderState.ageInTicks % 80) < 20) {
@@ -199,14 +195,8 @@ public class BarnOwlModel extends EntityModel<BarnOwlRenderState> {
             this.head.xRot = 0.0f;
             this.head.zRot = 0.0f;
 
-            // Leg walking animation
-            float walkSpeed = renderState.walkAnimationSpeed;
-            float walkPos = renderState.walkAnimationPos;
-            if (walkSpeed > 0.01f) {
-                float legSwing = (float) Math.sin(walkPos * 0.6662f) * 1.4f * walkSpeed;
-                this.leftLeg.xRot = legSwing;
-                this.rightLeg.xRot = -legSwing;
-            }
+            BirdAnimations.animateWalkingLegs(this.leftLeg, this.rightLeg,
+                    renderState.walkAnimationSpeed, renderState.walkAnimationPos);
         }
     }
 }

@@ -167,27 +167,22 @@ public class RobinModel extends EntityModel<RobinRenderState> {
             this.head.zRot = 0.0f;
 
             // Wing flapping
-            this.leftWing.zRot = -renderState.flapAngle;
-            this.rightWing.zRot = renderState.flapAngle;
+            BirdAnimations.animateWingFlap(this.leftWing, this.rightWing, renderState.flapAngle);
 
-            // Tuck legs up
-            this.leftLeg.xRot = 0.5f;
-            this.rightLeg.xRot = 0.5f;
+            BirdAnimations.tuckLegs(this.leftLeg, this.rightLeg, 0.5f);
 
             // Tail extends back
             this.tail.xRot = -0.4f;
         } else {
             // Ground animations
-            // Fold wings against body
-            this.leftWing.zRot = 0.0f;
-            this.rightWing.zRot = 0.0f;
+            BirdAnimations.foldWings(this.leftWing, this.rightWing);
 
             // Reset body tilt
             this.body.xRot = 0.0f;
             this.breast.xRot = 0.0f;
 
-            // Gentle tail bob (sinusoidal)
-            this.tail.xRot = (float) Math.toRadians(-15.0) + (float) Math.sin(renderState.ageInTicks * 0.15f) * 0.05f;
+            BirdAnimations.animateTailBob(this.tail, (float) Math.toRadians(-15.0),
+                    renderState.ageInTicks, 0.15f, 0.05f);
 
             // Pecking animation: head dips down
             if (renderState.isPecking) {
@@ -202,17 +197,8 @@ public class RobinModel extends EntityModel<RobinRenderState> {
                 this.head.zRot = 0.0f;
             }
 
-            // Leg walking animation based on walkAnimationSpeed
-            float walkSpeed = renderState.walkAnimationSpeed;
-            float walkPos = renderState.walkAnimationPos;
-            if (walkSpeed > 0.01f) {
-                float legSwing = (float) Math.sin(walkPos * 0.6662f) * 1.4f * walkSpeed;
-                this.leftLeg.xRot = legSwing;
-                this.rightLeg.xRot = -legSwing;
-            } else {
-                this.leftLeg.xRot = 0.0f;
-                this.rightLeg.xRot = 0.0f;
-            }
+            BirdAnimations.animateWalkingLegs(this.leftLeg, this.rightLeg,
+                    renderState.walkAnimationSpeed, renderState.walkAnimationPos);
         }
     }
 }

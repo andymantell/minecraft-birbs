@@ -76,8 +76,8 @@ src/main/java/com/birbs/britishbirds/     — server-safe mod code
 
 src/client/java/com/birbs/britishbirds/client/  — CLIENT-SIDE ONLY
   BritishBirdsClient.java                   — renderer + model layer registration
-  model/                                    — per-species EntityModel classes, BirdModelLayers
-  renderer/                                 — per-species MobRenderer + RenderState classes
+  model/                                    — per-species EntityModel classes, BirdModelLayers, BirdAnimations
+  renderer/                                 — AbstractBirdRenderer, BirdRenderState, per-species subclasses
 
 src/main/resources/
   fabric.mod.json

@@ -5,10 +5,9 @@ import com.birbs.britishbirds.client.model.BirdModelLayers;
 import com.birbs.britishbirds.client.model.RobinModel;
 import com.birbs.britishbirds.entity.songbird.RobinEntity;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.resources.Identifier;
 
-public class RobinRenderer extends MobRenderer<RobinEntity, RobinRenderState, RobinModel> {
+public class RobinRenderer extends AbstractBirdRenderer<RobinEntity, RobinRenderState, RobinModel> {
     private static final Identifier ROBIN_TEXTURE =
             Identifier.fromNamespaceAndPath(BritishBirdsMod.MOD_ID, "textures/entity/robin/robin.png");
     private static final Identifier ROBIN_BABY_TEXTURE =
@@ -24,17 +23,14 @@ public class RobinRenderer extends MobRenderer<RobinEntity, RobinRenderState, Ro
     }
 
     @Override
-    public void extractRenderState(RobinEntity entity, RobinRenderState state, float partialTick) {
-        super.extractRenderState(entity, state, partialTick);
-        state.isMale = entity.isMale();
-        state.isFlying = entity.isFlying() || (!entity.onGround() && !entity.isInWater());
+    protected float flapFrequency() { return 1.8f; }
+
+    @Override
+    protected float flapAmplitude() { return 0.9f; }
+
+    @Override
+    protected void extractSpeciesState(RobinEntity entity, RobinRenderState state, float partialTick) {
         state.isPecking = entity.isPecking();
-        if (state.isFlying) {
-            // Very rapid fluttering — ~15Hz wingbeat
-            state.flapAngle = (float) Math.sin(state.ageInTicks * 1.8f) * 0.9f;
-        } else {
-            state.flapAngle = 0.0f;
-        }
     }
 
     @Override

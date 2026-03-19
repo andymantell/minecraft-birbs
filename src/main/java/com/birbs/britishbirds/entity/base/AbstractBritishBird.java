@@ -44,6 +44,14 @@ public abstract class AbstractBritishBird extends Animal {
     }
 
     /**
+     * Whether this bird is currently in flight. Overridden by AbstractFlyingBird
+     * and AbstractWaterBird with tracked data. Base returns false.
+     */
+    public boolean isFlying() {
+        return false;
+    }
+
+    /**
      * Whether this species has visible differences between male and female.
      * Override to return true for species like Mallard.
      */

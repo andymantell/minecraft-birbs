@@ -206,16 +206,13 @@ public class PeregrineFalconModel extends EntityModel<PeregrineFalconRenderState
             this.chest.xRot = -0.6f;
             this.rearBody.xRot = -0.6f;
             this.head.xRot = 0.35f;
-            this.leftWing.zRot = -renderState.flapAngle * 0.5f;
-            this.rightWing.zRot = renderState.flapAngle * 0.5f;
+            BirdAnimations.animateWingFlap(this.leftWing, this.rightWing, renderState.flapAngle, 0.5f);
             this.leftWing.xRot = 0.0f;
             this.rightWing.xRot = 0.0f;
             this.leftWing.yRot = 0.0f;
             this.rightWing.yRot = 0.0f;
             this.tail.xRot = -0.3f;
-            // Legs tucked tight against body
-            this.leftLeg.xRot = 0.8f;
-            this.rightLeg.xRot = 0.8f;
+            BirdAnimations.tuckLegs(this.leftLeg, this.rightLeg, 0.8f);
 
             // Soaring detection: if flapAngle is very small, wings spread wide and flat
             if (Math.abs(renderState.flapAngle) < 0.1f) {
@@ -226,8 +223,7 @@ public class PeregrineFalconModel extends EntityModel<PeregrineFalconRenderState
             }
         } else {
             // Perched: BOLT-UPRIGHT and alert — very different from duck posture
-            this.leftWing.zRot = 0.0f;
-            this.rightWing.zRot = 0.0f;
+            BirdAnimations.foldWings(this.leftWing, this.rightWing);
             this.leftWing.xRot = 0.0f;
             this.rightWing.xRot = 0.0f;
             this.leftWing.yRot = 0.0f;
@@ -250,14 +246,8 @@ public class PeregrineFalconModel extends EntityModel<PeregrineFalconRenderState
                 this.head.yRot = 0.0f;
             }
 
-            // Leg walking animation
-            float walkSpeed = renderState.walkAnimationSpeed;
-            float walkPos = renderState.walkAnimationPos;
-            if (walkSpeed > 0.01f) {
-                float legSwing = (float) Math.sin(walkPos * 0.6662f) * 1.4f * walkSpeed;
-                this.leftLeg.xRot = legSwing;
-                this.rightLeg.xRot = -legSwing;
-            }
+            BirdAnimations.animateWalkingLegs(this.leftLeg, this.rightLeg,
+                    renderState.walkAnimationSpeed, renderState.walkAnimationPos);
         }
     }
 }

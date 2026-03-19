@@ -5,10 +5,9 @@ import com.birbs.britishbirds.client.model.BirdModelLayers;
 import com.birbs.britishbirds.client.model.MallardModel;
 import com.birbs.britishbirds.entity.waterfowl.MallardEntity;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.resources.Identifier;
 
-public class MallardRenderer extends MobRenderer<MallardEntity, MallardRenderState, MallardModel> {
+public class MallardRenderer extends AbstractBirdRenderer<MallardEntity, MallardRenderState, MallardModel> {
     private static final Identifier MALLARD_MALE_TEXTURE =
             Identifier.fromNamespaceAndPath(BritishBirdsMod.MOD_ID, "textures/entity/mallard/mallard_male.png");
     private static final Identifier MALLARD_FEMALE_TEXTURE =
@@ -26,20 +25,17 @@ public class MallardRenderer extends MobRenderer<MallardEntity, MallardRenderSta
     }
 
     @Override
-    public void extractRenderState(MallardEntity entity, MallardRenderState state, float partialTick) {
-        super.extractRenderState(entity, state, partialTick);
-        state.isMale = entity.isMale();
-        state.isFlying = entity.isFlying() || (!entity.onGround() && !entity.isInWater());
+    protected float flapFrequency() { return 1.6f; }
+
+    @Override
+    protected float flapAmplitude() { return 1.0f; }
+
+    @Override
+    protected void extractSpeciesState(MallardEntity entity, MallardRenderState state, float partialTick) {
         state.isSwimming = entity.isSwimming();
         state.isDabbling = entity.isDabbling();
         state.isWaddling = entity.isWaddling();
         state.isBaby = entity.isBaby();
-        if (state.isFlying) {
-            // Rapid stiff continuous wingbeats — characteristic whistling flight
-            state.flapAngle = (float) Math.sin(state.ageInTicks * 1.6f) * 1.0f;
-        } else {
-            state.flapAngle = 0.0f;
-        }
     }
 
     @Override

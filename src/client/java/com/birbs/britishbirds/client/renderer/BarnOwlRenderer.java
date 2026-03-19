@@ -5,10 +5,9 @@ import com.birbs.britishbirds.client.model.BarnOwlModel;
 import com.birbs.britishbirds.client.model.BirdModelLayers;
 import com.birbs.britishbirds.entity.raptor.BarnOwlEntity;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.resources.Identifier;
 
-public class BarnOwlRenderer extends MobRenderer<BarnOwlEntity, BarnOwlRenderState, BarnOwlModel> {
+public class BarnOwlRenderer extends AbstractBirdRenderer<BarnOwlEntity, BarnOwlRenderState, BarnOwlModel> {
     private static final Identifier BARN_OWL_MALE_TEXTURE =
             Identifier.fromNamespaceAndPath(BritishBirdsMod.MOD_ID, "textures/entity/barn_owl/barn_owl_male.png");
     private static final Identifier BARN_OWL_FEMALE_TEXTURE =
@@ -24,17 +23,14 @@ public class BarnOwlRenderer extends MobRenderer<BarnOwlEntity, BarnOwlRenderSta
     }
 
     @Override
-    public void extractRenderState(BarnOwlEntity entity, BarnOwlRenderState state, float partialTick) {
-        super.extractRenderState(entity, state, partialTick);
-        state.isMale = entity.isMale();
-        state.isFlying = entity.isFlying() || (!entity.onGround() && !entity.isInWater());
+    protected float flapFrequency() { return 0.35f; }
+
+    @Override
+    protected float flapAmplitude() { return 1.4f; }
+
+    @Override
+    protected void extractSpeciesState(BarnOwlEntity entity, BarnOwlRenderState state, float partialTick) {
         state.isHovering = entity.isHovering();
-        if (state.isFlying) {
-            // Very slow, deep wing sweeps — silent flight
-            state.flapAngle = (float) Math.sin(state.ageInTicks * 0.35f) * 1.4f;
-        } else {
-            state.flapAngle = 0.0f;
-        }
     }
 
     @Override
