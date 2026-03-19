@@ -3,6 +3,7 @@ package com.birbs.britishbirds.entity.raptor;
 import com.birbs.britishbirds.ai.feeding.HuntingGoal;
 import com.birbs.britishbirds.ai.flight.SoaringFlightGoal;
 import com.birbs.britishbirds.ai.flight.StoopingFlightGoal;
+import com.birbs.britishbirds.entity.songbird.SmallPasserineEntity;
 import com.birbs.britishbirds.registry.ModSounds;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -36,7 +37,7 @@ public class PeregrineFalconEntity extends RaptorEntity {
     protected void registerSpeciesGoals() {
         this.goalSelector.addGoal(1, new StoopingFlightGoal(this));
         this.goalSelector.addGoal(2, new SoaringFlightGoal(this));
-        this.goalSelector.addGoal(4, new HuntingGoal(this, Chicken.class, 20.0, 1.2));
+        this.goalSelector.addGoal(4, new HuntingGoal(this, SmallPasserineEntity.class, 20.0, 1.2));
     }
 
     public static AttributeSupplier.Builder createPeregrineAttributes() {
