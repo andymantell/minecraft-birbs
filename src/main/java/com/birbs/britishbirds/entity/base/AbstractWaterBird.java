@@ -64,15 +64,23 @@ public abstract class AbstractWaterBird extends AbstractBritishBird {
         // Auto-detect swimming state
         if (this.isInWater()) {
             this.isSwimming = true;
-            // Auto-land if was flying and hit water
             if (this.isFlying) {
                 this.setFlying(false);
             }
         } else if (this.onGround()) {
             this.isSwimming = false;
-            // Auto-land if was flying and touched ground
             if (this.isFlying) {
                 this.setFlying(false);
+            }
+        }
+
+        // Face movement direction while airborne
+        if (this.isFlying) {
+            Vec3 vel = this.getDeltaMovement();
+            if (vel.horizontalDistanceSqr() > 1.0E-6) {
+                float yaw = (float) (Math.atan2(-vel.x, vel.z) * (180.0 / Math.PI));
+                this.setYRot(yaw);
+                this.yBodyRot = yaw;
             }
         }
     }

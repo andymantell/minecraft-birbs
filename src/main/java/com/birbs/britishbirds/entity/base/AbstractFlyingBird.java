@@ -42,9 +42,19 @@ public abstract class AbstractFlyingBird extends AbstractBritishBird {
     @Override
     public void tick() {
         super.tick();
-        // Auto-land if flying but on ground (flight goal ended, touched down)
-        if (this.isFlying && this.onGround()) {
-            this.setFlying(false);
+        if (this.isFlying) {
+            if (this.onGround()) {
+                // Auto-land if flying but on ground (flight goal ended, touched down)
+                this.setFlying(false);
+            } else {
+                // Face movement direction while airborne
+                Vec3 vel = this.getDeltaMovement();
+                if (vel.horizontalDistanceSqr() > 1.0E-6) {
+                    float yaw = (float) (Math.atan2(-vel.x, vel.z) * (180.0 / Math.PI));
+                    this.setYRot(yaw);
+                    this.yBodyRot = yaw;
+                }
+            }
         }
     }
 
