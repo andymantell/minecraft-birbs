@@ -7,25 +7,39 @@ import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.*;
 
 /**
- * Peregrine Falcon model: medium-large, compact torpedo shape.
- * Broad chest, narrow tail, long pointed wings. 32x32 texture.
+ * Peregrine Falcon model: COMPLETE REMODEL.
+ * Compact, powerful, broad-chested muscular build.
+ * Torpedo-shaped / streamlined — body TAPERS from broad shoulders to narrow tail.
+ * V-shaped contour — broad at shoulders, narrowing to tail tip.
+ * Long, pointed, narrow wings — sickle-shaped in active flight.
+ * Head appears relatively small compared to broad chest.
+ * Perched: bolt-upright and alert posture.
+ * 64x64 texture.
  */
 public class PeregrineFalconModel extends EntityModel<PeregrineFalconRenderState> {
-    private final ModelPart body;
+    private final ModelPart chest;
+    private final ModelPart rearBody;
     private final ModelPart head;
     private final ModelPart leftWing;
     private final ModelPart rightWing;
+    private final ModelPart leftWingOuter;
+    private final ModelPart rightWingOuter;
     private final ModelPart tail;
+    private final ModelPart tailTip;
     private final ModelPart leftLeg;
     private final ModelPart rightLeg;
 
     public PeregrineFalconModel(ModelPart root) {
         super(root);
-        this.body = root.getChild("body");
+        this.chest = root.getChild("chest");
+        this.rearBody = root.getChild("rear_body");
         this.head = root.getChild("head");
         this.leftWing = root.getChild("left_wing");
         this.rightWing = root.getChild("right_wing");
+        this.leftWingOuter = this.leftWing.getChild("left_wing_outer");
+        this.rightWingOuter = this.rightWing.getChild("right_wing_outer");
         this.tail = root.getChild("tail");
+        this.tailTip = this.tail.getChild("tail_tip");
         this.leftLeg = root.getChild("left_leg");
         this.rightLeg = root.getChild("right_leg");
     }
@@ -34,65 +48,136 @@ public class PeregrineFalconModel extends EntityModel<PeregrineFalconRenderState
         MeshDefinition meshDefinition = new MeshDefinition();
         PartDefinition partDefinition = meshDefinition.getRoot();
 
-        // Body: torpedo-shaped, broad chest narrowing to tail, 5x5x7
-        partDefinition.addOrReplaceChild("body",
+        // CHEST: broad, powerful, muscular — the widest part of the V-contour
+        // 6x5x5 — wide side-to-side, narrow front-to-back
+        partDefinition.addOrReplaceChild("chest",
                 CubeListBuilder.create()
                         .texOffs(0, 0)
-                        .addBox(-2.5f, -2.5f, -3.5f, 5.0f, 5.0f, 7.0f),
-                PartPose.offset(0.0f, 17.0f, 0.0f));
+                        .addBox(-3.0f, -2.5f, -2.5f, 6.0f, 5.0f, 5.0f),
+                PartPose.offsetAndRotation(0.0f, 16.0f, -1.0f,
+                        (float) Math.toRadians(10.0), 0.0f, 0.0f));
 
-        // Head: compact, 3x3x3 with dark helmet/moustachial stripe
+        // REAR BODY: narrows significantly — creates the V-taper / torpedo shape
+        // 4x4x5 — narrower than chest, extends behind
+        partDefinition.addOrReplaceChild("rear_body",
+                CubeListBuilder.create()
+                        .texOffs(0, 10)
+                        .addBox(-2.0f, -2.0f, -1.0f, 4.0f, 4.0f, 5.0f),
+                PartPose.offsetAndRotation(0.0f, 16.5f, 2.0f,
+                        (float) Math.toRadians(5.0), 0.0f, 0.0f));
+
+        // HEAD: relatively SMALL compared to broad chest — 3x3x3
+        // This is key to getting rid of the "duck" look
         PartDefinition headPart = partDefinition.addOrReplaceChild("head",
                 CubeListBuilder.create()
-                        .texOffs(0, 12)
+                        .texOffs(0, 19)
                         .addBox(-1.5f, -3.0f, -1.5f, 3.0f, 3.0f, 3.0f),
-                PartPose.offset(0.0f, 14.5f, -2.5f));
+                PartPose.offset(0.0f, 13.5f, -2.5f));
 
-        // Beak: hooked raptor beak
+        // Hooked beak: short powerful with tomial tooth 1x1x2
         headPart.addOrReplaceChild("beak",
                 CubeListBuilder.create()
-                        .texOffs(12, 12)
-                        .addBox(-0.5f, -1.5f, -3.0f, 1.0f, 1.0f, 2.0f),
+                        .texOffs(12, 19)
+                        .addBox(-0.5f, -1.5f, -3.5f, 1.0f, 1.0f, 2.0f),
                 PartPose.ZERO);
 
-        // Left wing: long and pointed, 1x4x8
-        partDefinition.addOrReplaceChild("left_wing",
+        // Beak hook: the tomial tooth curve 1x1x1 angled down
+        headPart.addOrReplaceChild("beak_hook",
                 CubeListBuilder.create()
-                        .texOffs(0, 18)
-                        .addBox(0.0f, -1.0f, -3.0f, 1.0f, 4.0f, 8.0f),
-                PartPose.offset(2.5f, 16.0f, 0.0f));
+                        .texOffs(18, 19)
+                        .addBox(-0.5f, -0.5f, -3.5f, 1.0f, 1.0f, 1.0f),
+                PartPose.offsetAndRotation(0.0f, -1.0f, 0.0f,
+                        (float) Math.toRadians(15.0), 0.0f, 0.0f));
 
-        // Right wing: long and pointed, 1x4x8
-        partDefinition.addOrReplaceChild("right_wing",
+        // Dark helmet/malar stripe: slight widening on sides of head 1x2x2 each side
+        headPart.addOrReplaceChild("left_malar",
                 CubeListBuilder.create()
-                        .texOffs(0, 18)
+                        .texOffs(22, 19)
+                        .addBox(1.0f, -2.5f, -1.5f, 1.0f, 2.0f, 2.0f),
+                PartPose.ZERO);
+
+        headPart.addOrReplaceChild("right_malar",
+                CubeListBuilder.create()
+                        .texOffs(22, 19)
                         .mirror()
-                        .addBox(-1.0f, -1.0f, -3.0f, 1.0f, 4.0f, 8.0f),
-                PartPose.offset(-2.5f, 16.0f, 0.0f));
+                        .addBox(-2.0f, -2.5f, -1.5f, 1.0f, 2.0f, 2.0f),
+                PartPose.ZERO);
 
-        // Tail: narrow, 3x1x3
-        partDefinition.addOrReplaceChild("tail",
+        // LEFT WING: LONG, NARROW, POINTED — sickle-shaped
+        // Inner wing: 1x4x6
+        PartDefinition leftWingPart = partDefinition.addOrReplaceChild("left_wing",
                 CubeListBuilder.create()
-                        .texOffs(18, 0)
-                        .addBox(-1.5f, -0.5f, 0.0f, 3.0f, 1.0f, 3.0f),
-                PartPose.offsetAndRotation(0.0f, 17.0f, 3.5f,
+                        .texOffs(0, 25)
+                        .addBox(0.0f, -1.0f, -2.5f, 1.0f, 4.0f, 6.0f),
+                PartPose.offset(3.0f, 15.0f, 0.0f));
+
+        // Left wing outer: extends the wing long and narrow — pointed tip 1x3x5
+        leftWingPart.addOrReplaceChild("left_wing_outer",
+                CubeListBuilder.create()
+                        .texOffs(14, 25)
+                        .addBox(1.0f, -0.5f, -1.5f, 1.0f, 3.0f, 5.0f),
+                PartPose.ZERO);
+
+        // RIGHT WING: LONG, NARROW, POINTED (mirrored)
+        PartDefinition rightWingPart = partDefinition.addOrReplaceChild("right_wing",
+                CubeListBuilder.create()
+                        .texOffs(0, 25)
+                        .mirror()
+                        .addBox(-1.0f, -1.0f, -2.5f, 1.0f, 4.0f, 6.0f),
+                PartPose.offset(-3.0f, 15.0f, 0.0f));
+
+        // Right wing outer
+        rightWingPart.addOrReplaceChild("right_wing_outer",
+                CubeListBuilder.create()
+                        .texOffs(14, 25)
+                        .mirror()
+                        .addBox(-2.0f, -0.5f, -1.5f, 1.0f, 3.0f, 5.0f),
+                PartPose.ZERO);
+
+        // TAIL: medium-long, narrow — continues the taper 3x1x4
+        PartDefinition tailPart = partDefinition.addOrReplaceChild("tail",
+                CubeListBuilder.create()
+                        .texOffs(22, 0)
+                        .addBox(-1.5f, -0.5f, 0.0f, 3.0f, 1.0f, 4.0f),
+                PartPose.offsetAndRotation(0.0f, 16.5f, 5.5f,
                         (float) Math.toRadians(-5.0), 0.0f, 0.0f));
 
-        // Left leg: 1x3x1
-        partDefinition.addOrReplaceChild("left_leg",
+        // Tail tip: even narrower end 2x1x3
+        tailPart.addOrReplaceChild("tail_tip",
                 CubeListBuilder.create()
-                        .texOffs(24, 0)
-                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 3.0f, 1.0f),
-                PartPose.offset(1.5f, 21.0f, 0.0f));
+                        .texOffs(22, 5)
+                        .addBox(-1.0f, -0.5f, 3.5f, 2.0f, 1.0f, 3.0f),
+                PartPose.ZERO);
 
-        // Right leg: 1x3x1
-        partDefinition.addOrReplaceChild("right_leg",
+        // LEFT LEG: short powerful 1x3x1 with large talon
+        PartDefinition leftLegPart = partDefinition.addOrReplaceChild("left_leg",
                 CubeListBuilder.create()
-                        .texOffs(24, 0)
+                        .texOffs(36, 0)
                         .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 3.0f, 1.0f),
-                PartPose.offset(-1.5f, 21.0f, 0.0f));
+                PartPose.offset(1.5f, 20.5f, 0.0f));
 
-        return LayerDefinition.create(meshDefinition, 32, 32);
+        // Left talon: large powerful feet 2x1x2 (yellow in texture)
+        leftLegPart.addOrReplaceChild("left_talon",
+                CubeListBuilder.create()
+                        .texOffs(40, 0)
+                        .addBox(-1.0f, 2.5f, -1.5f, 2.0f, 1.0f, 2.0f),
+                PartPose.ZERO);
+
+        // RIGHT LEG: short powerful 1x3x1
+        PartDefinition rightLegPart = partDefinition.addOrReplaceChild("right_leg",
+                CubeListBuilder.create()
+                        .texOffs(36, 0)
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 3.0f, 1.0f),
+                PartPose.offset(-1.5f, 20.5f, 0.0f));
+
+        // Right talon
+        rightLegPart.addOrReplaceChild("right_talon",
+                CubeListBuilder.create()
+                        .texOffs(40, 0)
+                        .addBox(-1.0f, 2.5f, -1.5f, 2.0f, 1.0f, 2.0f),
+                PartPose.ZERO);
+
+        return LayerDefinition.create(meshDefinition, 64, 64);
     }
 
     @Override
@@ -101,19 +186,16 @@ public class PeregrineFalconModel extends EntityModel<PeregrineFalconRenderState
 
         if (renderState.isStooping) {
             // Stooping: wings completely folded against body, body angled downward, teardrop shape
-            this.leftWing.zRot = 0.0f;
-            this.rightWing.zRot = 0.0f;
-            this.leftWing.yRot = 0.0f;
-            this.rightWing.yRot = 0.0f;
-            // Fold wings tight against body
-            this.leftWing.xRot = (float) Math.toRadians(80.0);
-            this.rightWing.xRot = (float) Math.toRadians(80.0);
-            // Scale wings very small to appear folded (hide them via rotation)
             this.leftWing.zRot = -0.05f;
             this.rightWing.zRot = 0.05f;
+            this.leftWing.xRot = (float) Math.toRadians(80.0);
+            this.rightWing.xRot = (float) Math.toRadians(80.0);
+            this.leftWing.yRot = 0.0f;
+            this.rightWing.yRot = 0.0f;
             // Body angled steeply downward
-            this.body.xRot = (float) Math.toRadians(60.0);
-            this.head.xRot = (float) Math.toRadians(-30.0); // Head looks forward, compensating body tilt
+            this.chest.xRot = (float) Math.toRadians(60.0);
+            this.rearBody.xRot = (float) Math.toRadians(55.0);
+            this.head.xRot = (float) Math.toRadians(-30.0);
             // Tail folded tight
             this.tail.xRot = (float) Math.toRadians(50.0);
             // Legs tucked
@@ -127,7 +209,8 @@ public class PeregrineFalconModel extends EntityModel<PeregrineFalconRenderState
             this.rightWing.xRot = 0.0f;
             this.leftWing.yRot = 0.0f;
             this.rightWing.yRot = 0.0f;
-            this.body.xRot = -0.1f;
+            this.chest.xRot = (float) Math.toRadians(5.0);
+            this.rearBody.xRot = 0.0f;
             this.head.xRot = 0.0f;
             this.tail.xRot = (float) Math.toRadians(-5.0);
             // Legs tucked back
@@ -142,21 +225,23 @@ public class PeregrineFalconModel extends EntityModel<PeregrineFalconRenderState
                 this.tail.xRot = (float) Math.toRadians(-15.0);
             }
         } else {
-            // Perched: upright bolt posture
+            // Perched: BOLT-UPRIGHT and alert — very different from duck posture
             this.leftWing.zRot = 0.0f;
             this.rightWing.zRot = 0.0f;
             this.leftWing.xRot = 0.0f;
             this.rightWing.xRot = 0.0f;
             this.leftWing.yRot = 0.0f;
             this.rightWing.yRot = 0.0f;
-            this.body.xRot = (float) Math.toRadians(15.0); // Slightly upright posture
-            this.head.xRot = 0.0f;
+            // Upright posture — body tilted more vertical
+            this.chest.xRot = (float) Math.toRadians(20.0);
+            this.rearBody.xRot = (float) Math.toRadians(15.0);
+            this.head.xRot = (float) Math.toRadians(-10.0); // compensate, look forward
             this.head.yRot = 0.0f;
-            this.tail.xRot = (float) Math.toRadians(10.0);
+            this.tail.xRot = (float) Math.toRadians(15.0);
             this.leftLeg.xRot = 0.0f;
             this.rightLeg.xRot = 0.0f;
 
-            // Alert head turns
+            // Alert head turns — sharp, quick movements
             if (((int) renderState.ageInTicks % 120) < 30) {
                 this.head.yRot = 0.4f;
             } else if (((int) renderState.ageInTicks % 120) < 60) {

@@ -7,16 +7,22 @@ import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.*;
 
 /**
- * Mallard model: ~chicken sized, heavy rounded body, flat spatulate bill,
- * short legs set far back, webbed feet. 32x32 texture.
- * Drake tail curl only shown when male.
+ * Mallard model: heavy, hefty, robust — large for a dabbling duck.
+ * Rounded head with smooth domed profile. Short thick neck.
+ * Long body relative to overall size. Broad flat spatulate bill.
+ * Short legs set far back on body. Webbed feet. Drake tail curl.
+ * 64x64 texture. Higher fidelity with more cuboids.
  */
 public class MallardModel extends EntityModel<MallardRenderState> {
     private final ModelPart body;
+    private final ModelPart rearBody;
+    private final ModelPart neck;
     private final ModelPart head;
     private final ModelPart bill;
     private final ModelPart leftWing;
     private final ModelPart rightWing;
+    private final ModelPart leftWingTip;
+    private final ModelPart rightWingTip;
     private final ModelPart tail;
     private final ModelPart tailCurl;
     private final ModelPart leftLeg;
@@ -27,10 +33,14 @@ public class MallardModel extends EntityModel<MallardRenderState> {
     public MallardModel(ModelPart root) {
         super(root);
         this.body = root.getChild("body");
+        this.rearBody = root.getChild("rear_body");
+        this.neck = root.getChild("neck");
         this.head = root.getChild("head");
         this.bill = this.head.getChild("bill");
         this.leftWing = root.getChild("left_wing");
         this.rightWing = root.getChild("right_wing");
+        this.leftWingTip = this.leftWing.getChild("left_wing_tip");
+        this.rightWingTip = this.rightWing.getChild("right_wing_tip");
         this.tail = root.getChild("tail");
         this.tailCurl = this.tail.getChild("tail_curl");
         this.leftLeg = root.getChild("left_leg");
@@ -43,87 +53,130 @@ public class MallardModel extends EntityModel<MallardRenderState> {
         MeshDefinition meshDefinition = new MeshDefinition();
         PartDefinition partDefinition = meshDefinition.getRoot();
 
-        // Body: heavy rounded, 6x5x8
+        // Body: heavy rounded front section 7x6x6 — hefty and robust
         partDefinition.addOrReplaceChild("body",
                 CubeListBuilder.create()
                         .texOffs(0, 0)
-                        .addBox(-3.0f, -2.5f, -4.0f, 6.0f, 5.0f, 8.0f),
-                PartPose.offset(0.0f, 17.0f, 0.0f));
+                        .addBox(-3.5f, -3.0f, -3.0f, 7.0f, 6.0f, 6.0f),
+                PartPose.offset(0.0f, 17.0f, -1.0f));
 
-        // Head: 3x3x3 on a neck
+        // Rear body: extends the long body shape 5x5x5
+        partDefinition.addOrReplaceChild("rear_body",
+                CubeListBuilder.create()
+                        .texOffs(0, 12)
+                        .addBox(-2.5f, -2.5f, -1.0f, 5.0f, 5.0f, 5.0f),
+                PartPose.offset(0.0f, 17.0f, 3.0f));
+
+        // Neck: short thick 3x3x2
+        partDefinition.addOrReplaceChild("neck",
+                CubeListBuilder.create()
+                        .texOffs(20, 12)
+                        .addBox(-1.5f, -2.0f, -1.0f, 3.0f, 3.0f, 2.0f),
+                PartPose.offset(0.0f, 15.0f, -3.5f));
+
+        // Head: rounded with smooth domed profile 4x4x4
         PartDefinition headPart = partDefinition.addOrReplaceChild("head",
                 CubeListBuilder.create()
-                        .texOffs(0, 13)
-                        .addBox(-1.5f, -3.0f, -1.5f, 3.0f, 3.0f, 3.0f),
-                PartPose.offset(0.0f, 14.5f, -3.0f));
+                        .texOffs(0, 22)
+                        .addBox(-2.0f, -4.0f, -2.0f, 4.0f, 4.0f, 4.0f),
+                PartPose.offset(0.0f, 13.0f, -3.5f));
 
-        // Bill: flat spatulate, wider than tall, 2x1x2
+        // Crown dome: rounds out the head shape 3x1x3
+        headPart.addOrReplaceChild("crown",
+                CubeListBuilder.create()
+                        .texOffs(16, 22)
+                        .addBox(-1.5f, -4.5f, -1.5f, 3.0f, 1.0f, 3.0f),
+                PartPose.ZERO);
+
+        // Bill: broad flat spatulate — the classic duck bill 3x1x3 (wider than tall!)
         headPart.addOrReplaceChild("bill",
                 CubeListBuilder.create()
-                        .texOffs(12, 13)
-                        .addBox(-1.0f, -0.5f, -2.5f, 2.0f, 1.0f, 2.0f),
-                PartPose.offset(0.0f, -1.0f, -1.5f));
+                        .texOffs(16, 26)
+                        .addBox(-1.5f, -1.5f, -5.0f, 3.0f, 1.0f, 3.0f),
+                PartPose.offset(0.0f, 0.0f, 0.0f));
 
-        // Left wing: 1x4x6
-        partDefinition.addOrReplaceChild("left_wing",
+        // Bill tip: slightly wider and flatter 3x1x1
+        headPart.addOrReplaceChild("bill_tip",
                 CubeListBuilder.create()
-                        .texOffs(0, 19)
-                        .addBox(0.0f, -1.5f, -3.0f, 1.0f, 4.0f, 6.0f),
-                PartPose.offset(3.0f, 16.0f, 0.0f));
+                        .texOffs(28, 26)
+                        .addBox(-1.5f, -1.5f, -6.0f, 3.0f, 1.0f, 1.0f),
+                PartPose.ZERO);
 
-        // Right wing: 1x4x6 (mirrored)
-        partDefinition.addOrReplaceChild("right_wing",
+        // Left wing: 1x5x7
+        PartDefinition leftWingPart = partDefinition.addOrReplaceChild("left_wing",
                 CubeListBuilder.create()
-                        .texOffs(0, 19)
+                        .texOffs(0, 30)
+                        .addBox(0.0f, -2.0f, -3.0f, 1.0f, 5.0f, 7.0f),
+                PartPose.offset(3.5f, 16.0f, 0.0f));
+
+        // Left wing tip: speculum area 1x3x3
+        leftWingPart.addOrReplaceChild("left_wing_tip",
+                CubeListBuilder.create()
+                        .texOffs(16, 30)
+                        .addBox(0.5f, -1.0f, 2.0f, 1.0f, 3.0f, 3.0f),
+                PartPose.ZERO);
+
+        // Right wing: 1x5x7 (mirrored)
+        PartDefinition rightWingPart = partDefinition.addOrReplaceChild("right_wing",
+                CubeListBuilder.create()
+                        .texOffs(0, 30)
                         .mirror()
-                        .addBox(-1.0f, -1.5f, -3.0f, 1.0f, 4.0f, 6.0f),
-                PartPose.offset(-3.0f, 16.0f, 0.0f));
+                        .addBox(-1.0f, -2.0f, -3.0f, 1.0f, 5.0f, 7.0f),
+                PartPose.offset(-3.5f, 16.0f, 0.0f));
 
-        // Tail: 4x1x3
+        // Right wing tip
+        rightWingPart.addOrReplaceChild("right_wing_tip",
+                CubeListBuilder.create()
+                        .texOffs(16, 30)
+                        .mirror()
+                        .addBox(-1.5f, -1.0f, 2.0f, 1.0f, 3.0f, 3.0f),
+                PartPose.ZERO);
+
+        // Tail: 5x1x4
         PartDefinition tailPart = partDefinition.addOrReplaceChild("tail",
                 CubeListBuilder.create()
-                        .texOffs(20, 0)
-                        .addBox(-2.0f, -0.5f, 0.0f, 4.0f, 1.0f, 3.0f),
-                PartPose.offsetAndRotation(0.0f, 16.5f, 4.0f,
+                        .texOffs(26, 0)
+                        .addBox(-2.5f, -0.5f, 0.0f, 5.0f, 1.0f, 4.0f),
+                PartPose.offsetAndRotation(0.0f, 16.5f, 6.5f,
                         (float) Math.toRadians(-10.0), 0.0f, 0.0f));
 
-        // Drake tail curl: small curled cuboid, 1x1x2 (only visible for males)
+        // Drake tail curl: small curled feathers 1x1x2 (only visible for males)
         tailPart.addOrReplaceChild("tail_curl",
                 CubeListBuilder.create()
-                        .texOffs(20, 4)
-                        .addBox(-0.5f, -1.0f, 1.0f, 1.0f, 1.0f, 2.0f),
+                        .texOffs(26, 5)
+                        .addBox(-0.5f, -1.0f, 2.0f, 1.0f, 1.0f, 2.0f),
                 PartPose.offsetAndRotation(0.0f, -0.5f, 1.5f,
                         (float) Math.toRadians(-30.0), 0.0f, 0.0f));
 
-        // Left leg: short, set far back, 1x3x1
+        // Left leg: short, set far back 1x3x1
         PartDefinition leftLegPart = partDefinition.addOrReplaceChild("left_leg",
                 CubeListBuilder.create()
-                        .texOffs(14, 19)
+                        .texOffs(26, 8)
                         .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 3.0f, 1.0f),
-                PartPose.offset(1.5f, 21.0f, 2.0f));
+                PartPose.offset(1.5f, 21.0f, 3.0f));
 
-        // Left foot: webbed, wider, 2x0.5x2
+        // Left foot: webbed, wide 3x1x3
         leftLegPart.addOrReplaceChild("left_foot",
                 CubeListBuilder.create()
-                        .texOffs(14, 23)
-                        .addBox(-1.0f, 2.5f, -2.0f, 2.0f, 1.0f, 2.0f),
+                        .texOffs(30, 8)
+                        .addBox(-1.5f, 2.5f, -2.5f, 3.0f, 1.0f, 3.0f),
                 PartPose.ZERO);
 
-        // Right leg: short, set far back, 1x3x1
+        // Right leg: short, set far back 1x3x1
         PartDefinition rightLegPart = partDefinition.addOrReplaceChild("right_leg",
                 CubeListBuilder.create()
-                        .texOffs(14, 19)
+                        .texOffs(26, 8)
                         .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 3.0f, 1.0f),
-                PartPose.offset(-1.5f, 21.0f, 2.0f));
+                PartPose.offset(-1.5f, 21.0f, 3.0f));
 
-        // Right foot: webbed, wider, 2x0.5x2
+        // Right foot: webbed, wide 3x1x3
         rightLegPart.addOrReplaceChild("right_foot",
                 CubeListBuilder.create()
-                        .texOffs(14, 23)
-                        .addBox(-1.0f, 2.5f, -2.0f, 2.0f, 1.0f, 2.0f),
+                        .texOffs(30, 8)
+                        .addBox(-1.5f, 2.5f, -2.5f, 3.0f, 1.0f, 3.0f),
                 PartPose.ZERO);
 
-        return LayerDefinition.create(meshDefinition, 32, 32);
+        return LayerDefinition.create(meshDefinition, 64, 64);
     }
 
     @Override
@@ -136,6 +189,8 @@ public class MallardModel extends EntityModel<MallardRenderState> {
         if (state.isDabbling) {
             // Dabbling: body pitches 90 degrees forward, tail points up
             this.body.xRot = (float) Math.toRadians(90.0);
+            this.rearBody.xRot = (float) Math.toRadians(90.0);
+            this.neck.xRot = (float) Math.toRadians(90.0);
             this.head.xRot = (float) Math.toRadians(90.0);
             this.tail.xRot = (float) Math.toRadians(-80.0);
             this.leftWing.zRot = 0.0f;
@@ -147,6 +202,8 @@ public class MallardModel extends EntityModel<MallardRenderState> {
             this.leftWing.zRot = -state.flapAngle;
             this.rightWing.zRot = state.flapAngle;
             this.body.xRot = (float) Math.toRadians(-15.0);
+            this.rearBody.xRot = (float) Math.toRadians(-15.0);
+            this.neck.xRot = (float) Math.toRadians(10.0);
             this.head.xRot = 0.0f;
             this.leftLeg.xRot = (float) Math.toRadians(60.0);
             this.rightLeg.xRot = (float) Math.toRadians(60.0);
@@ -154,6 +211,8 @@ public class MallardModel extends EntityModel<MallardRenderState> {
         } else if (state.isSwimming) {
             // Swimming: body level, legs paddle alternately, gentle bob
             this.body.xRot = 0.0f;
+            this.rearBody.xRot = 0.0f;
+            this.neck.xRot = 0.0f;
             this.head.xRot = 0.0f;
             this.leftWing.zRot = 0.0f;
             this.rightWing.zRot = 0.0f;
@@ -167,14 +226,18 @@ public class MallardModel extends EntityModel<MallardRenderState> {
             // Gentle floating bob
             float bob = (float) Math.sin(state.ageInTicks * 0.1f) * 0.02f;
             this.body.y = 17.0f + bob;
+            this.rearBody.y = 17.0f + bob;
         } else {
             // Ground / idle
             this.body.xRot = 0.0f;
+            this.rearBody.xRot = 0.0f;
+            this.neck.xRot = 0.0f;
             this.head.xRot = 0.0f;
             this.leftWing.zRot = 0.0f;
             this.rightWing.zRot = 0.0f;
             this.tail.xRot = (float) Math.toRadians(-10.0);
             this.body.y = 17.0f;
+            this.rearBody.y = 17.0f;
 
             // Walking/waddling animation
             float walkSpeed = state.walkAnimationSpeed;
@@ -186,14 +249,17 @@ public class MallardModel extends EntityModel<MallardRenderState> {
 
                 // Waddle: body rolls side to side
                 this.body.zRot = (float) Math.sin(walkPos * 0.6662f) * 0.15f * walkSpeed;
+                this.rearBody.zRot = this.body.zRot;
             } else {
                 this.leftLeg.xRot = 0.0f;
                 this.rightLeg.xRot = 0.0f;
                 this.body.zRot = 0.0f;
+                this.rearBody.zRot = 0.0f;
 
                 // Idle on water/ground: gentle bob
                 float bob = (float) Math.sin(state.ageInTicks * 0.08f) * 0.01f;
                 this.body.y = 17.0f + bob;
+                this.rearBody.y = 17.0f + bob;
             }
 
             // Head look-around
