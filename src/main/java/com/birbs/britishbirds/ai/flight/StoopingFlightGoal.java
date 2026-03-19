@@ -153,9 +153,10 @@ public class StoopingFlightGoal extends Goal {
             }
         }
 
-        // Abort if no prey found after timeout
+        // Abort if no prey found after timeout — pull out cleanly
         if (this.phaseTicks > TARGETING_TIMEOUT) {
-            this.phase = null; // abort, return to soaring
+            this.phase = StoopPhase.PULLOUT;
+            this.phaseTicks = 0;
         }
     }
 
