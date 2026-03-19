@@ -1,18 +1,20 @@
 # British Birds Minecraft Mod — Design Specification
 
-**Date:** 2026-03-19
-**Target:** Minecraft Java Edition 26.1, Fabric Loader 0.18.4+, Fabric API 0.143.14+26.1
-**Toolchain:** Loom 1.15, Gradle 9.4.0, Java 25
+**Date:** 2026-03-19 (updated 2026-03-19 after implementation)
+**Target:** Minecraft Java Edition 26.1-rc-1 (unobfuscated, Mojang names), Fabric Loader 0.18.4, Fabric API 0.143.14+26.1
+**Toolchain:** Loom 1.15.5, Gradle 9.4.0, Java 25 (Adoptium Temurin)
 **Mod ID:** `britishbirds`
 **Package:** `com.birbs.britishbirds`
+
+> **Implementation status:** All 5 pilot birds implemented and running in-game. See CLAUDE.md for current status, API gotchas, and build instructions.
 
 ---
 
 ## 1. Overview
 
-A Fabric mod adding 100 British bird species as wild mobs with spawn eggs. Focus on biological accuracy: realistic models/textures at 32x32 "enhanced vanilla" resolution, appropriate biome spawning, species-specific flight behaviour, feeding habits, nesting, and authentic bird calls sourced from xeno-canto (CC BY-SA or CC BY-NC-SA licensed).
+A Fabric mod adding 100 British bird species as wild mobs with spawn eggs. Focus on biological accuracy: realistic models/textures at 64x64 resolution, appropriate biome spawning, species-specific flight behaviour, feeding habits, nesting, and authentic bird calls sourced from xeno-canto (CC BY-SA preferred).
 
-The mod starts with a 5-bird pilot (European Robin, Blue Tit, Barn Owl, Peregrine Falcon, Mallard) chosen to stress-test the entity hierarchy across different size categories, flight styles, habitats, and behavioural archetypes.
+The 5-bird pilot (European Robin, Blue Tit, Barn Owl, Peregrine Falcon, Mallard) is complete. The entity hierarchy, AI goal system, and rendering pipeline are proven and ready to scale to all 100 species.
 
 No external dependencies beyond Fabric API. Models and animations are vanilla entity system (procedural, not GeckoLib) — all model geometry defined in Java code, all animations driven programmatically.
 
@@ -456,7 +458,7 @@ birbs/
     └── resources/
         ├── fabric.mod.json
         ├── assets/britishbirds/
-        │   ├── textures/entity/{species}/ # 32x32 .png per variant
+        │   ├── textures/entity/{species}/ # 64x64 .png per variant
         │   ├── sounds/{species}/          # .ogg files, 2-3 per call type
         │   ├── lang/en_us.json
         │   └── sounds.json               # Sound event definitions
@@ -542,9 +544,45 @@ Dawn chorus system. Spawn weight balancing. Inter-species interactions (peregrin
 
 ## 10. Conventions
 
-- **No git commits by Claude** — pause after each phase for user to commit
 - **Asset provenance** — every external asset logged in `docs/ASSET_PROVENANCE.md` and `SOUND_CREDITS.md`
 - **Sound licensing** — xeno-canto BY-SA preferred, BY-NC-SA acceptable, BY-NC-ND excluded
-- **Textures** — 32x32, enhanced vanilla style
+- **Textures** — 64x64, generated programmatically by `tools/TextureGenerator.java`
 - **One EntityType per species** — variants (sex, age) handled by texture switching, not separate types
-- **Test incrementally** — each phase must produce a working, testable state
+- **Test incrementally** — each change must compile and run without crashes
+
+---
+
+## 11. Implementation Notes (Post-Build)
+
+These changes were made during implementation and differ from the original plan:
+
+### Flight System Overhaul
+The original design used `FlyingMoveControl` + `FlyingPathNavigation` for all flying birds. In practice this caused all birds to spiral upward constantly. The fix:
+- **Ground-first approach:** All birds (except raptors) use default `GroundPathNavigation`. They walk normally.
+- **Flight goals use direct velocity control** via `setDeltaMovement()` — not navigation.
+- **`setFlying(true)` toggles `setNoGravity(true)`** — birds float during flight, fall when flight goal ends.
+- **Only `RaptorEntity`** keeps `FlyingPathNavigation` since raptors are most aerial.
+- **Render state detects airborne:** `isFlying = entity.isFlying() || (!onGround() && !inWater())` ensures flying pose shows whenever airborne.
+
+### MC 26.1 API Differences
+The plan assumed Mojang names from documentation, but several were wrong. See CLAUDE.md "MC 26.1 API Gotchas" table for the full mapping. Key: `Identifier` not `ResourceLocation`, `ValueInput`/`ValueOutput` for NBT, `Item.Properties.setId(ResourceKey)` required before construction.
+
+### Texture Resolution
+Changed from 32x32 to 64x64 after initial in-game testing showed too little detail.
+
+### Model Fidelity
+All models were reworked after initial testing with more cuboids per bird:
+- Robin: added breast, crown, wing tips, feet
+- Blue Tit: enlarged head to match body (big-headed look)
+- Barn Owl: split body upper/lower for slender silhouette, enlarged facial disc
+- Peregrine: complete remodel — two-body V-shape (broad chest → narrow rear)
+- Mallard: added rear body, neck, crown dome, wider bill
+
+### Sound Sourcing
+xeno-canto API v3 requires an API key (v2 deprecated). Downloads work via direct URL with browser User-Agent. Most BY-SA recordings are from Benoît Van Hecke, Marie-Lan Taÿ Pamart, and a few others. Peregrine has very limited BY-SA availability (single recording for all 5 sounds).
+
+### Item Registration
+MC 26.1 requires `Item.Properties.setId(ResourceKey<Item>)` before item construction. The original `SpawnEggItem(type, color1, color2, props)` constructor no longer exists — use `SpawnEggItem(props.setId(key).spawnEgg(type))`.
+
+### Client Source Set
+Fabric Loom's `splitEnvironmentSourceSets()` puts client code in `src/client/java/` (not `src/main/java/.../client/`). This is where all model and renderer classes live.
