@@ -1,5 +1,6 @@
 package com.birbs.britishbirds.ai.social;
 
+import com.birbs.britishbirds.ai.BirdAIUtils;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.phys.Vec3;
@@ -99,7 +100,7 @@ public class TerritorialGoal extends Goal {
         // When close enough, push the intruder away
         double distSqr = this.bird.distanceToSqr(this.intruder);
         if (distSqr < KNOCKBACK_RANGE_SQ) {
-            Vec3 pushDir = this.intruder.position().subtract(this.bird.position()).normalize();
+            Vec3 pushDir = BirdAIUtils.safeDirection(this.bird.position(), this.intruder.position());
             this.intruder.setDeltaMovement(
                     this.intruder.getDeltaMovement().add(pushDir.x * 0.3, 0.1, pushDir.z * 0.3)
             );
