@@ -69,7 +69,7 @@ public class PerchingGoal extends Goal {
         boolean isPerchBlock = state.getBlock() instanceof FenceBlock
                 || state.getBlock() instanceof FenceGateBlock
                 || state.getBlock() instanceof WallBlock
-                || state.is(BlockTags.LOGS, s -> true);
+                || state.is(BlockTags.LOGS);
         if (!isPerchBlock) {
             return false;
         }
