@@ -1178,9 +1178,8 @@ public class PoseEditor extends JFrame {
             double tz = targetPos[2] - jp[2];
 
             double angleToEnd, angleToTarget, delta;
-            float damping = 0.08f;
-            // No per-chain sign flip — use consistent direction for all
-            float maxStep = 0.05f;   // small max step per joint
+            float damping = 0.12f;
+            float maxStep = 0.08f;
 
             // Map the joint name to the slider name (L_ for mirrored joints)
             String sliderName = joint.name.startsWith("R_") ? "L_" + joint.name.substring(2) : joint.name;
@@ -1270,9 +1269,8 @@ public class PoseEditor extends JFrame {
             applyPose(skeleton, poseData);
             computeFK(skeleton);
 
-            // Special case: 1 or 2-joint chain — rotate the end effector directly toward target
-            // (CCD can't work when the adjusted joint IS the end effector)
-            if (ikChain.size() <= 2) {
+            // Special case: 1-joint chain — rotate the end effector directly toward target
+            if (ikChain.size() == 1) {
                 double[] jp = endEffector.worldPos;
                 double tx = targetWorldPos[0] - jp[0];
                 double ty = targetWorldPos[1] - jp[1];
@@ -1310,25 +1308,52 @@ public class PoseEditor extends JFrame {
                 return;
             }
 
+            // Skip structural roots (shoulder_mount, hip, chest) but allow non-structural roots
+            String rootName = ikChain.get(0);
+            boolean structuralRoot = rootName.equals("shoulder_mount") ||
+                                     rootName.equals("hip") || rootName.equals("chest");
+            int endIndex = structuralRoot ? 1 : 0;
+
             for (int iter = 0; iter < iterations; iter++) {
-                // Always skip index 0 (the root) — shoulder_mount, hip, chest should never move.
-                // For 2-joint chains, this means only the dragged joint itself adjusts (handled by
-                // including the end effector at size-1 in such cases).
-                int startIndex = Math.min(ikChain.size() - 1, ikChain.size() - 2);
-                int endIndex = 1;  // always skip root
-                // For 2-joint chains, adjust the end effector (index 1) directly
-                if (ikChain.size() == 2) startIndex = 1;
-                for (int i = startIndex; i >= endIndex; i--) {
+                // Adjust parent joints (standard CCD)
+                for (int i = ikChain.size() - 2; i >= endIndex; i--) {
                     String jName = ikChain.get(i);
                     Joint joint = skeleton.jointMap.get(jName);
                     if (joint == null) continue;
 
                     double[] endPos = skeleton.jointMap.get(ikJointName).worldPos.clone();
                     ccdStep(joint, endPos, targetWorldPos, ikViewQuadrant);
-
-                    // Recompute FK after each joint change (don't reset from sliders!)
                     computeFK(skeleton);
                 }
+
+                // Also adjust the end effector using its PARENT's position as reference
+                // This lets tips bend relative to their parent joint
+                if (endEffector.parent != null) {
+                    double[] parentPos = endEffector.parent.worldPos;
+                    double[] effPos = endEffector.worldPos.clone();
+                    // Pretend the parent is the "joint" and the end effector is the "end"
+                    // to get a meaningful rotation for the end effector
+                    double pex = effPos[0] - parentPos[0];
+                    double pey = effPos[1] - parentPos[1];
+                    double pez = effPos[2] - parentPos[2];
+                    double ptx = targetWorldPos[0] - parentPos[0];
+                    double pty = targetWorldPos[1] - parentPos[1];
+                    double ptz = targetWorldPos[2] - parentPos[2];
+                    // Use the same cross product approach but apply to end effector at half strength
+                    float halfDamp = 0.06f;
+                    float halfMax = 0.04f;
+                    switch (ikViewQuadrant) {
+                        case 0 -> { double c = pex*pty - pey*ptx; double m = Math.sqrt((pex*pex+pey*pey)*(ptx*ptx+pty*pty));
+                            if(m>0.001) endEffector.angleZ = clampAngle(endEffector.angleZ + (float)clampDelta(Math.asin(Math.max(-1,Math.min(1,c/m)))*halfDamp, halfMax)); }
+                        case 1 -> { double c = -(pez*pty - pey*ptz); double m = Math.sqrt((pez*pez+pey*pey)*(ptz*ptz+pty*pty));
+                            if(m>0.001) endEffector.angleX = clampAngle(endEffector.angleX + (float)clampDelta(Math.asin(Math.max(-1,Math.min(1,c/m)))*halfDamp, halfMax)); }
+                        case 2 -> { double c = -(pex*ptz - pez*ptx); double m = Math.sqrt((pex*pex+pez*pez)*(ptx*ptx+ptz*ptz));
+                            if(m>0.001) endEffector.angleY = clampAngle(endEffector.angleY + (float)clampDelta(Math.asin(Math.max(-1,Math.min(1,c/m)))*halfDamp, halfMax)); }
+                        default -> { double c = pex*pty - pey*ptx; double m = Math.sqrt((pex*pex+pey*pey)*(ptx*ptx+pty*pty));
+                            if(m>0.001) endEffector.angleZ = clampAngle(endEffector.angleZ + (float)clampDelta(Math.asin(Math.max(-1,Math.min(1,c/m)))*halfDamp, halfMax)); }
+                    }
+                }
+                computeFK(skeleton);
             }
 
             // After solving, write chain joint angles back to sliders
