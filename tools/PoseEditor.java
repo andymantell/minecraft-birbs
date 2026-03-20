@@ -755,11 +755,28 @@ public class PoseEditor extends JFrame {
     class PreviewPanel extends JPanel {
         final float SCALE = 14f;
 
+        // Per-panel zoom levels
+        float zoomFront = 1.0f, zoomSide = 1.0f, zoomTop = 1.0f, zoom3D = 1.0f;
+
         // 3D camera rotation (mouse drag)
         double camYaw = 0.4;    // initial slight angle
         double camPitch = 0.3;
         int dragStartX, dragStartY;
         double dragStartYaw, dragStartPitch;
+
+        // Selection state
+        String selectedJoint = null;
+
+        // Drag handle state: 0=none, 1=xRot(red), 2=yRot(green), 3=zRot(blue)
+        int draggingAxis = 0;
+        String draggingJoint = null;
+        int handleDragStartX, handleDragStartY;
+        float handleDragStartValue;
+        // Current drag position for tooltip
+        int dragCurX, dragCurY;
+
+        // Whether we are dragging the 3D camera
+        boolean dragging3DCamera = false;
 
         PreviewPanel() {
             setPreferredSize(new Dimension(900, 600));
@@ -767,22 +784,134 @@ public class PoseEditor extends JFrame {
             setBackground(new Color(245, 245, 240));
             setMinimumSize(new Dimension(600, 400));
 
-            // Mouse drag for 3D rotation (only in bottom-right quadrant)
+            // Mouse wheel zoom per panel
+            addMouseWheelListener(e -> {
+                int w = getWidth(), h = getHeight();
+                boolean rightCol = e.getX() > w / 2;
+                boolean bottomRow = e.getY() > h / 2;
+                float factor = e.getWheelRotation() < 0 ? 1.1f : 0.9f;
+                if (!rightCol && !bottomRow) {
+                    zoomFront = Math.max(0.3f, Math.min(5.0f, zoomFront * factor));
+                } else if (rightCol && !bottomRow) {
+                    zoomSide = Math.max(0.3f, Math.min(5.0f, zoomSide * factor));
+                } else if (!rightCol && bottomRow) {
+                    zoomTop = Math.max(0.3f, Math.min(5.0f, zoomTop * factor));
+                } else {
+                    zoom3D = Math.max(0.3f, Math.min(5.0f, zoom3D * factor));
+                }
+                repaint();
+            });
+
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mousePressed(MouseEvent e) {
-                    dragStartX = e.getX();
-                    dragStartY = e.getY();
-                    dragStartYaw = camYaw;
-                    dragStartPitch = camPitch;
+                    int w = getWidth(), h = getHeight();
+                    int cellW = w / 2, cellH = h / 2;
+                    int mx = e.getX(), my = e.getY();
+
+                    // First check if clicking on a rotation handle
+                    if (selectedJoint != null) {
+                        int handleHit = hitTestHandles(mx, my, cellW, cellH);
+                        if (handleHit > 0) {
+                            draggingAxis = handleHit;
+                            draggingJoint = selectedJoint;
+                            handleDragStartX = mx;
+                            handleDragStartY = my;
+                            dragCurX = mx;
+                            dragCurY = my;
+                            // Get the current rotation value for this axis
+                            String sliderName = draggingJoint.startsWith("R_") ?
+                                    "L_" + draggingJoint.substring(2) : draggingJoint;
+                            JointSliderGroup grp = sliderGroups.get(sliderName);
+                            if (grp != null) {
+                                handleDragStartValue = draggingAxis == 1 ? grp.getX() :
+                                        draggingAxis == 2 ? grp.getY() : grp.getZ();
+                            }
+                            return;
+                        }
+                    }
+
+                    // Check for 3D camera drag (bottom-right)
+                    if (mx > cellW && my > cellH) {
+                        dragging3DCamera = true;
+                        dragStartX = mx;
+                        dragStartY = my;
+                        dragStartYaw = camYaw;
+                        dragStartPitch = camPitch;
+                    }
+
+                    // Hit test for joint selection
+                    Map<String, float[]> poseData = getCurrentPose();
+                    applyPose(skeleton, poseData);
+                    computeFK(skeleton);
+
+                    String hit = hitTestJoint(mx, my, cellW, cellH);
+                    selectedJoint = hit;
+                    if (hit != null) {
+                        // Scroll the matching slider group into view
+                        String sliderName = hit.startsWith("R_") ? "L_" + hit.substring(2) : hit;
+                        JointSliderGroup grp = sliderGroups.get(sliderName);
+                        if (grp != null && grp.xSlider.getParent() != null) {
+                            // Walk up to find the JPanel built by buildPanel()
+                            java.awt.Component comp = grp.xSlider.getParent();
+                            while (comp != null && comp != sliderPanel) {
+                                if (comp instanceof JPanel) {
+                                    ((JComponent) comp).scrollRectToVisible(comp.getBounds());
+                                }
+                                comp = comp.getParent();
+                            }
+                        }
+                    }
+                    repaint();
+                }
+
+                @Override
+                public void mouseReleased(MouseEvent e) {
+                    draggingAxis = 0;
+                    draggingJoint = null;
+                    dragging3DCamera = false;
+                    repaint();
                 }
             });
             addMouseMotionListener(new MouseMotionAdapter() {
                 @Override
                 public void mouseDragged(MouseEvent e) {
-                    // Only drag in bottom-right quadrant (the 3D view)
-                    int w = getWidth(), h = getHeight();
-                    if (dragStartX > w / 2 && dragStartY > h / 2) {
+                    // Handle rotation handle drag
+                    if (draggingAxis > 0 && draggingJoint != null) {
+                        int dx = e.getX() - handleDragStartX;
+                        int dy = e.getY() - handleDragStartY;
+                        dragCurX = e.getX();
+                        dragCurY = e.getY();
+                        // Compute drag distance based on axis
+                        int dragDist;
+                        if (draggingAxis == 1) dragDist = dx;        // red: horizontal
+                        else if (draggingAxis == 2) dragDist = -dy;  // green: vertical (invert)
+                        else dragDist = (dx - dy) / 2;               // blue: diagonal
+                        float newVal = handleDragStartValue + dragDist * 0.01f;
+                        newVal = Math.max(-(float)Math.PI, Math.min((float)Math.PI, newVal));
+
+                        // Update the slider
+                        String sliderName = draggingJoint.startsWith("R_") ?
+                                "L_" + draggingJoint.substring(2) : draggingJoint;
+                        JointSliderGroup grp = sliderGroups.get(sliderName);
+                        if (grp != null) {
+                            if (draggingAxis == 1) {
+                                grp.xSlider.setValue(Math.round(newVal * 100));
+                                grp.xField.setText(String.format("%.2f", newVal));
+                            } else if (draggingAxis == 2) {
+                                grp.ySlider.setValue(Math.round(newVal * 100));
+                                grp.yField.setText(String.format("%.2f", newVal));
+                            } else {
+                                grp.zSlider.setValue(Math.round(newVal * 100));
+                                grp.zField.setText(String.format("%.2f", newVal));
+                            }
+                        }
+                        repaint();
+                        return;
+                    }
+
+                    // 3D camera drag
+                    if (dragging3DCamera) {
                         camYaw = dragStartYaw + (e.getX() - dragStartX) * 0.01;
                         camPitch = dragStartPitch + (e.getY() - dragStartY) * 0.01;
                         camPitch = Math.max(-1.5, Math.min(1.5, camPitch));
@@ -792,47 +921,137 @@ public class PoseEditor extends JFrame {
             });
         }
 
-        // For 2x2 grid: col 0-1, row 0-1
-        int toScreenX(double worldCoord, int cellW, int col, int row) {
-            return col * cellW + cellW / 2 + (int)(worldCoord * SCALE);
+        /** Determine which panel quadrant a screen point is in: 0=FRONT, 1=SIDE, 2=TOP, 3=3D */
+        int getQuadrant(int mx, int my, int cellW, int cellH) {
+            boolean right = mx > cellW;
+            boolean bottom = my > cellH;
+            if (!right && !bottom) return 0;
+            if (right && !bottom) return 1;
+            if (!right && bottom) return 2;
+            return 3;
         }
 
-        int toScreenY(double worldCoord, int cellH, int col, int row) {
-            return row * cellH + cellH / 2 + (int)((worldCoord - 19f) * SCALE);
+        float zoomForQuadrant(int q) {
+            return switch (q) { case 0 -> zoomFront; case 1 -> zoomSide; case 2 -> zoomTop; default -> zoom3D; };
         }
 
-        // 3D perspective projection: rotate point by camera yaw/pitch, then project
-        double[] project3D(double[] p, int cellW, int cellH, int col, int row) {
-            // Center around bird's body (approximately Y=19)
+        /** Hit test rotation handles around selected joint. Returns axis (1/2/3) or 0 for no hit. */
+        int hitTestHandles(int mx, int my, int cellW, int cellH) {
+            if (selectedJoint == null) return 0;
+            Joint j = skeleton.jointMap.get(selectedJoint);
+            if (j == null) return 0;
+
+            int q = getQuadrant(mx, my, cellW, cellH);
+            float es = SCALE * zoomForQuadrant(q);
+            int col = (q == 1 || q == 3) ? 1 : 0;
+            int row = (q == 2 || q == 3) ? 1 : 0;
+
+            int jx, jy;
+            if (q < 3) {
+                View view = q == 0 ? View.FRONT : q == 1 ? View.SIDE : View.TOP;
+                double[] p2d = project(j.worldPos, view);
+                jx = toScreenX(p2d[0], cellW, col, row, es);
+                jy = toScreenY(p2d[1], cellH, col, row, es);
+            } else {
+                double[] p3 = project3D(j.worldPos, cellW, cellH, col, row, es);
+                jx = (int) p3[0];
+                jy = (int) p3[1];
+            }
+
+            // Red handle at (+20, 0)
+            if (Math.hypot(mx - (jx + 20), my - jy) < 8) return 1;
+            // Green handle at (0, -20)
+            if (Math.hypot(mx - jx, my - (jy - 20)) < 8) return 2;
+            // Blue handle at (+14, -14)
+            if (Math.hypot(mx - (jx + 14), my - (jy - 14)) < 8) return 3;
+            return 0;
+        }
+
+        /** Hit test joints under cursor. Returns joint name or null. */
+        String hitTestJoint(int mx, int my, int cellW, int cellH) {
+            int q = getQuadrant(mx, my, cellW, cellH);
+            float es = SCALE * zoomForQuadrant(q);
+            int col = (q == 1 || q == 3) ? 1 : 0;
+            int row = (q == 2 || q == 3) ? 1 : 0;
+
+            String bestJoint = null;
+            double bestArea = Double.MAX_VALUE;
+
+            for (Joint j : skeleton.allJoints) {
+                double[][] corners = getCuboidCorners(j);
+                int minSx = Integer.MAX_VALUE, maxSx = Integer.MIN_VALUE;
+                int minSy = Integer.MAX_VALUE, maxSy = Integer.MIN_VALUE;
+
+                for (int i = 0; i < 8; i++) {
+                    int sx, sy;
+                    if (q < 3) {
+                        View view = q == 0 ? View.FRONT : q == 1 ? View.SIDE : View.TOP;
+                        double[] p2d = project(corners[i], view);
+                        sx = toScreenX(p2d[0], cellW, col, row, es);
+                        sy = toScreenY(p2d[1], cellH, col, row, es);
+                    } else {
+                        double[] p3 = project3D(corners[i], cellW, cellH, col, row, es);
+                        sx = (int) p3[0];
+                        sy = (int) p3[1];
+                    }
+                    if (sx < minSx) minSx = sx;
+                    if (sx > maxSx) maxSx = sx;
+                    if (sy < minSy) minSy = sy;
+                    if (sy > maxSy) maxSy = sy;
+                }
+
+                if (mx >= minSx && mx <= maxSx && my >= minSy && my <= maxSy) {
+                    double area = (double)(maxSx - minSx) * (maxSy - minSy);
+                    if (area < bestArea) {
+                        bestArea = area;
+                        bestJoint = j.name;
+                    }
+                }
+            }
+            return bestJoint;
+        }
+
+        // For 2x2 grid: col 0-1, row 0-1 — with effective scale
+        int toScreenX(double worldCoord, int cellW, int col, int row, float scale) {
+            return col * cellW + cellW / 2 + (int)(worldCoord * scale);
+        }
+
+        int toScreenY(double worldCoord, int cellH, int col, int row, float scale) {
+            return row * cellH + cellH / 2 + (int)((worldCoord - 19f) * scale);
+        }
+
+        // 3D perspective projection with effective scale
+        double[] project3D(double[] p, int cellW, int cellH, int col, int row, float scale) {
             double px = p[0], py = p[1] - 19.0, pz = p[2];
 
-            // Rotate by camera yaw (around Y)
             double cosY = Math.cos(camYaw), sinY = Math.sin(camYaw);
             double rx = px * cosY + pz * sinY;
             double rz = -px * sinY + pz * cosY;
             double ry = py;
 
-            // Rotate by camera pitch (around X)
             double cosP = Math.cos(camPitch), sinP = Math.sin(camPitch);
             double ry2 = ry * cosP - rz * sinP;
             double rz2 = ry * sinP + rz * cosP;
 
-            // Simple perspective (distance = 30)
             double dist = 30.0;
-            double scale = dist / (dist + rz2) * SCALE;
+            double perspScale = dist / (dist + rz2) * scale;
 
-            double screenX = col * cellW + cellW / 2 + rx * scale;
-            double screenY = row * cellH + cellH / 2 + ry2 * scale;
-            return new double[]{screenX, screenY, rz2}; // z for depth sorting
+            double screenX = col * cellW + cellW / 2 + rx * perspScale;
+            double screenY = row * cellH + cellH / 2 + ry2 * perspScale;
+            return new double[]{screenX, screenY, rz2};
         }
 
-        void drawCuboid(Graphics2D g, Joint j, View view, int cellW, int cellH, int col, int row) {
+        boolean isSelected(Joint j) {
+            return selectedJoint != null && selectedJoint.equals(j.name);
+        }
+
+        void drawCuboid(Graphics2D g, Joint j, View view, int cellW, int cellH, int col, int row, float scale) {
             double[][] corners = getCuboidCorners(j);
             int[] sx = new int[8], sy = new int[8];
             for (int i = 0; i < 8; i++) {
                 double[] p2d = project(corners[i], view);
-                sx[i] = toScreenX(p2d[0], cellW, col, row);
-                sy[i] = toScreenY(p2d[1], cellH, col, row);
+                sx[i] = toScreenX(p2d[0], cellW, col, row, scale);
+                sy[i] = toScreenY(p2d[1], cellH, col, row, scale);
             }
             Color fill = new Color(j.colour.getRed(), j.colour.getGreen(), j.colour.getBlue(), 60);
             g.setColor(fill);
@@ -844,9 +1063,14 @@ public class PoseEditor extends JFrame {
                 for (int i = 0; i < 4; i++) { fx[i] = sx[face[i]]; fy[i] = sy[face[i]]; }
                 g.fillPolygon(fx, fy, 4);
             }
-            Color edge = new Color(j.colour.getRed()/2, j.colour.getGreen()/2, j.colour.getBlue()/2, 200);
-            g.setColor(edge);
-            g.setStroke(new BasicStroke(1.2f));
+            if (isSelected(j)) {
+                g.setColor(new Color(255, 180, 40));
+                g.setStroke(new BasicStroke(3f));
+            } else {
+                Color edge = new Color(j.colour.getRed()/2, j.colour.getGreen()/2, j.colour.getBlue()/2, 200);
+                g.setColor(edge);
+                g.setStroke(new BasicStroke(1.2f));
+            }
             int[][] edges = {
                     {0,1},{1,2},{2,3},{3,0},{4,5},{5,6},{6,7},{7,4},{0,4},{1,5},{2,6},{3,7}
             };
@@ -855,10 +1079,10 @@ public class PoseEditor extends JFrame {
             }
         }
 
-        void drawJointDot(Graphics2D g, Joint j, View view, int cellW, int cellH, int col, int row) {
+        void drawJointDot(Graphics2D g, Joint j, View view, int cellW, int cellH, int col, int row, float scale) {
             double[] p2d = project(j.worldPos, view);
-            int x = toScreenX(p2d[0], cellW, col, row);
-            int y = toScreenY(p2d[1], cellH, col, row);
+            int x = toScreenX(p2d[0], cellW, col, row, scale);
+            int y = toScreenY(p2d[1], cellH, col, row, scale);
             g.setColor(j.colour);
             g.fillOval(x-3, y-3, 6, 6);
             g.setColor(j.colour.darker().darker());
@@ -866,8 +1090,25 @@ public class PoseEditor extends JFrame {
             g.drawOval(x-3, y-3, 6, 6);
         }
 
-        void drawGroundPlane(Graphics2D g, int cellW, int cellH, int col, int row) {
-            int groundY = toScreenY(24.0, cellH, col, row);
+        void drawHandles(Graphics2D g, Joint j, int jx, int jy) {
+            // Red handle = xRot at (+20, 0)
+            drawHandle(g, jx + 20, jy, new Color(220, 40, 40));
+            // Green handle = yRot at (0, -20)
+            drawHandle(g, jx, jy - 20, new Color(40, 180, 40));
+            // Blue handle = zRot at (+14, -14)
+            drawHandle(g, jx + 14, jy - 14, new Color(40, 80, 220));
+        }
+
+        void drawHandle(Graphics2D g, int cx, int cy, Color color) {
+            g.setColor(color);
+            g.fillOval(cx - 4, cy - 4, 8, 8);
+            g.setColor(Color.WHITE);
+            g.setStroke(new BasicStroke(1.5f));
+            g.drawOval(cx - 4, cy - 4, 8, 8);
+        }
+
+        void drawGroundPlane(Graphics2D g, int cellW, int cellH, int col, int row, float scale) {
+            int groundY = toScreenY(24.0, cellH, col, row, scale);
             g.setColor(new Color(140, 100, 60, 100));
             g.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER,
                     10f, new float[]{6f, 4f}, 0f));
@@ -876,7 +1117,8 @@ public class PoseEditor extends JFrame {
             g.drawLine(x0, groundY, x1, groundY);
         }
 
-        void drawPanel(Graphics2D g, View view, int cellW, int cellH, int col, int row, String label) {
+        void drawPanel(Graphics2D g, View view, int cellW, int cellH, int col, int row, String label, float zoom) {
+            float es = SCALE * zoom;
             int x0 = col * cellW, y0 = row * cellH;
             g.setColor(new Color(245, 245, 240));
             g.fillRect(x0, y0, cellW, cellH);
@@ -886,18 +1128,29 @@ public class PoseEditor extends JFrame {
             g.setColor(new Color(100, 100, 100));
             g.setFont(new Font("SansSerif", Font.BOLD, 12));
             g.drawString(label, x0 + 8, y0 + 16);
-            drawGroundPlane(g, cellW, cellH, col, row);
+            drawGroundPlane(g, cellW, cellH, col, row, es);
 
-            for (Joint j : skeleton.allJoints) drawCuboid(g, j, view, cellW, cellH, col, row);
-            for (Joint j : skeleton.allJoints) drawJointDot(g, j, view, cellW, cellH, col, row);
+            for (Joint j : skeleton.allJoints) drawCuboid(g, j, view, cellW, cellH, col, row, es);
+            for (Joint j : skeleton.allJoints) drawJointDot(g, j, view, cellW, cellH, col, row, es);
+
+            // Draw handles on selected joint
+            if (selectedJoint != null) {
+                Joint sel = skeleton.jointMap.get(selectedJoint);
+                if (sel != null) {
+                    double[] p2d = project(sel.worldPos, view);
+                    int jx = toScreenX(p2d[0], cellW, col, row, es);
+                    int jy = toScreenY(p2d[1], cellH, col, row, es);
+                    drawHandles(g, sel, jx, jy);
+                }
+            }
         }
 
-        void drawCuboid3D(Graphics2D g, Joint j, int cellW, int cellH, int col, int row) {
+        void drawCuboid3D(Graphics2D g, Joint j, int cellW, int cellH, int col, int row, float scale) {
             double[][] corners = getCuboidCorners(j);
             int[] sx = new int[8], sy = new int[8];
             double[] depths = new double[8];
             for (int i = 0; i < 8; i++) {
-                double[] p3 = project3D(corners[i], cellW, cellH, col, row);
+                double[] p3 = project3D(corners[i], cellW, cellH, col, row, scale);
                 sx[i] = (int) p3[0];
                 sy[i] = (int) p3[1];
                 depths[i] = p3[2];
@@ -912,9 +1165,14 @@ public class PoseEditor extends JFrame {
                 for (int i = 0; i < 4; i++) { fx[i] = sx[face[i]]; fy[i] = sy[face[i]]; }
                 g.fillPolygon(fx, fy, 4);
             }
-            Color edge = new Color(j.colour.getRed()/2, j.colour.getGreen()/2, j.colour.getBlue()/2, 200);
-            g.setColor(edge);
-            g.setStroke(new BasicStroke(1.2f));
+            if (isSelected(j)) {
+                g.setColor(new Color(255, 180, 40));
+                g.setStroke(new BasicStroke(3f));
+            } else {
+                Color edge = new Color(j.colour.getRed()/2, j.colour.getGreen()/2, j.colour.getBlue()/2, 200);
+                g.setColor(edge);
+                g.setStroke(new BasicStroke(1.2f));
+            }
             int[][] edges = {
                     {0,1},{1,2},{2,3},{3,0},{4,5},{5,6},{6,7},{7,4},{0,4},{1,5},{2,6},{3,7}
             };
@@ -923,8 +1181,8 @@ public class PoseEditor extends JFrame {
             }
         }
 
-        void drawJointDot3D(Graphics2D g, Joint j, int cellW, int cellH, int col, int row) {
-            double[] p3 = project3D(j.worldPos, cellW, cellH, col, row);
+        void drawJointDot3D(Graphics2D g, Joint j, int cellW, int cellH, int col, int row, float scale) {
+            double[] p3 = project3D(j.worldPos, cellW, cellH, col, row, scale);
             int x = (int) p3[0];
             int y = (int) p3[1];
             g.setColor(j.colour);
@@ -934,7 +1192,8 @@ public class PoseEditor extends JFrame {
             g.drawOval(x-3, y-3, 6, 6);
         }
 
-        void draw3DPanel(Graphics2D g, int cellW, int cellH, int col, int row, String label) {
+        void draw3DPanel(Graphics2D g, int cellW, int cellH, int col, int row, String label, float zoom) {
+            float es = SCALE * zoom;
             int x0 = col * cellW, y0 = row * cellH;
             g.setColor(new Color(235, 235, 230));
             g.fillRect(x0, y0, cellW, cellH);
@@ -945,8 +1204,19 @@ public class PoseEditor extends JFrame {
             g.setFont(new Font("SansSerif", Font.BOLD, 12));
             g.drawString(label, x0 + 8, y0 + 16);
 
-            for (Joint j : skeleton.allJoints) drawCuboid3D(g, j, cellW, cellH, col, row);
-            for (Joint j : skeleton.allJoints) drawJointDot3D(g, j, cellW, cellH, col, row);
+            for (Joint j : skeleton.allJoints) drawCuboid3D(g, j, cellW, cellH, col, row, es);
+            for (Joint j : skeleton.allJoints) drawJointDot3D(g, j, cellW, cellH, col, row, es);
+
+            // Draw handles on selected joint
+            if (selectedJoint != null) {
+                Joint sel = skeleton.jointMap.get(selectedJoint);
+                if (sel != null) {
+                    double[] p3 = project3D(sel.worldPos, cellW, cellH, col, row, es);
+                    int jx = (int) p3[0];
+                    int jy = (int) p3[1];
+                    drawHandles(g, sel, jx, jy);
+                }
+            }
         }
 
         @Override
@@ -963,10 +1233,34 @@ public class PoseEditor extends JFrame {
             applyPose(skeleton, poseData);
             computeFK(skeleton);
 
-            drawPanel(g, View.FRONT, cellW, cellH, 0, 0, "FRONT (from +Z)");
-            drawPanel(g, View.SIDE,  cellW, cellH, 1, 0, "SIDE (from +X)");
-            drawPanel(g, View.TOP,   cellW, cellH, 0, 1, "TOP (from -Y)");
-            draw3DPanel(g, cellW, cellH, 1, 1, "3D (drag to rotate)");
+            drawPanel(g, View.FRONT, cellW, cellH, 0, 0, "FRONT (from +Z)", zoomFront);
+            drawPanel(g, View.SIDE,  cellW, cellH, 1, 0, "SIDE (from +X)", zoomSide);
+            drawPanel(g, View.TOP,   cellW, cellH, 0, 1, "TOP (from -Y)", zoomTop);
+            draw3DPanel(g, cellW, cellH, 1, 1, "3D (drag to rotate)", zoom3D);
+
+            // Draw drag tooltip
+            if (draggingAxis > 0 && draggingJoint != null) {
+                String sliderName = draggingJoint.startsWith("R_") ?
+                        "L_" + draggingJoint.substring(2) : draggingJoint;
+                JointSliderGroup grp = sliderGroups.get(sliderName);
+                if (grp != null) {
+                    float val = draggingAxis == 1 ? grp.getX() :
+                            draggingAxis == 2 ? grp.getY() : grp.getZ();
+                    String axisName = draggingAxis == 1 ? "xRot" : draggingAxis == 2 ? "yRot" : "zRot";
+                    Color axisColor = draggingAxis == 1 ? new Color(220, 40, 40) :
+                            draggingAxis == 2 ? new Color(40, 180, 40) : new Color(40, 80, 220);
+                    String tip = String.format("%s: %.2f", axisName, val);
+                    g.setFont(new Font("Monospaced", Font.BOLD, 12));
+                    FontMetrics tfm = g.getFontMetrics();
+                    int tw = tfm.stringWidth(tip) + 8;
+                    int th = tfm.getHeight() + 4;
+                    int tx = dragCurX + 16, ty = dragCurY - 16;
+                    g.setColor(new Color(40, 40, 40, 200));
+                    g.fillRoundRect(tx, ty, tw, th, 6, 6);
+                    g.setColor(axisColor);
+                    g.drawString(tip, tx + 4, ty + th - 5);
+                }
+            }
 
             // Overlay: archetype + pose name
             g.setColor(new Color(40, 40, 40));
