@@ -415,7 +415,15 @@ public class TextureGenerator {
     }
 
     /**
-     * Add detail pass: eyes, speckles, gradients, species-specific markings.
+     * Add detail pass: eyes on left and right side faces of the HEAD cuboid.
+     *
+     * UV face layout for a cuboid at texOffs(u,v) with dims (w,h,d):
+     *   Left face:  (u,       v+d, d, h)
+     *   Right face: (u+d+w,   v+d, d, h)
+     *
+     * Eyes are placed in the upper third of the side face, toward the front
+     * (higher x on left face = closer to front, lower x on right face = closer to front).
+     * Each eye is 1-2 dark pixels with a highlight pixel for realism.
      */
     static void addEyes(BufferedImage img, Map<String, int[]> layout, Map<String, int[]> dims,
                         Color eyeColor) {
@@ -426,19 +434,197 @@ public class TextureGenerator {
         int u = headUV[0], v = headUV[1];
         int w = headDims[0], h = headDims[1], d = headDims[2];
 
-        // Eyes on left side face: at (u, v+d) region of size (d, h)
-        // Place eye roughly in the upper-middle of the side face
-        int eyeY = v + d + Math.max(0, h / 3);
+        // Eye Y position: upper third of the side face (which starts at v+d, height h)
+        int eyeY = v + d + Math.max(1, h / 4);
 
-        // Left side face starts at (u, v+d)
-        int leftEyeX = u + d / 2;
+        // Eye highlight colour (white glint)
+        Color highlight = new Color(0xEE, 0xEE, 0xEE);
+
+        // Left side face starts at (u, v+d), width=d, height=h
+        // Place eye toward the front edge (higher x within the face)
+        int leftFaceStartX = u;
+        int leftEyeX = leftFaceStartX + Math.max(0, d - d / 3 - 1);
         safeSetRGB(img, leftEyeX, eyeY, eyeColor);
-        if (d > 2) safeSetRGB(img, leftEyeX + 1, eyeY, eyeColor);
+        if (d > 2) safeSetRGB(img, leftEyeX - 1, eyeY, eyeColor);
+        // Highlight pixel above-right of eye
+        safeSetRGB(img, leftEyeX, eyeY - 1, highlight);
 
-        // Right side face starts at (u+d+w, v+d)
-        int rightEyeX = u + d + w + d / 2;
+        // Right side face starts at (u+d+w, v+d), width=d, height=h
+        // Place eye toward the front edge (lower x within the face)
+        int rightFaceStartX = u + d + w;
+        int rightEyeX = rightFaceStartX + Math.max(0, d / 3);
         safeSetRGB(img, rightEyeX, eyeY, eyeColor);
-        if (d > 2) safeSetRGB(img, rightEyeX - 1, eyeY, eyeColor);
+        if (d > 2) safeSetRGB(img, rightEyeX + 1, eyeY, eyeColor);
+        // Highlight pixel above-left of eye
+        safeSetRGB(img, rightEyeX, eyeY - 1, highlight);
+    }
+
+    /**
+     * Explicitly paint ALL 6 faces of a beak cuboid with the given colour.
+     * Small cuboids (1x1x2 etc.) can be missed by gradient/speckle passes,
+     * so we force-fill every face to ensure the beak is fully coloured.
+     */
+    static void paintBeakCuboid(Graphics2D g, Map<String, int[]> layout, Map<String, int[]> dims,
+                                String joint, Color beakColor) {
+        int[] uv = layout.get(joint);
+        int[] d = dims.get(joint);
+        if (uv == null || d == null) return;
+
+        int u = uv[0], v = uv[1];
+        int w = d[0], h = d[1], depth = d[2];
+
+        fillBox(g, u, v, w, h, depth, beakColor, beakColor, beakColor, beakColor, beakColor, beakColor);
+    }
+
+    /**
+     * Paint both beak cuboids with a single colour, ensuring full coverage.
+     */
+    static void paintBeaks(Graphics2D g, Map<String, int[]> layout, Map<String, int[]> dims,
+                           Color beakColor) {
+        paintBeakCuboid(g, layout, dims, UPPER_BEAK, beakColor);
+        paintBeakCuboid(g, layout, dims, LOWER_BEAK, beakColor);
+    }
+
+    /**
+     * Ensure head-to-neck colour continuity: paint the back face of the head
+     * and the top/front of neck_upper to share a compatible transition colour.
+     */
+    static void blendHeadNeck(Graphics2D g, BufferedImage img,
+                              Map<String, int[]> layout, Map<String, int[]> dims,
+                              Color headBackColor, Color neckTopColor) {
+        // Head back face: at (u + 2*d + w, v + d) with size (w, h)
+        int[] headUV = layout.get(HEAD);
+        int[] headDims = dims.get(HEAD);
+        if (headUV != null && headDims != null) {
+            int u = headUV[0], v = headUV[1];
+            int w = headDims[0], h = headDims[1], d = headDims[2];
+            // Paint the lower portion of head back face with a blend toward neck colour
+            int blendRows = Math.max(1, h / 3);
+            for (int row = 0; row < blendRows; row++) {
+                float ratio = (float)(row + 1) / blendRows;
+                Color blended = blendColors(headBackColor, neckTopColor, ratio);
+                int py = v + d + h - blendRows + row;
+                for (int px = u + 2 * d + w; px < u + 2 * d + 2 * w; px++) {
+                    safeSetRGB(img, px, py, blended);
+                }
+            }
+        }
+
+        // Neck upper top face: at (u+d, v, w, d)
+        int[] neckUV = layout.get(NECK_UPPER);
+        int[] neckDims = dims.get(NECK_UPPER);
+        if (neckUV != null && neckDims != null) {
+            int u = neckUV[0], v = neckUV[1];
+            int w = neckDims[0], h = neckDims[1], d = neckDims[2];
+            // Fill top face with the blend colour
+            fillFace(g, u + d, v, w, d, neckTopColor);
+        }
+    }
+
+    static Color blendColors(Color a, Color b, float ratio) {
+        int r = (int)(a.getRed() + ratio * (b.getRed() - a.getRed()));
+        int gr = (int)(a.getGreen() + ratio * (b.getGreen() - a.getGreen()));
+        int bl = (int)(a.getBlue() + ratio * (b.getBlue() - a.getBlue()));
+        return new Color(clamp(r), clamp(gr), clamp(bl));
+    }
+
+    // ---- Species-specific face markings ----
+
+    /**
+     * Blue tit: dark eye stripe through the eye on both side faces of the head.
+     */
+    static void addBlueTitEyeStripe(BufferedImage img, Map<String, int[]> layout,
+                                     Map<String, int[]> dims, Color stripeColor) {
+        int[] headUV = layout.get(HEAD);
+        int[] headDims = dims.get(HEAD);
+        if (headUV == null || headDims == null) return;
+
+        int u = headUV[0], v = headUV[1];
+        int w = headDims[0], h = headDims[1], d = headDims[2];
+
+        // Stripe runs horizontally through the eye level on each side face
+        int eyeY = v + d + Math.max(1, h / 4);
+
+        // Left side face: full-width stripe at eye level
+        for (int x = u; x < u + d; x++) {
+            safeSetRGB(img, x, eyeY, stripeColor);
+            if (h > 3) safeSetRGB(img, x, eyeY + 1, stripeColor);
+        }
+
+        // Right side face
+        for (int x = u + d + w; x < u + d + w + d; x++) {
+            safeSetRGB(img, x, eyeY, stripeColor);
+            if (h > 3) safeSetRGB(img, x, eyeY + 1, stripeColor);
+        }
+    }
+
+    /**
+     * Peregrine: moustachial stripe below the eye on both side faces.
+     */
+    static void addPeregrineMoustache(BufferedImage img, Map<String, int[]> layout,
+                                       Map<String, int[]> dims, Color stripeColor) {
+        int[] headUV = layout.get(HEAD);
+        int[] headDims = dims.get(HEAD);
+        if (headUV == null || headDims == null) return;
+
+        int u = headUV[0], v = headUV[1];
+        int w = headDims[0], h = headDims[1], d = headDims[2];
+
+        // Moustachial stripe: below eye, in lower half of side face
+        int stripeY = v + d + Math.max(1, h / 2);
+
+        // Left side face: stripe from center to front edge
+        for (int x = u + d / 3; x < u + d; x++) {
+            safeSetRGB(img, x, stripeY, stripeColor);
+            if (h > 3) safeSetRGB(img, x, stripeY + 1, stripeColor);
+        }
+
+        // Right side face: stripe from front edge to center
+        for (int x = u + d + w; x < u + d + w + d - d / 3; x++) {
+            safeSetRGB(img, x, stripeY, stripeColor);
+            if (h > 3) safeSetRGB(img, x, stripeY + 1, stripeColor);
+        }
+    }
+
+    /**
+     * Barn owl: heart-shaped facial disc. Cream front face with golden-brown
+     * rim painted on the side faces near the front edge.
+     */
+    static void addBarnOwlFacialDisc(Graphics2D g, BufferedImage img,
+                                      Map<String, int[]> layout, Map<String, int[]> dims,
+                                      Color discCenter, Color discRim) {
+        int[] headUV = layout.get(HEAD);
+        int[] headDims = dims.get(HEAD);
+        if (headUV == null || headDims == null) return;
+
+        int u = headUV[0], v = headUV[1];
+        int w = headDims[0], h = headDims[1], d = headDims[2];
+
+        // Paint front face with cream disc centre
+        fillFace(g, u + d, v + d, w, h, discCenter);
+
+        // Paint disc rim on sides: a column near the front edge of each side face
+        // Left side face: rightmost column (nearest to front face)
+        for (int y = v + d; y < v + d + h; y++) {
+            safeSetRGB(img, u + d - 1, y, discRim);
+            if (d > 2) safeSetRGB(img, u + d - 2, y, discRim);
+        }
+
+        // Right side face: leftmost column (nearest to front face)
+        for (int y = v + d; y < v + d + h; y++) {
+            safeSetRGB(img, u + d + w, y, discRim);
+            if (d > 2) safeSetRGB(img, u + d + w + 1, y, discRim);
+        }
+
+        // Top edge of front face: darker rim
+        for (int x = u + d; x < u + d + w; x++) {
+            safeSetRGB(img, x, v + d, discRim);
+        }
+
+        // Bottom edge of front face: V-shape for heart
+        for (int x = u + d; x < u + d + w; x++) {
+            safeSetRGB(img, x, v + d + h - 1, discRim);
+        }
     }
 
     static void addWingBarring(BufferedImage img, Map<String, int[]> layout, Map<String, int[]> dims,
@@ -555,6 +741,12 @@ public class TextureGenerator {
         addWingBarring(img, layout, dims, L_UPPER_WING, new Color(0xC4, 0xA8, 0x82), 3);
         addWingBarring(img, layout, dims, R_UPPER_WING, new Color(0xC4, 0xA8, 0x82), 3);
 
+        // Explicitly paint beaks
+        paintBeaks(g, layout, dims, p.beak);
+
+        // Head-neck colour continuity
+        blendHeadNeck(g, img, layout, dims, p.headTop, p.neckBack);
+
         // Eyes
         addEyes(img, layout, dims, p.eye);
 
@@ -593,6 +785,8 @@ public class TextureGenerator {
         addSpecklesOnCuboid(img, layout, dims, TORSO, darkSpeckle, goldenBuff);
         addSpecklesOnCuboid(img, layout, dims, HEAD, darkSpeckle, goldenBuff);
 
+        paintBeaks(g, layout, dims, p.beak);
+        blendHeadNeck(g, img, layout, dims, speckledBrown, speckledBrown);
         addEyes(img, layout, dims, p.eye);
 
         g.dispose();
@@ -647,6 +841,16 @@ public class TextureGenerator {
         // Back gradient
         addGradientOnTop(img, layout, dims, CHEST, p.back, new Color(0x7B, 0xA0, 0x28));
 
+        // Explicitly paint beaks
+        paintBeaks(g, layout, dims, p.beak);
+
+        // Head-neck colour continuity
+        blendHeadNeck(g, img, layout, dims, p.headTop, p.neckBack);
+
+        // Blue tit eye stripe through the eye
+        addBlueTitEyeStripe(img, layout, dims, p.accent1);
+
+        // Eyes (painted after stripe so they sit on top)
         addEyes(img, layout, dims, p.eye);
 
         g.dispose();
@@ -709,7 +913,16 @@ public class TextureGenerator {
         // Gradient on back
         addGradientOnTop(img, layout, dims, CHEST, new Color(0xD4, 0xB0, 0x65), p.accent2);
 
-        // Face: add facial disc rim detail on head front
+        // Explicitly paint beaks
+        paintBeaks(g, layout, dims, p.beak);
+
+        // Head-neck colour continuity
+        blendHeadNeck(g, img, layout, dims, p.headTop, p.neckBack);
+
+        // Face: heart-shaped facial disc
+        addBarnOwlFacialDisc(g, img, layout, dims, p.headFront, p.accent1);
+
+        // Eyes (after facial disc so they sit on top)
         addEyes(img, layout, dims, p.eye);
 
         g.dispose();
@@ -743,6 +956,10 @@ public class TextureGenerator {
         addWingBarring(img, layout, dims, R_FOREARM, p.accent2, 2);
 
         addGradientOnTop(img, layout, dims, CHEST, new Color(0xD4, 0xB0, 0x65), p.accent2);
+
+        paintBeaks(g, layout, dims, p.beak);
+        blendHeadNeck(g, img, layout, dims, p.headTop, p.neckBack);
+        addBarnOwlFacialDisc(g, img, layout, dims, p.headFront, p.accent1);
         addEyes(img, layout, dims, p.eye);
 
         g.dispose();
@@ -802,6 +1019,16 @@ public class TextureGenerator {
         addGradientOnTop(img, layout, dims, L_HAND, p.wingUpper, p.wingTip);
         addGradientOnTop(img, layout, dims, R_HAND, p.wingUpper, p.wingTip);
 
+        // Explicitly paint beaks
+        paintBeaks(g, layout, dims, p.beak);
+
+        // Head-neck colour continuity
+        blendHeadNeck(g, img, layout, dims, p.headTop, p.neckBack);
+
+        // Moustachial stripe below eye
+        addPeregrineMoustache(img, layout, dims, new Color(0x11, 0x11, 0x11));
+
+        // Eyes (after moustache so they sit on top)
         addEyes(img, layout, dims, p.eye);
 
         g.dispose();
@@ -839,6 +1066,9 @@ public class TextureGenerator {
         addWingBarring(img, layout, dims, CHEST, p.accent1, 2);
         addWingBarring(img, layout, dims, TORSO, p.accent1, 2);
 
+        paintBeaks(g, layout, dims, p.beak);
+        blendHeadNeck(g, img, layout, dims, darkHead, brown);
+        addPeregrineMoustache(img, layout, dims, new Color(0x22, 0x1A, 0x11));
         addEyes(img, layout, dims, p.eye);
 
         g.dispose();
@@ -922,6 +1152,13 @@ public class TextureGenerator {
                 new Color(0x9A, 0x8E, 0x82), new Color(0xC0, 0xBA, 0xAE));
 
         addGradientOnTop(img, layout, dims, CHEST, p.back, new Color(0x7A, 0x6E, 0x62));
+
+        // Explicitly paint beaks (yellow bill)
+        paintBeaks(g, layout, dims, p.beak);
+
+        // Head-neck colour continuity (green head to white neck ring)
+        blendHeadNeck(g, img, layout, dims, p.headTop, p.neckBack);
+
         addEyes(img, layout, dims, p.eye);
 
         g.dispose();
@@ -974,6 +1211,8 @@ public class TextureGenerator {
             }
         }
 
+        paintBeaks(g, layout, dims, p.beak);
+        blendHeadNeck(g, img, layout, dims, p.headTop, mottledBrown);
         addEyes(img, layout, dims, p.eye);
 
         g.dispose();
@@ -1006,6 +1245,8 @@ public class TextureGenerator {
         p.eye = new Color(0x11, 0x11, 0x11);
 
         paintBird(img, g, dims, layout, p);
+        paintBeaks(g, layout, dims, p.beak);
+        blendHeadNeck(g, img, layout, dims, darkBack, darkBack);
         addEyes(img, layout, dims, p.eye);
 
         g.dispose();
