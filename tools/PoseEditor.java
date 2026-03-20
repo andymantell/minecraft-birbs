@@ -2545,6 +2545,8 @@ public class PoseEditor extends JFrame {
     String cyclicAnimName = null;    // e.g. "wingbeat"
     String cyclicEndpoint = null;    // "A" or "B" — which endpoint the sliders currently show
     float animPhase = 0f;            // 0.0 = offset A, 1.0 = offset B
+    float animDirection = 1f;         // kept for manual scrub compatibility
+    float animElapsedTicks = 0f;      // simulated MC ticks elapsed
 
     // --- Animation playback ---
     boolean animPlaying = false;
@@ -2601,6 +2603,10 @@ public class PoseEditor extends JFrame {
         sb.append("// Exported from PoseEditor — archetype: ").append(currentArchetype)
                 .append(", pose: ").append(currentPoseName).append("\n");
         sb.append("// Timestamp: ").append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("\n");
+        float flapsPerSec = animSpeed * 20f / (2f * (float) Math.PI);
+        sb.append("// Flap Frequency: ").append(String.format("%.2f", animSpeed))
+          .append(" (").append(String.format("%.1f", flapsPerSec)).append(" flaps/sec)\n");
+        sb.append("// Use in renderer: flapFrequency() { return ").append(String.format("%.2f", animSpeed)).append("f; }\n\n");
 
         if (editingCyclic && cyclicBasePose != null && cyclicOffsetA != null && cyclicOffsetB != null) {
             // --- Cyclic export: compute offsets from current slider values ---
@@ -2857,28 +2863,35 @@ public class PoseEditor extends JFrame {
         leftPanel.add(playRow);
         leftPanel.add(Box.createVerticalStrut(4));
 
-        JLabel speedLabel = new JLabel("Speed:");
+        JLabel speedLabel = new JLabel("Flap Freq: 1.0 (1.6 flaps/sec)");
         speedLabel.setAlignmentX(0f);
         speedLabel.setFont(new Font("SansSerif", Font.PLAIN, 11));
         leftPanel.add(speedLabel);
-        // Speed slider: 10..400 represents 0.1x..4.0x (in units of 0.1)
-        speedSlider = new JSlider(1, 40, 10);
+        // Flap frequency slider: maps to MC flapFrequency value (0.1 to 3.0)
+        // MC formula: flapAngle = sin(ageInTicks * freq) * amplitude
+        // flaps/sec = freq * 20 / (2*PI)
+        speedSlider = new JSlider(1, 30, 10);  // 0.1 to 3.0 in steps of 0.1
         speedSlider.setMaximumSize(new Dimension(200, 22));
         speedSlider.setAlignmentX(0f);
         speedSlider.addChangeListener(e -> {
             animSpeed = speedSlider.getValue() / 10f;
-            speedLabel.setText(String.format("Speed: %.1fx", animSpeed));
+            float flapsPerSec = animSpeed * 20f / (2f * (float) Math.PI);
+            speedLabel.setText(String.format("Flap Freq: %.1f (%.1f flaps/sec)", animSpeed, flapsPerSec));
         });
         leftPanel.add(speedSlider);
         leftPanel.add(Box.createVerticalStrut(4));
 
-        // Set up the animation timer (30 fps)
+        // Set up the animation timer using MC-equivalent math
+        // In MC: flapAngle = sin(ageInTicks * flapFrequency) * flapAmplitude
+        // phase = flapAngle * 0.5 + 0.5  (maps -1..+1 to 0..1)
+        // MC runs at 20 ticks/sec, editor at 30 fps, so ~0.667 MC ticks per frame
         animTimer = new javax.swing.Timer(33, e -> {
             if (!animPlaying || !editingCyclic) return;
-            // Advance phase by speed * (33ms / 1000ms) for one direction, then bounce
-            float delta = animSpeed * 0.033f;
-            animPhase += delta;
-            if (animPhase > 1f) animPhase = 0f;  // wrap
+            float mcTicksPerFrame = 20f / 30f;  // ~0.667
+            animElapsedTicks += mcTicksPerFrame;
+            // Use same sin() formula as MC
+            float flapAngle = (float) Math.sin(animElapsedTicks * animSpeed);
+            animPhase = flapAngle * 0.5f + 0.5f;  // 0..1 ping-pong naturally
             batchUpdating = true;
             phaseSlider.setValue(Math.round(animPhase * 100));
             batchUpdating = false;
