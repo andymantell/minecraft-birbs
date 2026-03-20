@@ -25,8 +25,8 @@ public class Breathing implements ProceduralBehaviour {
 
     @Override
     public void apply(BirdSkeleton skeleton, BirdRenderState state, float deltaTime) {
-        float breathPhase = state.ageInTicks * breathRate;
-        float expansion = (float) Math.sin(breathPhase) * 0.015f;
+        float breathPhase = (state.ageInTicks / 20.0f) * breathRate * 2.0f * (float) Math.PI;
+        float expansion = (float) Math.sin(breathPhase) * 0.008f;
 
         BirdJoint chest = skeleton.getJoint(BirdSkeleton.CHEST);
         BirdJoint torso = skeleton.getJoint(BirdSkeleton.TORSO);

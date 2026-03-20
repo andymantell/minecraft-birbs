@@ -97,9 +97,9 @@ public class BirdUVLayout {
         dims.put(BirdSkeleton.SHOULDER_MOUNT, new int[]{2, 2, 2});
         dims.put(BirdSkeleton.TORSO,          new int[]{3, 3, 3});
         dims.put(BirdSkeleton.HIP,            new int[]{2, 2, 2});
-        dims.put(BirdSkeleton.NECK_LOWER,     new int[]{2, 2, 1});
-        dims.put(BirdSkeleton.NECK_MID,       new int[]{2, 2, 1});
-        dims.put(BirdSkeleton.NECK_UPPER,     new int[]{2, 2, 1});
+        dims.put(BirdSkeleton.NECK_LOWER,     new int[]{2, 1, 1});
+        dims.put(BirdSkeleton.NECK_MID,       new int[]{2, 1, 1});
+        dims.put(BirdSkeleton.NECK_UPPER,     new int[]{2, 1, 1});
         dims.put(BirdSkeleton.HEAD,           new int[]{4, 4, 4});
         dims.put(BirdSkeleton.UPPER_BEAK,     new int[]{1, 1, 2});
         dims.put(BirdSkeleton.LOWER_BEAK,     new int[]{1, 1, 2});

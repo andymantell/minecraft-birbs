@@ -311,7 +311,7 @@ public class BlueTitModel extends AbstractBirdModel<BlueTitRenderState> {
         headPart.addOrReplaceChild("right_cheek",
                 CubeListBuilder.create()
                         .texOffs(0, 210)
-                        .mirror()
+
                         .addBox(-2.5f, -3.0f, -1.5f, 1.0f, 2.0f, 2.0f),
                 PartPose.ZERO);
 
@@ -372,7 +372,7 @@ public class BlueTitModel extends AbstractBirdModel<BlueTitRenderState> {
         PartDefinition rUpperWingPart = shoulderPart.addOrReplaceChild("R_upper_wing",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.0f, -1.5f, 1.0f, 3.0f, 3.0f),
                 PartPose.offset(-1.0f, -1.0f, 0.0f));
 
@@ -381,7 +381,7 @@ public class BlueTitModel extends AbstractBirdModel<BlueTitRenderState> {
         rUpperWingPart.addOrReplaceChild("R_scapulars",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.5f, -0.5f, 1.0f, 2.0f, 2.0f),
                 PartPose.ZERO);
 
@@ -390,7 +390,7 @@ public class BlueTitModel extends AbstractBirdModel<BlueTitRenderState> {
         PartDefinition rForearmPart = rUpperWingPart.addOrReplaceChild("R_forearm",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.0f, -1.0f, 1.0f, 3.0f, 2.0f),
                 PartPose.offset(0.0f, 3.0f, 0.0f));
 
@@ -399,7 +399,7 @@ public class BlueTitModel extends AbstractBirdModel<BlueTitRenderState> {
         rForearmPart.addOrReplaceChild("R_secondaries",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.5f, -0.5f, 1.0f, 2.0f, 2.0f),
                 PartPose.ZERO);
 
@@ -408,7 +408,7 @@ public class BlueTitModel extends AbstractBirdModel<BlueTitRenderState> {
         PartDefinition rHandPart = rForearmPart.addOrReplaceChild("R_hand",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.0f, -1.0f, 1.0f, 2.0f, 2.0f),
                 PartPose.offset(0.0f, 3.0f, 0.0f));
 
@@ -417,7 +417,7 @@ public class BlueTitModel extends AbstractBirdModel<BlueTitRenderState> {
         rHandPart.addOrReplaceChild("R_primaries",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.5f, -0.5f, 1.0f, 2.0f, 2.0f),
                 PartPose.ZERO);
 

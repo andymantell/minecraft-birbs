@@ -178,29 +178,29 @@ public class RobinModel extends AbstractBirdModel<RobinRenderState> {
                         .addBox(-1.0f, -1.0f, -1.0f, 2.0f, 2.0f, 2.0f),
                 PartPose.offset(0.0f, 1.0f, 1.0f));
 
-        // --- NECK_LOWER (child of chest) --- 2,2,1
+        // --- NECK_LOWER (child of chest) --- 2,1,1
         uv = layout.getOffset(BirdSkeleton.NECK_LOWER);
         PartDefinition neckLowerPart = chestPart.addOrReplaceChild("neck_lower",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-1.0f, -2.0f, -0.5f, 2.0f, 2.0f, 1.0f),
-                PartPose.offset(0.0f, -1.5f, -0.5f));
+                        .addBox(-1.0f, -1.0f, -0.5f, 2.0f, 1.0f, 1.0f),
+                PartPose.offset(0.0f, -1.0f, -0.5f));
 
-        // --- NECK_MID (child of neck_lower) --- 2,2,1
+        // --- NECK_MID (child of neck_lower) --- 2,1,1
         uv = layout.getOffset(BirdSkeleton.NECK_MID);
         PartDefinition neckMidPart = neckLowerPart.addOrReplaceChild("neck_mid",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-1.0f, -2.0f, -0.5f, 2.0f, 2.0f, 1.0f),
-                PartPose.offset(0.0f, -2.0f, 0.0f));
+                        .addBox(-1.0f, -1.0f, -0.5f, 2.0f, 1.0f, 1.0f),
+                PartPose.offset(0.0f, -1.0f, 0.0f));
 
-        // --- NECK_UPPER (child of neck_mid) --- 2,2,1
+        // --- NECK_UPPER (child of neck_mid) --- 2,1,1
         uv = layout.getOffset(BirdSkeleton.NECK_UPPER);
         PartDefinition neckUpperPart = neckMidPart.addOrReplaceChild("neck_upper",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-1.0f, -2.0f, -0.5f, 2.0f, 2.0f, 1.0f),
-                PartPose.offset(0.0f, -2.0f, 0.0f));
+                        .addBox(-1.0f, -1.0f, -0.5f, 2.0f, 1.0f, 1.0f),
+                PartPose.offset(0.0f, -1.0f, 0.0f));
 
         // --- HEAD (child of neck_upper) --- 4,4,4
         uv = layout.getOffset(BirdSkeleton.HEAD);
@@ -208,7 +208,7 @@ public class RobinModel extends AbstractBirdModel<RobinRenderState> {
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
                         .addBox(-2.0f, -4.0f, -2.0f, 4.0f, 4.0f, 4.0f),
-                PartPose.offset(0.0f, -2.0f, 0.0f));
+                PartPose.offset(0.0f, -1.0f, 0.0f));
 
         // --- UPPER_BEAK (child of head) --- 1,1,2
         uv = layout.getOffset(BirdSkeleton.UPPER_BEAK);
@@ -290,7 +290,7 @@ public class RobinModel extends AbstractBirdModel<RobinRenderState> {
         PartDefinition rUpperWingPart = shoulderPart.addOrReplaceChild("R_upper_wing",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.0f, -2.0f, 1.0f, 4.0f, 4.0f),
                 PartPose.offset(-1.0f, -1.0f, 0.0f));
 
@@ -299,7 +299,7 @@ public class RobinModel extends AbstractBirdModel<RobinRenderState> {
         rUpperWingPart.addOrReplaceChild("R_scapulars",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.5f, -1.0f, 1.0f, 3.0f, 3.0f),
                 PartPose.ZERO);
 
@@ -308,7 +308,7 @@ public class RobinModel extends AbstractBirdModel<RobinRenderState> {
         PartDefinition rForearmPart = rUpperWingPart.addOrReplaceChild("R_forearm",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.0f, -1.5f, 1.0f, 3.0f, 3.0f),
                 PartPose.offset(0.0f, 4.0f, 0.0f));
 
@@ -317,7 +317,7 @@ public class RobinModel extends AbstractBirdModel<RobinRenderState> {
         rForearmPart.addOrReplaceChild("R_secondaries",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.5f, -1.0f, 1.0f, 3.0f, 3.0f),
                 PartPose.ZERO);
 
@@ -326,7 +326,7 @@ public class RobinModel extends AbstractBirdModel<RobinRenderState> {
         PartDefinition rHandPart = rForearmPart.addOrReplaceChild("R_hand",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.0f, -1.0f, 1.0f, 3.0f, 2.0f),
                 PartPose.offset(0.0f, 3.0f, 0.0f));
 
@@ -335,7 +335,7 @@ public class RobinModel extends AbstractBirdModel<RobinRenderState> {
         rHandPart.addOrReplaceChild("R_primaries",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.5f, -0.5f, 1.0f, 3.0f, 2.0f),
                 PartPose.ZERO);
 

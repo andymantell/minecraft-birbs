@@ -100,9 +100,9 @@ public class TextureGenerator {
         dims.put(SHOULDER_MOUNT, new int[]{2, 2, 2});
         dims.put(TORSO,          new int[]{3, 3, 3});
         dims.put(HIP,            new int[]{2, 2, 2});
-        dims.put(NECK_LOWER,     new int[]{2, 2, 1});
-        dims.put(NECK_MID,       new int[]{2, 2, 1});
-        dims.put(NECK_UPPER,     new int[]{2, 2, 1});
+        dims.put(NECK_LOWER,     new int[]{2, 1, 1});
+        dims.put(NECK_MID,       new int[]{2, 1, 1});
+        dims.put(NECK_UPPER,     new int[]{2, 1, 1});
         dims.put(HEAD,           new int[]{4, 4, 4});
         dims.put(UPPER_BEAK,     new int[]{1, 1, 2});
         dims.put(LOWER_BEAK,     new int[]{1, 1, 2});
@@ -138,9 +138,9 @@ public class TextureGenerator {
         dims.put(SHOULDER_MOUNT, new int[]{3, 3, 3});
         dims.put(TORSO,          new int[]{4, 4, 4});
         dims.put(HIP,            new int[]{3, 3, 3});
-        dims.put(NECK_LOWER,     new int[]{3, 2, 2});
-        dims.put(NECK_MID,       new int[]{2, 2, 2});
-        dims.put(NECK_UPPER,     new int[]{2, 2, 2});
+        dims.put(NECK_LOWER,     new int[]{2, 2, 1});
+        dims.put(NECK_MID,       new int[]{2, 2, 1});
+        dims.put(NECK_UPPER,     new int[]{2, 2, 1});
         dims.put(HEAD,           new int[]{5, 5, 5});
         dims.put(UPPER_BEAK,     new int[]{1, 1, 1});
         dims.put(LOWER_BEAK,     new int[]{1, 1, 1});
@@ -175,9 +175,9 @@ public class TextureGenerator {
         dims.put(SHOULDER_MOUNT, new int[]{3, 3, 3});
         dims.put(TORSO,          new int[]{4, 4, 4});
         dims.put(HIP,            new int[]{3, 3, 3});
-        dims.put(NECK_LOWER,     new int[]{2, 2, 2});
-        dims.put(NECK_MID,       new int[]{2, 2, 2});
-        dims.put(NECK_UPPER,     new int[]{2, 2, 2});
+        dims.put(NECK_LOWER,     new int[]{2, 2, 1});
+        dims.put(NECK_MID,       new int[]{2, 2, 1});
+        dims.put(NECK_UPPER,     new int[]{2, 2, 1});
         dims.put(HEAD,           new int[]{3, 3, 3});
         dims.put(UPPER_BEAK,     new int[]{1, 1, 2});
         dims.put(LOWER_BEAK,     new int[]{1, 1, 2});
@@ -212,9 +212,9 @@ public class TextureGenerator {
         dims.put(SHOULDER_MOUNT, new int[]{3, 3, 3});
         dims.put(TORSO,          new int[]{5, 5, 5});
         dims.put(HIP,            new int[]{4, 4, 4});
-        dims.put(NECK_LOWER,     new int[]{3, 3, 2});
-        dims.put(NECK_MID,       new int[]{2, 3, 2});
-        dims.put(NECK_UPPER,     new int[]{2, 2, 2});
+        dims.put(NECK_LOWER,     new int[]{3, 2, 2});
+        dims.put(NECK_MID,       new int[]{3, 2, 2});
+        dims.put(NECK_UPPER,     new int[]{3, 2, 2});
         dims.put(HEAD,           new int[]{4, 4, 4});
         dims.put(UPPER_BEAK,     new int[]{3, 1, 3});
         dims.put(LOWER_BEAK,     new int[]{3, 1, 3});
@@ -559,6 +559,7 @@ public class TextureGenerator {
         addEyes(img, layout, dims, p.eye);
 
         g.dispose();
+        fillTransparentPixels(img);
         save(img, path);
         System.out.println("Generated: " + path);
     }
@@ -595,6 +596,7 @@ public class TextureGenerator {
         addEyes(img, layout, dims, p.eye);
 
         g.dispose();
+        fillTransparentPixels(img);
         save(img, path);
         System.out.println("Generated: " + path);
     }
@@ -648,6 +650,7 @@ public class TextureGenerator {
         addEyes(img, layout, dims, p.eye);
 
         g.dispose();
+        fillTransparentPixels(img);
         save(img, path);
         System.out.println("Generated: " + path);
     }
@@ -710,6 +713,7 @@ public class TextureGenerator {
         addEyes(img, layout, dims, p.eye);
 
         g.dispose();
+        fillTransparentPixels(img);
         save(img, path);
         System.out.println("Generated: " + path);
     }
@@ -742,6 +746,7 @@ public class TextureGenerator {
         addEyes(img, layout, dims, p.eye);
 
         g.dispose();
+        fillTransparentPixels(img);
         save(img, path);
         System.out.println("Generated: " + path);
     }
@@ -800,6 +805,7 @@ public class TextureGenerator {
         addEyes(img, layout, dims, p.eye);
 
         g.dispose();
+        fillTransparentPixels(img);
         save(img, path);
         System.out.println("Generated: " + path);
     }
@@ -836,6 +842,7 @@ public class TextureGenerator {
         addEyes(img, layout, dims, p.eye);
 
         g.dispose();
+        fillTransparentPixels(img);
         save(img, path);
         System.out.println("Generated: " + path);
     }
@@ -918,6 +925,7 @@ public class TextureGenerator {
         addEyes(img, layout, dims, p.eye);
 
         g.dispose();
+        fillTransparentPixels(img);
         save(img, path);
         System.out.println("Generated: " + path);
     }
@@ -969,6 +977,7 @@ public class TextureGenerator {
         addEyes(img, layout, dims, p.eye);
 
         g.dispose();
+        fillTransparentPixels(img);
         save(img, path);
         System.out.println("Generated: " + path);
     }
@@ -1000,6 +1009,7 @@ public class TextureGenerator {
         addEyes(img, layout, dims, p.eye);
 
         g.dispose();
+        fillTransparentPixels(img);
         save(img, path);
         System.out.println("Generated: " + path);
     }
@@ -1066,6 +1076,7 @@ public class TextureGenerator {
         }
 
         g.dispose();
+        fillTransparentPixels(img);
         save(img, path);
         System.out.println("Generated: " + path);
     }
@@ -1163,6 +1174,50 @@ public class TextureGenerator {
 
     static int clamp(int val) {
         return Math.max(0, Math.min(255, val));
+    }
+
+    /**
+     * Fill any remaining transparent pixels with the nearest opaque colour.
+     * This prevents invisible cuboid faces when UV regions map to unpainted areas.
+     * Uses a simple approach: find the most common body colour and fill all
+     * transparent pixels with it.
+     */
+    static void fillTransparentPixels(BufferedImage img) {
+        int imgW = img.getWidth();
+        int imgH = img.getHeight();
+        // First pass: find the most common opaque colour (the body base colour)
+        java.util.HashMap<Integer, Integer> colourCounts = new java.util.HashMap<>();
+        for (int y = 0; y < imgH; y++) {
+            for (int x = 0; x < imgW; x++) {
+                int argb = img.getRGB(x, y);
+                int alpha = (argb >> 24) & 0xFF;
+                if (alpha > 0) {
+                    int rgb = argb | 0xFF000000; // force full alpha for counting
+                    colourCounts.merge(rgb, 1, Integer::sum);
+                }
+            }
+        }
+
+        // Find the most common colour
+        int fallbackColour = 0xFF808080; // grey default
+        int maxCount = 0;
+        for (var entry : colourCounts.entrySet()) {
+            if (entry.getValue() > maxCount) {
+                maxCount = entry.getValue();
+                fallbackColour = entry.getKey();
+            }
+        }
+
+        // Second pass: fill transparent pixels
+        for (int y = 0; y < imgH; y++) {
+            for (int x = 0; x < imgW; x++) {
+                int argb = img.getRGB(x, y);
+                int alpha = (argb >> 24) & 0xFF;
+                if (alpha == 0) {
+                    img.setRGB(x, y, fallbackColour);
+                }
+            }
+        }
     }
 
     static void save(BufferedImage img, String path) throws Exception {

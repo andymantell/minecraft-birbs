@@ -147,9 +147,9 @@ public class MallardModel extends AbstractBirdModel<MallardRenderState> {
         dims.put(BirdSkeleton.HIP,            new int[]{3, 3, 3});
 
         // Thick neck
-        dims.put(BirdSkeleton.NECK_LOWER,     new int[]{3, 3, 2});
-        dims.put(BirdSkeleton.NECK_MID,       new int[]{3, 3, 2});
-        dims.put(BirdSkeleton.NECK_UPPER,     new int[]{3, 3, 2});
+        dims.put(BirdSkeleton.NECK_LOWER,     new int[]{3, 2, 2});
+        dims.put(BirdSkeleton.NECK_MID,       new int[]{3, 2, 2});
+        dims.put(BirdSkeleton.NECK_UPPER,     new int[]{3, 2, 2});
         // Rounded head with smooth dome
         dims.put(BirdSkeleton.HEAD,           new int[]{4, 4, 4});
         // Broad flat spatulate bill
@@ -231,29 +231,29 @@ public class MallardModel extends AbstractBirdModel<MallardRenderState> {
                         .addBox(-1.5f, -1.5f, -1.5f, 3.0f, 3.0f, 3.0f),
                 PartPose.offset(0.0f, 1.0f, 2.0f));
 
-        // --- NECK_LOWER (child of chest) --- 3,3,2 — thick duck neck
+        // --- NECK_LOWER (child of chest) --- 3,2,2 — thick duck neck
         uv = layout.getOffset(BirdSkeleton.NECK_LOWER);
         PartDefinition neckLowerPart = chestPart.addOrReplaceChild("neck_lower",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-1.5f, -3.0f, -1.0f, 3.0f, 3.0f, 2.0f),
+                        .addBox(-1.5f, -2.0f, -1.0f, 3.0f, 2.0f, 2.0f),
                 PartPose.offset(0.0f, -2.0f, -1.0f));
 
-        // --- NECK_MID (child of neck_lower) --- 3,3,2
+        // --- NECK_MID (child of neck_lower) --- 3,2,2
         uv = layout.getOffset(BirdSkeleton.NECK_MID);
         PartDefinition neckMidPart = neckLowerPart.addOrReplaceChild("neck_mid",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-1.5f, -3.0f, -1.0f, 3.0f, 3.0f, 2.0f),
-                PartPose.offset(0.0f, -3.0f, 0.0f));
+                        .addBox(-1.5f, -2.0f, -1.0f, 3.0f, 2.0f, 2.0f),
+                PartPose.offset(0.0f, -1.5f, 0.0f));
 
-        // --- NECK_UPPER (child of neck_mid) --- 3,3,2
+        // --- NECK_UPPER (child of neck_mid) --- 3,2,2
         uv = layout.getOffset(BirdSkeleton.NECK_UPPER);
         PartDefinition neckUpperPart = neckMidPart.addOrReplaceChild("neck_upper",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-1.5f, -3.0f, -1.0f, 3.0f, 3.0f, 2.0f),
-                PartPose.offset(0.0f, -3.0f, 0.0f));
+                        .addBox(-1.5f, -2.0f, -1.0f, 3.0f, 2.0f, 2.0f),
+                PartPose.offset(0.0f, -1.5f, 0.0f));
 
         // --- HEAD (child of neck_upper) --- 4,4,4 — rounded with smooth dome
         uv = layout.getOffset(BirdSkeleton.HEAD);
@@ -261,7 +261,7 @@ public class MallardModel extends AbstractBirdModel<MallardRenderState> {
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
                         .addBox(-2.0f, -4.0f, -2.0f, 4.0f, 4.0f, 4.0f),
-                PartPose.offset(0.0f, -3.0f, 0.0f));
+                PartPose.offset(0.0f, -1.5f, 0.0f));
 
         // --- UPPER_BEAK (child of head) --- 3,1,3 — broad flat spatulate bill
         uv = layout.getOffset(BirdSkeleton.UPPER_BEAK);
@@ -343,7 +343,7 @@ public class MallardModel extends AbstractBirdModel<MallardRenderState> {
         PartDefinition rUpperWingPart = shoulderPart.addOrReplaceChild("R_upper_wing",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.0f, -3.0f, 1.0f, 5.0f, 6.0f),
                 PartPose.offset(-1.5f, -1.5f, 0.0f));
 
@@ -352,7 +352,7 @@ public class MallardModel extends AbstractBirdModel<MallardRenderState> {
         rUpperWingPart.addOrReplaceChild("R_scapulars",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.5f, -1.5f, 1.0f, 4.0f, 4.0f),
                 PartPose.ZERO);
 
@@ -361,7 +361,7 @@ public class MallardModel extends AbstractBirdModel<MallardRenderState> {
         PartDefinition rForearmPart = rUpperWingPart.addOrReplaceChild("R_forearm",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.0f, -2.5f, 1.0f, 4.0f, 5.0f),
                 PartPose.offset(0.0f, 5.0f, 0.0f));
 
@@ -370,7 +370,7 @@ public class MallardModel extends AbstractBirdModel<MallardRenderState> {
         rForearmPart.addOrReplaceChild("R_secondaries",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.5f, -1.5f, 1.0f, 4.0f, 4.0f),
                 PartPose.ZERO);
 
@@ -379,7 +379,7 @@ public class MallardModel extends AbstractBirdModel<MallardRenderState> {
         PartDefinition rHandPart = rForearmPart.addOrReplaceChild("R_hand",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.0f, -1.5f, 1.0f, 4.0f, 3.0f),
                 PartPose.offset(0.0f, 4.0f, 0.0f));
 
@@ -388,7 +388,7 @@ public class MallardModel extends AbstractBirdModel<MallardRenderState> {
         rHandPart.addOrReplaceChild("R_primaries",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.5f, -0.5f, 1.0f, 4.0f, 2.0f),
                 PartPose.ZERO);
 

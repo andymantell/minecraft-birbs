@@ -149,9 +149,9 @@ public class PeregrineFalconModel extends AbstractBirdModel<PeregrineFalconRende
         dims.put(BirdSkeleton.HIP,            new int[]{3, 3, 3});
 
         // Short neck for a raptor
-        dims.put(BirdSkeleton.NECK_LOWER,     new int[]{2, 2, 2});
-        dims.put(BirdSkeleton.NECK_MID,       new int[]{2, 2, 2});
-        dims.put(BirdSkeleton.NECK_UPPER,     new int[]{2, 2, 2});
+        dims.put(BirdSkeleton.NECK_LOWER,     new int[]{2, 2, 1});
+        dims.put(BirdSkeleton.NECK_MID,       new int[]{2, 2, 1});
+        dims.put(BirdSkeleton.NECK_UPPER,     new int[]{2, 2, 1});
         // Relatively small head
         dims.put(BirdSkeleton.HEAD,           new int[]{3, 3, 3});
         // Hooked beak: short, powerful
@@ -233,29 +233,29 @@ public class PeregrineFalconModel extends AbstractBirdModel<PeregrineFalconRende
                         .addBox(-1.5f, -1.5f, -1.5f, 3.0f, 3.0f, 3.0f),
                 PartPose.offset(0.0f, 1.0f, 1.5f));
 
-        // --- NECK_LOWER (child of chest) --- 2,2,2
+        // --- NECK_LOWER (child of chest) --- 2,2,1
         uv = layout.getOffset(BirdSkeleton.NECK_LOWER);
         PartDefinition neckLowerPart = chestPart.addOrReplaceChild("neck_lower",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-1.0f, -2.0f, -1.0f, 2.0f, 2.0f, 2.0f),
+                        .addBox(-1.0f, -2.0f, -0.5f, 2.0f, 2.0f, 1.0f),
                 PartPose.offset(0.0f, -2.5f, -1.0f));
 
-        // --- NECK_MID (child of neck_lower) --- 2,2,2
+        // --- NECK_MID (child of neck_lower) --- 2,2,1
         uv = layout.getOffset(BirdSkeleton.NECK_MID);
         PartDefinition neckMidPart = neckLowerPart.addOrReplaceChild("neck_mid",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-1.0f, -2.0f, -1.0f, 2.0f, 2.0f, 2.0f),
-                PartPose.offset(0.0f, -2.0f, 0.0f));
+                        .addBox(-1.0f, -2.0f, -0.5f, 2.0f, 2.0f, 1.0f),
+                PartPose.offset(0.0f, -1.5f, 0.0f));
 
-        // --- NECK_UPPER (child of neck_mid) --- 2,2,2
+        // --- NECK_UPPER (child of neck_mid) --- 2,2,1
         uv = layout.getOffset(BirdSkeleton.NECK_UPPER);
         PartDefinition neckUpperPart = neckMidPart.addOrReplaceChild("neck_upper",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-1.0f, -2.0f, -1.0f, 2.0f, 2.0f, 2.0f),
-                PartPose.offset(0.0f, -2.0f, 0.0f));
+                        .addBox(-1.0f, -2.0f, -0.5f, 2.0f, 2.0f, 1.0f),
+                PartPose.offset(0.0f, -1.5f, 0.0f));
 
         // --- HEAD (child of neck_upper) --- 3,3,3 — relatively small
         uv = layout.getOffset(BirdSkeleton.HEAD);
@@ -263,7 +263,7 @@ public class PeregrineFalconModel extends AbstractBirdModel<PeregrineFalconRende
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
                         .addBox(-1.5f, -3.0f, -1.5f, 3.0f, 3.0f, 3.0f),
-                PartPose.offset(0.0f, -2.0f, 0.0f));
+                PartPose.offset(0.0f, -1.5f, 0.0f));
 
         // --- UPPER_BEAK (child of head) --- 1,1,2 — hooked raptor beak
         uv = layout.getOffset(BirdSkeleton.UPPER_BEAK);
@@ -300,7 +300,7 @@ public class PeregrineFalconModel extends AbstractBirdModel<PeregrineFalconRende
         headPart.addOrReplaceChild("right_malar",
                 CubeListBuilder.create()
                         .texOffs(0, 205)
-                        .mirror()
+
                         .addBox(-2.0f, -2.5f, -1.5f, 1.0f, 2.0f, 2.0f),
                 PartPose.ZERO);
 
@@ -361,7 +361,7 @@ public class PeregrineFalconModel extends AbstractBirdModel<PeregrineFalconRende
         PartDefinition rUpperWingPart = shoulderPart.addOrReplaceChild("R_upper_wing",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.0f, -2.5f, 1.0f, 5.0f, 5.0f),
                 PartPose.offset(-1.5f, -1.5f, 0.0f));
 
@@ -370,7 +370,7 @@ public class PeregrineFalconModel extends AbstractBirdModel<PeregrineFalconRende
         rUpperWingPart.addOrReplaceChild("R_scapulars",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.5f, -1.0f, 1.0f, 4.0f, 3.0f),
                 PartPose.ZERO);
 
@@ -379,7 +379,7 @@ public class PeregrineFalconModel extends AbstractBirdModel<PeregrineFalconRende
         PartDefinition rForearmPart = rUpperWingPart.addOrReplaceChild("R_forearm",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.0f, -2.0f, 1.0f, 4.0f, 4.0f),
                 PartPose.offset(0.0f, 5.0f, 0.0f));
 
@@ -388,7 +388,7 @@ public class PeregrineFalconModel extends AbstractBirdModel<PeregrineFalconRende
         rForearmPart.addOrReplaceChild("R_secondaries",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.5f, -1.0f, 1.0f, 4.0f, 3.0f),
                 PartPose.ZERO);
 
@@ -397,7 +397,7 @@ public class PeregrineFalconModel extends AbstractBirdModel<PeregrineFalconRende
         PartDefinition rHandPart = rForearmPart.addOrReplaceChild("R_hand",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.0f, -1.5f, 1.0f, 5.0f, 3.0f),
                 PartPose.offset(0.0f, 4.0f, 0.0f));
 
@@ -406,7 +406,7 @@ public class PeregrineFalconModel extends AbstractBirdModel<PeregrineFalconRende
         rHandPart.addOrReplaceChild("R_primaries",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .mirror()
+
                         .addBox(-1.0f, 0.5f, -0.5f, 1.0f, 5.0f, 2.0f),
                 PartPose.ZERO);
 
