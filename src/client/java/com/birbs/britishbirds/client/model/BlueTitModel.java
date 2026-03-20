@@ -1,219 +1,622 @@
 package com.birbs.britishbirds.client.model;
 
+import com.birbs.britishbirds.client.animation.BirdSkeleton;
+import com.birbs.britishbirds.client.animation.SkeletonModelMapper;
+import com.birbs.britishbirds.client.animation.pose.BaseBirdPoses;
+import com.birbs.britishbirds.client.animation.pose.CyclicAnimation;
+import com.birbs.britishbirds.client.animation.pose.PasserinePoses;
+import com.birbs.britishbirds.client.animation.pose.PoseData;
+import com.birbs.britishbirds.client.animation.pose.PoseResolver;
+import com.birbs.britishbirds.client.animation.procedural.Breathing;
+import com.birbs.britishbirds.client.animation.procedural.HeadTracking;
+import com.birbs.britishbirds.client.animation.procedural.LandingImpact;
+import com.birbs.britishbirds.client.animation.procedural.MovementDrag;
+import com.birbs.britishbirds.client.animation.procedural.StartleResponse;
+import com.birbs.britishbirds.client.animation.procedural.WeightShift;
 import com.birbs.britishbirds.client.renderer.BlueTitRenderState;
-import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.*;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 /**
- * Blue Tit model: small, round, compact — almost spherical when fluffed.
- * Proportionally very large head for body size ("big-headed").
- * Very small short fine conical bill. Short legs for clinging.
- * 64x64 texture. Higher fidelity with more cuboids.
+ * Blue Tit model rebuilt on the skeletal animation system.
+ * Uses the universal 32-joint bird skeleton with spring-driven animation,
+ * pose blending, and procedural behaviours.
+ *
+ * <p>Blue Tit is smaller than Robin with a proportionally very large head.
+ * Decorative parts: leftCheek, rightCheek, crown (all children of head).
+ * 512x512 texture. ModelPart hierarchy mirrors the BirdSkeleton joint tree.
  */
-public class BlueTitModel extends EntityModel<BlueTitRenderState> {
-    private final ModelPart body;
-    private final ModelPart belly;
+public class BlueTitModel extends AbstractBirdModel<BlueTitRenderState> {
+
+    // =========================================================================
+    // Hanging pose — body inverted for upside-down clinging
+    // =========================================================================
+
+    /** Upside-down hanging pose for acrobatic clinging (blue tit's signature behaviour). */
+    public static final PoseData HANGING = PoseData.builder("hanging")
+            .joint(BirdSkeleton.CHEST,       (float) Math.PI, 0f, 0f)  // body inverted
+            .joint(BirdSkeleton.NECK_LOWER,  0.2f,  0f, 0f)
+            .joint(BirdSkeleton.NECK_MID,    0.1f,  0f, 0f)
+            .joint(BirdSkeleton.NECK_UPPER,  0.1f,  0f, 0f)
+            .joint(BirdSkeleton.HEAD,       -(float) Math.PI + 0.1f, 0f, 0f) // head un-inverted to look forward
+            .joint(BirdSkeleton.L_UPPER_WING, 0f, 0f, -0.2f) // wings slightly spread for balance
+            .joint(BirdSkeleton.L_FOREARM,    0f, 0f, -1.5f)
+            .joint(BirdSkeleton.L_HAND,       0f, 0f,  1.3f)
+            .joint(BirdSkeleton.TAIL_BASE,   (float) Math.PI + 0.15f, 0f, 0f) // tail hangs
+            .joint(BirdSkeleton.TAIL_FAN,    0.1f, 0f, 0f)
+            .joint(BirdSkeleton.L_THIGH,     (float) Math.PI, 0f, 0f) // legs reach up to grip
+            .joint(BirdSkeleton.L_SHIN,      -0.3f, 0f, 0f)
+            .joint(BirdSkeleton.L_TARSUS,     0.2f, 0f, 0f)
+            .mirror()
+            .build();
+
+    // All 32 skeleton-driven parts
+    private final ModelPart chest;
+    private final ModelPart shoulderMount;
+    private final ModelPart torso;
+    private final ModelPart hip;
+    private final ModelPart neckLower;
+    private final ModelPart neckMid;
+    private final ModelPart neckUpper;
     private final ModelPart head;
-    private final ModelPart leftWing;
-    private final ModelPart rightWing;
-    private final ModelPart leftWingTip;
-    private final ModelPart rightWingTip;
-    private final ModelPart tail;
-    private final ModelPart leftLeg;
-    private final ModelPart rightLeg;
+    private final ModelPart upperBeak;
+    private final ModelPart lowerBeak;
+    private final ModelPart lUpperWing;
+    private final ModelPart lScapulars;
+    private final ModelPart lForearm;
+    private final ModelPart lSecondaries;
+    private final ModelPart lHand;
+    private final ModelPart lPrimaries;
+    private final ModelPart rUpperWing;
+    private final ModelPart rScapulars;
+    private final ModelPart rForearm;
+    private final ModelPart rSecondaries;
+    private final ModelPart rHand;
+    private final ModelPart rPrimaries;
+    private final ModelPart tailBase;
+    private final ModelPart tailFan;
+    private final ModelPart lThigh;
+    private final ModelPart lShin;
+    private final ModelPart lTarsus;
+    private final ModelPart lFoot;
+    private final ModelPart rThigh;
+    private final ModelPart rShin;
+    private final ModelPart rTarsus;
+    private final ModelPart rFoot;
+
+    // Decorative (not skeleton-driven)
+    private final ModelPart crown;
+    private final ModelPart leftCheek;
+    private final ModelPart rightCheek;
 
     public BlueTitModel(ModelPart root) {
         super(root);
-        this.body = root.getChild("body");
-        this.belly = root.getChild("belly");
-        this.head = root.getChild("head");
-        this.leftWing = root.getChild("left_wing");
-        this.rightWing = root.getChild("right_wing");
-        this.leftWingTip = this.leftWing.getChild("left_wing_tip");
-        this.rightWingTip = this.rightWing.getChild("right_wing_tip");
-        this.tail = root.getChild("tail");
-        this.leftLeg = root.getChild("left_leg");
-        this.rightLeg = root.getChild("right_leg");
+
+        // Navigate the ModelPart hierarchy to store references
+        this.chest = root.getChild("chest");
+
+        // Spine chain off chest
+        this.shoulderMount = this.chest.getChild("shoulder_mount");
+        this.torso = this.chest.getChild("torso");
+        this.hip = this.chest.getChild("hip");
+
+        // Neck chain off chest
+        this.neckLower = this.chest.getChild("neck_lower");
+        this.neckMid = this.neckLower.getChild("neck_mid");
+        this.neckUpper = this.neckMid.getChild("neck_upper");
+        this.head = this.neckUpper.getChild("head");
+        this.upperBeak = this.head.getChild("upper_beak");
+        this.lowerBeak = this.head.getChild("lower_beak");
+
+        // Left wing chain off shoulder_mount
+        this.lUpperWing = this.shoulderMount.getChild("L_upper_wing");
+        this.lScapulars = this.lUpperWing.getChild("L_scapulars");
+        this.lForearm = this.lUpperWing.getChild("L_forearm");
+        this.lSecondaries = this.lForearm.getChild("L_secondaries");
+        this.lHand = this.lForearm.getChild("L_hand");
+        this.lPrimaries = this.lHand.getChild("L_primaries");
+
+        // Right wing chain off shoulder_mount
+        this.rUpperWing = this.shoulderMount.getChild("R_upper_wing");
+        this.rScapulars = this.rUpperWing.getChild("R_scapulars");
+        this.rForearm = this.rUpperWing.getChild("R_forearm");
+        this.rSecondaries = this.rForearm.getChild("R_secondaries");
+        this.rHand = this.rForearm.getChild("R_hand");
+        this.rPrimaries = this.rHand.getChild("R_primaries");
+
+        // Tail chain off chest
+        this.tailBase = this.chest.getChild("tail_base");
+        this.tailFan = this.tailBase.getChild("tail_fan");
+
+        // Left leg chain off hip
+        this.lThigh = this.hip.getChild("L_thigh");
+        this.lShin = this.lThigh.getChild("L_shin");
+        this.lTarsus = this.lShin.getChild("L_tarsus");
+        this.lFoot = this.lTarsus.getChild("L_foot");
+
+        // Right leg chain off hip
+        this.rThigh = this.hip.getChild("R_thigh");
+        this.rShin = this.rThigh.getChild("R_shin");
+        this.rTarsus = this.rShin.getChild("R_tarsus");
+        this.rFoot = this.rTarsus.getChild("R_foot");
+
+        // Decorative parts
+        this.crown = this.head.getChild("crown");
+        this.leftCheek = this.head.getChild("left_cheek");
+        this.rightCheek = this.head.getChild("right_cheek");
+
+        // LAST: initialise skeleton binding
+        initSkeleton(root);
+    }
+
+    // =========================================================================
+    // Static mesh definition
+    // =========================================================================
+
+    /**
+     * Returns cuboid dimensions for a blue tit — smaller than Robin,
+     * with a proportionally very large head.
+     */
+    public static Map<String, int[]> getBlueTitDimensions() {
+        Map<String, int[]> dims = new LinkedHashMap<>();
+
+        // Blue tit is tiny — smaller body cuboids than Robin
+        dims.put(BirdSkeleton.CHEST,          new int[]{3, 3, 3});    // compact round body
+        dims.put(BirdSkeleton.SHOULDER_MOUNT, new int[]{2, 2, 2});
+        dims.put(BirdSkeleton.TORSO,          new int[]{2, 2, 2});    // smaller torso
+        dims.put(BirdSkeleton.HIP,            new int[]{2, 2, 2});
+        dims.put(BirdSkeleton.NECK_LOWER,     new int[]{2, 1, 1});    // shorter neck
+        dims.put(BirdSkeleton.NECK_MID,       new int[]{2, 1, 1});
+        dims.put(BirdSkeleton.NECK_UPPER,     new int[]{2, 1, 1});
+        dims.put(BirdSkeleton.HEAD,           new int[]{4, 4, 4});    // very large head for body
+        dims.put(BirdSkeleton.UPPER_BEAK,     new int[]{1, 1, 1});    // tiny fine beak
+        dims.put(BirdSkeleton.LOWER_BEAK,     new int[]{1, 1, 1});
+
+        dims.put(BirdSkeleton.L_UPPER_WING,   new int[]{1, 3, 3});   // smaller wings
+        dims.put(BirdSkeleton.L_SCAPULARS,    new int[]{1, 2, 2});
+        dims.put(BirdSkeleton.L_FOREARM,      new int[]{1, 3, 2});
+        dims.put(BirdSkeleton.L_SECONDARIES,  new int[]{1, 2, 2});
+        dims.put(BirdSkeleton.L_HAND,         new int[]{1, 2, 2});
+        dims.put(BirdSkeleton.L_PRIMARIES,    new int[]{1, 2, 2});
+
+        dims.put(BirdSkeleton.R_UPPER_WING,   new int[]{1, 3, 3});
+        dims.put(BirdSkeleton.R_SCAPULARS,    new int[]{1, 2, 2});
+        dims.put(BirdSkeleton.R_FOREARM,      new int[]{1, 3, 2});
+        dims.put(BirdSkeleton.R_SECONDARIES,  new int[]{1, 2, 2});
+        dims.put(BirdSkeleton.R_HAND,         new int[]{1, 2, 2});
+        dims.put(BirdSkeleton.R_PRIMARIES,    new int[]{1, 2, 2});
+
+        dims.put(BirdSkeleton.TAIL_BASE,      new int[]{2, 1, 2});
+        dims.put(BirdSkeleton.TAIL_FAN,       new int[]{2, 1, 2});    // shorter tail than Robin
+
+        dims.put(BirdSkeleton.L_THIGH,        new int[]{1, 1, 1});    // short legs
+        dims.put(BirdSkeleton.L_SHIN,         new int[]{1, 2, 1});
+        dims.put(BirdSkeleton.L_TARSUS,       new int[]{1, 1, 1});
+        dims.put(BirdSkeleton.L_FOOT,         new int[]{1, 1, 1});    // tiny gripping feet
+
+        dims.put(BirdSkeleton.R_THIGH,        new int[]{1, 1, 1});
+        dims.put(BirdSkeleton.R_SHIN,         new int[]{1, 2, 1});
+        dims.put(BirdSkeleton.R_TARSUS,       new int[]{1, 1, 1});
+        dims.put(BirdSkeleton.R_FOOT,         new int[]{1, 1, 1});
+
+        return dims;
     }
 
     public static LayerDefinition createBodyLayer() {
         MeshDefinition meshDefinition = new MeshDefinition();
         PartDefinition partDefinition = meshDefinition.getRoot();
 
-        // Body: small compact sphere 4x4x4 — nearly spherical
-        partDefinition.addOrReplaceChild("body",
+        // Compute UV offsets from the blue tit dimensions
+        BirdUVLayout layout = BirdUVLayout.computeLayout(getBlueTitDimensions());
+
+        // --- CHEST (root) --- 3,3,3 — compact, nearly spherical
+        int[] uv = layout.getOffset(BirdSkeleton.CHEST);
+        PartDefinition chestPart = partDefinition.addOrReplaceChild("chest",
                 CubeListBuilder.create()
-                        .texOffs(0, 0)
-                        .addBox(-2.0f, -2.0f, -2.0f, 4.0f, 4.0f, 4.0f),
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-1.5f, -1.5f, -1.5f, 3.0f, 3.0f, 3.0f),
                 PartPose.offset(0.0f, 20.0f, 0.0f));
 
-        // Belly: rounded underbelly bulge 3x2x3 for spherical look
-        partDefinition.addOrReplaceChild("belly",
+        // --- SHOULDER_MOUNT (child of chest) --- 2,2,2
+        uv = layout.getOffset(BirdSkeleton.SHOULDER_MOUNT);
+        PartDefinition shoulderPart = chestPart.addOrReplaceChild("shoulder_mount",
                 CubeListBuilder.create()
-                        .texOffs(0, 8)
-                        .addBox(-1.5f, 0.5f, -1.5f, 3.0f, 2.0f, 3.0f),
-                PartPose.offset(0.0f, 20.0f, 0.0f));
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-1.0f, -1.0f, -1.0f, 2.0f, 2.0f, 2.0f),
+                PartPose.offset(0.0f, -1.0f, 0.0f));
 
-        // Head: proportionally VERY large — 4x4x4 (same size as body!)
-        // This is the defining "big-headed" look of the blue tit
-        PartDefinition headPart = partDefinition.addOrReplaceChild("head",
+        // --- TORSO (child of chest) --- 2,2,2 (smaller than Robin)
+        uv = layout.getOffset(BirdSkeleton.TORSO);
+        chestPart.addOrReplaceChild("torso",
                 CubeListBuilder.create()
-                        .texOffs(0, 13)
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-1.0f, -1.0f, -1.0f, 2.0f, 2.0f, 2.0f),
+                PartPose.offset(0.0f, 0.0f, 1.0f));
+
+        // --- HIP (child of chest) --- 2,2,2
+        uv = layout.getOffset(BirdSkeleton.HIP);
+        PartDefinition hipPart = chestPart.addOrReplaceChild("hip",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-1.0f, -1.0f, -1.0f, 2.0f, 2.0f, 2.0f),
+                PartPose.offset(0.0f, 1.0f, 0.5f));
+
+        // --- NECK_LOWER (child of chest) --- 2,1,1 (short neck)
+        uv = layout.getOffset(BirdSkeleton.NECK_LOWER);
+        PartDefinition neckLowerPart = chestPart.addOrReplaceChild("neck_lower",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-1.0f, -1.0f, -0.5f, 2.0f, 1.0f, 1.0f),
+                PartPose.offset(0.0f, -1.5f, -0.5f));
+
+        // --- NECK_MID (child of neck_lower) --- 2,1,1
+        uv = layout.getOffset(BirdSkeleton.NECK_MID);
+        PartDefinition neckMidPart = neckLowerPart.addOrReplaceChild("neck_mid",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-1.0f, -1.0f, -0.5f, 2.0f, 1.0f, 1.0f),
+                PartPose.offset(0.0f, -1.0f, 0.0f));
+
+        // --- NECK_UPPER (child of neck_mid) --- 2,1,1
+        uv = layout.getOffset(BirdSkeleton.NECK_UPPER);
+        PartDefinition neckUpperPart = neckMidPart.addOrReplaceChild("neck_upper",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-1.0f, -1.0f, -0.5f, 2.0f, 1.0f, 1.0f),
+                PartPose.offset(0.0f, -1.0f, 0.0f));
+
+        // --- HEAD (child of neck_upper) --- 4,4,4 (very large — "big-headed")
+        uv = layout.getOffset(BirdSkeleton.HEAD);
+        PartDefinition headPart = neckUpperPart.addOrReplaceChild("head",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
                         .addBox(-2.0f, -4.0f, -2.0f, 4.0f, 4.0f, 4.0f),
-                PartPose.offset(0.0f, 18.0f, -0.5f));
+                PartPose.offset(0.0f, -1.0f, 0.0f));
 
-        // Crown: raised cap area 3x1x3 for the blue cap
-        headPart.addOrReplaceChild("crown",
+        // --- UPPER_BEAK (child of head) --- 1,1,1 (tiny fine conical bill)
+        uv = layout.getOffset(BirdSkeleton.UPPER_BEAK);
+        headPart.addOrReplaceChild("upper_beak",
                 CubeListBuilder.create()
-                        .texOffs(16, 13)
-                        .addBox(-1.5f, -4.5f, -1.5f, 3.0f, 1.0f, 3.0f),
-                PartPose.ZERO);
-
-        // Beak: very small, short, fine conical bill 1x1x1
-        headPart.addOrReplaceChild("beak",
-                CubeListBuilder.create()
-                        .texOffs(16, 17)
+                        .texOffs(uv[0], uv[1])
                         .addBox(-0.5f, -2.0f, -3.0f, 1.0f, 1.0f, 1.0f),
                 PartPose.ZERO);
 
-        // Cheek patches: slight bulge on sides of head for the white cheeks 1x2x2
+        // --- LOWER_BEAK (child of head) --- 1,1,1
+        uv = layout.getOffset(BirdSkeleton.LOWER_BEAK);
+        headPart.addOrReplaceChild("lower_beak",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-0.5f, -1.0f, -3.0f, 1.0f, 1.0f, 1.0f),
+                PartPose.ZERO);
+
+        // --- Decorative: crown (child of head) --- 3,1,3 (blue cap)
+        headPart.addOrReplaceChild("crown",
+                CubeListBuilder.create()
+                        .texOffs(0, 200)
+                        .addBox(-1.5f, -4.5f, -1.5f, 3.0f, 1.0f, 3.0f),
+                PartPose.ZERO);
+
+        // --- Decorative: left cheek (child of head) --- 1,2,2 (white cheek patch)
         headPart.addOrReplaceChild("left_cheek",
                 CubeListBuilder.create()
-                        .texOffs(20, 17)
+                        .texOffs(0, 210)
                         .addBox(1.5f, -3.0f, -1.5f, 1.0f, 2.0f, 2.0f),
                 PartPose.ZERO);
 
+        // --- Decorative: right cheek (child of head) --- 1,2,2 (mirrored)
         headPart.addOrReplaceChild("right_cheek",
                 CubeListBuilder.create()
-                        .texOffs(20, 17)
+                        .texOffs(0, 210)
                         .mirror()
                         .addBox(-2.5f, -3.0f, -1.5f, 1.0f, 2.0f, 2.0f),
                 PartPose.ZERO);
 
-        // Left wing: 1x4x4 — pivots from shoulder (y=0 = top)
-        PartDefinition leftWingPart = partDefinition.addOrReplaceChild("left_wing",
-                CubeListBuilder.create()
-                        .texOffs(16, 0)
-                        .addBox(0.0f, 0.0f, -2.0f, 1.0f, 4.0f, 4.0f),
-                PartPose.offset(2.0f, 18.0f, 0.0f));
+        // --- LEFT WING CHAIN ---
 
-        // Left wing tip 1x3x2
-        leftWingPart.addOrReplaceChild("left_wing_tip",
+        // L_UPPER_WING (child of shoulder_mount) --- 1,3,3
+        uv = layout.getOffset(BirdSkeleton.L_UPPER_WING);
+        PartDefinition lUpperWingPart = shoulderPart.addOrReplaceChild("L_upper_wing",
                 CubeListBuilder.create()
-                        .texOffs(26, 0)
-                        .addBox(0.5f, 0.5f, 0.5f, 1.0f, 3.0f, 2.0f),
+                        .texOffs(uv[0], uv[1])
+                        .addBox(0.0f, 0.0f, -1.5f, 1.0f, 3.0f, 3.0f),
+                PartPose.offset(1.0f, -1.0f, 0.0f));
+
+        // L_SCAPULARS (child of L_upper_wing) --- 1,2,2
+        uv = layout.getOffset(BirdSkeleton.L_SCAPULARS);
+        lUpperWingPart.addOrReplaceChild("L_scapulars",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(0.0f, 0.5f, -0.5f, 1.0f, 2.0f, 2.0f),
                 PartPose.ZERO);
 
-        // Right wing: 1x4x4 (mirrored) — pivots from shoulder
-        PartDefinition rightWingPart = partDefinition.addOrReplaceChild("right_wing",
+        // L_FOREARM (child of L_upper_wing) --- 1,3,2
+        uv = layout.getOffset(BirdSkeleton.L_FOREARM);
+        PartDefinition lForearmPart = lUpperWingPart.addOrReplaceChild("L_forearm",
                 CubeListBuilder.create()
-                        .texOffs(16, 0)
+                        .texOffs(uv[0], uv[1])
+                        .addBox(0.0f, 0.0f, -1.0f, 1.0f, 3.0f, 2.0f),
+                PartPose.offset(0.0f, 3.0f, 0.0f));
+
+        // L_SECONDARIES (child of L_forearm) --- 1,2,2
+        uv = layout.getOffset(BirdSkeleton.L_SECONDARIES);
+        lForearmPart.addOrReplaceChild("L_secondaries",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(0.0f, 0.5f, -0.5f, 1.0f, 2.0f, 2.0f),
+                PartPose.ZERO);
+
+        // L_HAND (child of L_forearm) --- 1,2,2
+        uv = layout.getOffset(BirdSkeleton.L_HAND);
+        PartDefinition lHandPart = lForearmPart.addOrReplaceChild("L_hand",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(0.0f, 0.0f, -1.0f, 1.0f, 2.0f, 2.0f),
+                PartPose.offset(0.0f, 3.0f, 0.0f));
+
+        // L_PRIMARIES (child of L_hand) --- 1,2,2
+        uv = layout.getOffset(BirdSkeleton.L_PRIMARIES);
+        lHandPart.addOrReplaceChild("L_primaries",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(0.0f, 0.5f, -0.5f, 1.0f, 2.0f, 2.0f),
+                PartPose.ZERO);
+
+        // --- RIGHT WING CHAIN (mirrored) ---
+
+        // R_UPPER_WING (child of shoulder_mount) --- 1,3,3
+        uv = layout.getOffset(BirdSkeleton.R_UPPER_WING);
+        PartDefinition rUpperWingPart = shoulderPart.addOrReplaceChild("R_upper_wing",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
                         .mirror()
-                        .addBox(-1.0f, 0.0f, -2.0f, 1.0f, 4.0f, 4.0f),
-                PartPose.offset(-2.0f, 18.0f, 0.0f));
+                        .addBox(-1.0f, 0.0f, -1.5f, 1.0f, 3.0f, 3.0f),
+                PartPose.offset(-1.0f, -1.0f, 0.0f));
 
-        // Right wing tip
-        rightWingPart.addOrReplaceChild("right_wing_tip",
+        // R_SCAPULARS (child of R_upper_wing) --- 1,2,2
+        uv = layout.getOffset(BirdSkeleton.R_SCAPULARS);
+        rUpperWingPart.addOrReplaceChild("R_scapulars",
                 CubeListBuilder.create()
-                        .texOffs(26, 0)
+                        .texOffs(uv[0], uv[1])
                         .mirror()
-                        .addBox(-1.5f, 0.5f, 0.5f, 1.0f, 3.0f, 2.0f),
+                        .addBox(-1.0f, 0.5f, -0.5f, 1.0f, 2.0f, 2.0f),
                 PartPose.ZERO);
 
-        // Tail: moderately short, slightly notched 3x1x3
-        partDefinition.addOrReplaceChild("tail",
+        // R_FOREARM (child of R_upper_wing) --- 1,3,2
+        uv = layout.getOffset(BirdSkeleton.R_FOREARM);
+        PartDefinition rForearmPart = rUpperWingPart.addOrReplaceChild("R_forearm",
                 CubeListBuilder.create()
-                        .texOffs(0, 21)
-                        .addBox(-1.5f, -0.5f, 0.0f, 3.0f, 1.0f, 3.0f),
-                PartPose.offsetAndRotation(0.0f, 20.0f, 2.0f,
-                        (float) Math.toRadians(-15.0), 0.0f, 0.0f));
+                        .texOffs(uv[0], uv[1])
+                        .mirror()
+                        .addBox(-1.0f, 0.0f, -1.0f, 1.0f, 3.0f, 2.0f),
+                PartPose.offset(0.0f, 3.0f, 0.0f));
 
-        // Left leg: short 1x2x1
-        PartDefinition leftLegPart = partDefinition.addOrReplaceChild("left_leg",
+        // R_SECONDARIES (child of R_forearm) --- 1,2,2
+        uv = layout.getOffset(BirdSkeleton.R_SECONDARIES);
+        rForearmPart.addOrReplaceChild("R_secondaries",
                 CubeListBuilder.create()
-                        .texOffs(0, 25)
+                        .texOffs(uv[0], uv[1])
+                        .mirror()
+                        .addBox(-1.0f, 0.5f, -0.5f, 1.0f, 2.0f, 2.0f),
+                PartPose.ZERO);
+
+        // R_HAND (child of R_forearm) --- 1,2,2
+        uv = layout.getOffset(BirdSkeleton.R_HAND);
+        PartDefinition rHandPart = rForearmPart.addOrReplaceChild("R_hand",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .mirror()
+                        .addBox(-1.0f, 0.0f, -1.0f, 1.0f, 2.0f, 2.0f),
+                PartPose.offset(0.0f, 3.0f, 0.0f));
+
+        // R_PRIMARIES (child of R_hand) --- 1,2,2
+        uv = layout.getOffset(BirdSkeleton.R_PRIMARIES);
+        rHandPart.addOrReplaceChild("R_primaries",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .mirror()
+                        .addBox(-1.0f, 0.5f, -0.5f, 1.0f, 2.0f, 2.0f),
+                PartPose.ZERO);
+
+        // --- TAIL CHAIN ---
+
+        // TAIL_BASE (child of chest) --- 2,1,2
+        uv = layout.getOffset(BirdSkeleton.TAIL_BASE);
+        PartDefinition tailBasePart = chestPart.addOrReplaceChild("tail_base",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-1.0f, -0.5f, 0.0f, 2.0f, 1.0f, 2.0f),
+                PartPose.offset(0.0f, 0.0f, 1.5f));
+
+        // TAIL_FAN (child of tail_base) --- 2,1,2 (shorter tail)
+        uv = layout.getOffset(BirdSkeleton.TAIL_FAN);
+        tailBasePart.addOrReplaceChild("tail_fan",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-1.0f, -0.5f, 0.0f, 2.0f, 1.0f, 2.0f),
+                PartPose.offset(0.0f, 0.0f, 2.0f));
+
+        // --- LEFT LEG CHAIN ---
+
+        // L_THIGH (child of hip) --- 1,1,1 (short legs)
+        uv = layout.getOffset(BirdSkeleton.L_THIGH);
+        PartDefinition lThighPart = hipPart.addOrReplaceChild("L_thigh",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 1.0f, 1.0f),
+                PartPose.offset(0.75f, 1.0f, 0.0f));
+
+        // L_SHIN (child of L_thigh) --- 1,2,1
+        uv = layout.getOffset(BirdSkeleton.L_SHIN);
+        PartDefinition lShinPart = lThighPart.addOrReplaceChild("L_shin",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
                         .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 2.0f, 1.0f),
-                PartPose.offset(0.75f, 22.0f, 0.0f));
+                PartPose.offset(0.0f, 1.0f, 0.0f));
 
-        // Left foot: gripping toes 2x0.5x1
-        leftLegPart.addOrReplaceChild("left_foot",
+        // L_TARSUS (child of L_shin) --- 1,1,1
+        uv = layout.getOffset(BirdSkeleton.L_TARSUS);
+        PartDefinition lTarsusPart = lShinPart.addOrReplaceChild("L_tarsus",
                 CubeListBuilder.create()
-                        .texOffs(4, 25)
-                        .addBox(-0.5f, 1.5f, -1.0f, 1.0f, 1.0f, 1.0f),
-                PartPose.ZERO);
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 1.0f, 1.0f),
+                PartPose.offset(0.0f, 2.0f, 0.0f));
 
-        // Right leg: short 1x2x1
-        PartDefinition rightLegPart = partDefinition.addOrReplaceChild("right_leg",
+        // L_FOOT (child of L_tarsus) --- 1,1,1 (tiny gripping feet)
+        uv = layout.getOffset(BirdSkeleton.L_FOOT);
+        lTarsusPart.addOrReplaceChild("L_foot",
                 CubeListBuilder.create()
-                        .texOffs(0, 25)
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 1.0f, 1.0f),
+                PartPose.offset(0.0f, 1.0f, 0.0f));
+
+        // --- RIGHT LEG CHAIN ---
+
+        // R_THIGH (child of hip) --- 1,1,1
+        uv = layout.getOffset(BirdSkeleton.R_THIGH);
+        PartDefinition rThighPart = hipPart.addOrReplaceChild("R_thigh",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 1.0f, 1.0f),
+                PartPose.offset(-0.75f, 1.0f, 0.0f));
+
+        // R_SHIN (child of R_thigh) --- 1,2,1
+        uv = layout.getOffset(BirdSkeleton.R_SHIN);
+        PartDefinition rShinPart = rThighPart.addOrReplaceChild("R_shin",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
                         .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 2.0f, 1.0f),
-                PartPose.offset(-0.75f, 22.0f, 0.0f));
+                PartPose.offset(0.0f, 1.0f, 0.0f));
 
-        // Right foot
-        rightLegPart.addOrReplaceChild("right_foot",
+        // R_TARSUS (child of R_shin) --- 1,1,1
+        uv = layout.getOffset(BirdSkeleton.R_TARSUS);
+        PartDefinition rTarsusPart = rShinPart.addOrReplaceChild("R_tarsus",
                 CubeListBuilder.create()
-                        .texOffs(4, 25)
-                        .addBox(-0.5f, 1.5f, -1.0f, 1.0f, 1.0f, 1.0f),
-                PartPose.ZERO);
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 1.0f, 1.0f),
+                PartPose.offset(0.0f, 2.0f, 0.0f));
 
-        return LayerDefinition.create(meshDefinition, 64, 64);
+        // R_FOOT (child of R_tarsus) --- 1,1,1
+        uv = layout.getOffset(BirdSkeleton.R_FOOT);
+        rTarsusPart.addOrReplaceChild("R_foot",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 1.0f, 1.0f),
+                PartPose.offset(0.0f, 1.0f, 0.0f));
+
+        return LayerDefinition.create(meshDefinition, 512, 512);
     }
 
+    // =========================================================================
+    // Skeleton binding
+    // =========================================================================
+
     @Override
-    public void setupAnim(BlueTitRenderState renderState) {
-        super.setupAnim(renderState);
+    protected void buildMapper(ModelPart root) {
+        this.mapper = SkeletonModelMapper.builder()
+                .bind(BirdSkeleton.CHEST,          chest)
+                .bind(BirdSkeleton.SHOULDER_MOUNT, shoulderMount)
+                .bind(BirdSkeleton.TORSO,          torso)
+                .bind(BirdSkeleton.HIP,            hip)
+                .bind(BirdSkeleton.NECK_LOWER,     neckLower)
+                .bind(BirdSkeleton.NECK_MID,       neckMid)
+                .bind(BirdSkeleton.NECK_UPPER,     neckUpper)
+                .bind(BirdSkeleton.HEAD,           head)
+                .bind(BirdSkeleton.UPPER_BEAK,     upperBeak)
+                .bind(BirdSkeleton.LOWER_BEAK,     lowerBeak)
+                .bind(BirdSkeleton.L_UPPER_WING,   lUpperWing)
+                .bind(BirdSkeleton.L_SCAPULARS,    lScapulars)
+                .bind(BirdSkeleton.L_FOREARM,      lForearm)
+                .bind(BirdSkeleton.L_SECONDARIES,  lSecondaries)
+                .bind(BirdSkeleton.L_HAND,         lHand)
+                .bind(BirdSkeleton.L_PRIMARIES,    lPrimaries)
+                .bind(BirdSkeleton.R_UPPER_WING,   rUpperWing)
+                .bind(BirdSkeleton.R_SCAPULARS,    rScapulars)
+                .bind(BirdSkeleton.R_FOREARM,      rForearm)
+                .bind(BirdSkeleton.R_SECONDARIES,  rSecondaries)
+                .bind(BirdSkeleton.R_HAND,         rHand)
+                .bind(BirdSkeleton.R_PRIMARIES,    rPrimaries)
+                .bind(BirdSkeleton.TAIL_BASE,      tailBase)
+                .bind(BirdSkeleton.TAIL_FAN,       tailFan)
+                .bind(BirdSkeleton.L_THIGH,        lThigh)
+                .bind(BirdSkeleton.L_SHIN,         lShin)
+                .bind(BirdSkeleton.L_TARSUS,       lTarsus)
+                .bind(BirdSkeleton.L_FOOT,         lFoot)
+                .bind(BirdSkeleton.R_THIGH,        rThigh)
+                .bind(BirdSkeleton.R_SHIN,         rShin)
+                .bind(BirdSkeleton.R_TARSUS,       rTarsus)
+                .bind(BirdSkeleton.R_FOOT,         rFoot)
+                .build();
+    }
 
-        if (renderState.isHangingUpsideDown) {
-            // Upside-down clinging pose
-            this.body.xRot = (float) Math.PI; // 180 degrees
-            this.belly.xRot = (float) Math.PI;
-            this.head.xRot = (float) Math.PI; // head upside-down too
-            // Legs reach up to grip
-            this.leftLeg.xRot = (float) Math.PI;
-            this.rightLeg.xRot = (float) Math.PI;
-            // Wings slightly spread for balance
-            this.leftWing.zRot = -0.2f;
-            this.rightWing.zRot = 0.2f;
-            // Tail hangs down
-            this.tail.xRot = (float) Math.PI + (float) Math.toRadians(15.0);
-        } else if (renderState.isFlying) {
-            // Flying: body well forward, rapid whirring wingbeats
-            this.body.xRot = -0.6f;
-            this.belly.xRot = -0.6f;
-            this.head.xRot = 0.35f;
-            this.head.zRot = 0.0f;
+    // =========================================================================
+    // Procedural behaviours
+    // =========================================================================
 
-            BirdAnimations.animateWingFlap(this.leftWing, this.rightWing, renderState.flapAngle);
+    @Override
+    protected void configureBehaviours() {
+        behaviours.add(new Breathing(0.18f));        // tiny bird, faster breathing
+        behaviours.add(new HeadTracking(1.5f, 0.8f)); // very twitchy head
+        behaviours.add(new WeightShift(0.002f));
+        behaviours.add(new LandingImpact());
+        behaviours.add(new MovementDrag());
+        behaviours.add(new StartleResponse());
+    }
 
-            BirdAnimations.tuckLegs(this.leftLeg, this.rightLeg, 0.5f);
+    // =========================================================================
+    // Animation
+    // =========================================================================
 
-            // Tail extends back
-            this.tail.xRot = -0.4f;
+    @Override
+    public void setupAnim(BlueTitRenderState state) {
+        selectPoses(state);
+        super.setupAnim(state); // runs full skeleton pipeline
+    }
+
+    private void selectPoses(BlueTitRenderState state) {
+        PoseResolver resolver = getResolver(state);
+
+        if (state.isHangingUpsideDown) {
+            // Acrobatic clinging — body inverted, legs gripping above
+            resolver.setBasePose(HANGING, 4.0f);
+            resolver.clearCyclic();
+            resolver.removeOverlay("legs_tucked");
+            resolver.removeOverlay("head_tilt");
+        } else if (state.isFlying) {
+            resolver.setBasePose(BaseBirdPoses.FLYING_CRUISE, 3.0f);
+            // Convert flapAngle to 0..1 phase
+            float flapPhase = state.flapAngle * 0.5f + 0.5f;
+            resolver.setActiveCyclic(BaseBirdPoses.WINGBEAT, flapPhase);
+            resolver.addOverlay(BaseBirdPoses.LEGS_TUCKED, 1.0f);
+            resolver.removeOverlay("head_tilt");
+        } else if (state.isPecking) {
+            resolver.setBasePose(PasserinePoses.FORAGE, 4.0f);
+            // Peck phase: oscillate with ageInTicks
+            float peckPhase = (float) (Math.sin(state.ageInTicks * 0.3f) * 0.5f + 0.5f);
+            resolver.setActiveCyclic(PasserinePoses.PECK, peckPhase);
+            resolver.removeOverlay("legs_tucked");
+            resolver.removeOverlay("head_tilt");
         } else {
-            // Ground animations
-            BirdAnimations.foldWings(this.leftWing, this.rightWing);
-            this.body.xRot = 0.0f;
-            this.belly.xRot = 0.0f;
+            resolver.setBasePose(BaseBirdPoses.PERCHED, 2.0f);
+            resolver.removeOverlay("legs_tucked");
 
-            BirdAnimations.animateTailBob(this.tail, (float) Math.toRadians(-15.0),
-                    renderState.ageInTicks, 0.15f, 0.05f);
-
-            // Pecking animation
-            if (renderState.isPecking) {
-                this.head.xRot = 0.8f;
-                this.head.zRot = 0.0f;
-            } else if (((int) renderState.ageInTicks % 60) < 15) {
-                this.head.xRot = 0.0f;
-                this.head.zRot = 0.15f;
+            if (state.walkAnimationSpeed > 0.01f) {
+                float walkPhase = (float) (Math.sin(state.walkAnimationPos * 0.6662f) * 0.5f + 0.5f);
+                resolver.setActiveCyclic(BaseBirdPoses.WALK_CYCLE, walkPhase);
+                resolver.removeOverlay("head_tilt");
             } else {
-                this.head.xRot = 0.0f;
-                this.head.zRot = 0.0f;
-            }
+                resolver.clearCyclic();
 
-            BirdAnimations.animateWalkingLegs(this.leftLeg, this.rightLeg,
-                    renderState.walkAnimationSpeed, renderState.walkAnimationPos);
+                // Frequent head-tilt when idle (blue tits are very active/curious)
+                if (((int) state.ageInTicks % 40) < 15) {
+                    resolver.addOverlay(PasserinePoses.HEAD_TILT, 1.0f);
+                } else {
+                    resolver.removeOverlay("head_tilt");
+                }
+            }
         }
     }
 }
