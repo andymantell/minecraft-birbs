@@ -3006,8 +3006,12 @@ public class PoseEditor extends JFrame {
         JPanel exportButtons = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JButton exportBtn = new JButton("Export Java Code");
         JButton exportAllBtn = new JButton("Export All Presets");
+        JButton saveJsonBtn = new JButton("Save to JSON");
+        JButton loadJsonBtn = new JButton("Load from JSON");
         exportButtons.add(exportBtn);
         exportButtons.add(exportAllBtn);
+        exportButtons.add(saveJsonBtn);
+        exportButtons.add(loadJsonBtn);
         bottomPanel.add(exportButtons, BorderLayout.NORTH);
 
         exportTextArea = new JTextArea(6, 60);
@@ -3074,6 +3078,11 @@ public class PoseEditor extends JFrame {
             }
             buildPoseButtons();
             initGeometrySliders();
+            // Try to auto-load from JSON if available for the new archetype
+            tryAutoLoadJson();
+            if (editedPoses.isEmpty()) {
+                loadSelectedPreset();
+            }
             previewPanel.repaint();
             updateExportText();
         });
@@ -3137,9 +3146,17 @@ public class PoseEditor extends JFrame {
 
         exportAllBtn.addActionListener(e -> exportAllPresets());
 
+        saveJsonBtn.addActionListener(e -> saveToJson());
+        loadJsonBtn.addActionListener(e -> loadFromJson());
+
         // Build pose buttons and load default preset
         buildPoseButtons();
-        loadSelectedPreset();
+        // Try to auto-load from JSON if available
+        tryAutoLoadJson();
+        if (editedPoses.isEmpty()) {
+            // No JSON loaded, use hardcoded presets
+            loadSelectedPreset();
+        }
     }
 
     /** Rebuild the pose button panel for the current archetype. */
@@ -3737,6 +3754,347 @@ public class PoseEditor extends JFrame {
             JOptionPane.showMessageDialog(this,
                     "Error writing: " + ex.getMessage(),
                     "Export Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // =========================================================================
+    // JSON Save / Load
+    // =========================================================================
+
+    /**
+     * Resolves the path to the JSON pose file for the given archetype.
+     * Searches for the project's src/main/resources directory.
+     */
+    File resolveJsonFile(String archetype) {
+        String archetypeLower = archetype.toLowerCase();
+        // Try to find the project root by looking for src/main/resources
+        File dir = new File("src/main/resources/assets/britishbirds/poses");
+        if (!dir.exists()) {
+            // Maybe we're in the tools/ directory
+            dir = new File("../src/main/resources/assets/britishbirds/poses");
+        }
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        return new File(dir, archetypeLower + "_poses.json");
+    }
+
+    /**
+     * Saves all poses for the current archetype to a JSON file.
+     * Collects preset defaults + any user edits from editedPoses.
+     */
+    void saveToJson() {
+        // Save current slider state first
+        if (currentPoseName != null && !currentPoseName.equals("custom")) {
+            editedPoses.put(currentPoseName, getCurrentPose());
+        }
+
+        String archetype = currentArchetype;
+        List<Preset> presets = allPresets.get(archetype);
+        if (presets == null) return;
+
+        // Separate into static, cyclic, overlay categories
+        List<Preset> staticPresets = new ArrayList<>();
+        Map<String, List<Preset>> cyclicGroups = new LinkedHashMap<>();
+        for (Preset p : presets) {
+            if (p.isCyclic()) {
+                cyclicGroups.computeIfAbsent(p.cyclicName, k -> new ArrayList<>()).add(p);
+            } else {
+                staticPresets.add(p);
+            }
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\n");
+        sb.append("  \"archetype\": \"").append(archetype.toLowerCase()).append("\",\n");
+
+        // --- Static poses ---
+        sb.append("  \"static_poses\": {\n");
+        for (int i = 0; i < staticPresets.size(); i++) {
+            Preset p = staticPresets.get(i);
+            Map<String, float[]> joints = editedPoses.containsKey(p.name) ? editedPoses.get(p.name) : p.joints;
+            sb.append("    \"").append(p.name).append("\": {\n");
+            sb.append("      \"joints\": {\n");
+            writeJointsJson(sb, joints, "        ");
+            sb.append("      },\n");
+            sb.append("      \"spring_overrides\": {}\n");
+            sb.append("    }");
+            if (i < staticPresets.size() - 1) sb.append(",");
+            sb.append("\n");
+        }
+        sb.append("  },\n");
+
+        // --- Cyclic animations ---
+        sb.append("  \"cyclic_animations\": {\n");
+        int cyclicIdx = 0;
+        int cyclicCount = cyclicGroups.size();
+        for (var entry : cyclicGroups.entrySet()) {
+            String cyclicName = entry.getKey();
+            List<Preset> endpoints = entry.getValue();
+            // Find A and B endpoints
+            Map<String, float[]> offsetA = null;
+            Map<String, float[]> offsetB = null;
+            for (Preset ep : endpoints) {
+                if (isEndpointA(ep)) {
+                    offsetA = ep.offsetA;
+                } else {
+                    offsetB = ep.offsetB;
+                }
+            }
+            // Fallback: use first pair's stored offsets
+            if (offsetA == null && !endpoints.isEmpty()) offsetA = endpoints.get(0).offsetA;
+            if (offsetB == null && !endpoints.isEmpty()) offsetB = endpoints.get(0).offsetB;
+
+            sb.append("    \"").append(cyclicName).append("\": {\n");
+
+            sb.append("      \"offset_a\": {\n");
+            sb.append("        \"joints\": {\n");
+            if (offsetA != null) writeJointsJson(sb, filterLeftOnly(offsetA), "          ");
+            sb.append("        }\n");
+            sb.append("      },\n");
+
+            sb.append("      \"offset_b\": {\n");
+            sb.append("        \"joints\": {\n");
+            if (offsetB != null) writeJointsJson(sb, filterLeftOnly(offsetB), "          ");
+            sb.append("        }\n");
+            sb.append("      }\n");
+
+            sb.append("    }");
+            cyclicIdx++;
+            if (cyclicIdx < cyclicCount) sb.append(",");
+            sb.append("\n");
+        }
+        sb.append("  },\n");
+
+        // --- Overlay poses (empty section — overlays are defined in the Java classes) ---
+        sb.append("  \"overlay_poses\": {}\n");
+
+        sb.append("}\n");
+
+        File outFile = resolveJsonFile(archetype);
+        try (FileWriter fw = new FileWriter(outFile)) {
+            fw.write(sb.toString());
+            JOptionPane.showMessageDialog(this,
+                    "Saved JSON to: " + outFile.getAbsolutePath(),
+                    "Save Complete", JOptionPane.INFORMATION_MESSAGE);
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Error writing JSON: " + ex.getMessage(),
+                    "Save Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Filter a pose map to only include left-side (L_) and non-sided joints.
+     * This avoids writing both L_ and R_ entries (mirroring is done on load).
+     */
+    Map<String, float[]> filterLeftOnly(Map<String, float[]> joints) {
+        Map<String, float[]> filtered = new LinkedHashMap<>();
+        for (var entry : joints.entrySet()) {
+            String name = entry.getKey();
+            if (!name.startsWith("R_")) {
+                filtered.put(name, entry.getValue());
+            }
+        }
+        return filtered;
+    }
+
+    /** Write joint entries as JSON. Only writes left-side + non-sided joints (R_ entries skipped). */
+    void writeJointsJson(StringBuilder sb, Map<String, float[]> joints, String indent) {
+        // Filter out R_ joints (they're auto-mirrored from L_ on load)
+        List<Map.Entry<String, float[]>> entries = new ArrayList<>();
+        for (var entry : joints.entrySet()) {
+            if (!entry.getKey().startsWith("R_")) {
+                entries.add(entry);
+            }
+        }
+        for (int i = 0; i < entries.size(); i++) {
+            var entry = entries.get(i);
+            float[] v = entry.getValue();
+            sb.append(indent).append("\"").append(entry.getKey()).append("\": [")
+                    .append(formatJsonFloat(v[0])).append(", ")
+                    .append(formatJsonFloat(v[1])).append(", ")
+                    .append(formatJsonFloat(v[2])).append("]");
+            if (i < entries.size() - 1) sb.append(",");
+            sb.append("\n");
+        }
+    }
+
+    String formatJsonFloat(float v) {
+        if (v == 0f) return "0.0";
+        // Format to reasonable precision, trimming unnecessary trailing zeros
+        String s = String.format("%.4f", v);
+        // Remove trailing zeros after decimal point, but keep at least one
+        s = s.replaceAll("0+$", "");
+        if (s.endsWith(".")) s += "0";
+        return s;
+    }
+
+    /**
+     * Loads poses from a JSON file for the current archetype, overriding presets.
+     */
+    void loadFromJson() {
+        File jsonFile = resolveJsonFile(currentArchetype);
+        if (!jsonFile.exists()) {
+            JOptionPane.showMessageDialog(this,
+                    "No JSON file found at: " + jsonFile.getAbsolutePath(),
+                    "Load Error", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        loadFromJsonFile(jsonFile);
+    }
+
+    /**
+     * Attempts to load poses from the JSON file for the current archetype.
+     * If successful, updates the preset list with the loaded values.
+     */
+    void loadFromJsonFile(File jsonFile) {
+        if (!jsonFile.exists()) return;
+
+        try {
+            String content = new String(java.nio.file.Files.readAllBytes(jsonFile.toPath()),
+                    java.nio.charset.StandardCharsets.UTF_8);
+
+            // Simple JSON parsing without external dependencies
+            // Parse static_poses section
+            Map<String, Map<String, float[]>> loadedStatic = new LinkedHashMap<>();
+            parseJsonStaticPoses(content, loadedStatic);
+
+            // Apply loaded values to existing presets
+            List<Preset> presets = allPresets.get(currentArchetype);
+            if (presets != null) {
+                for (Preset p : presets) {
+                    if (!p.isCyclic() && loadedStatic.containsKey(p.name)) {
+                        Map<String, float[]> loadedJoints = loadedStatic.get(p.name);
+                        mirror(loadedJoints);
+                        p.joints.clear();
+                        p.joints.putAll(loadedJoints);
+                    }
+                }
+            }
+
+            // Clear edited poses and reload
+            editedPoses.clear();
+            buildPoseButtons();
+            loadSelectedPreset();
+
+            JOptionPane.showMessageDialog(this,
+                    "Loaded poses from: " + jsonFile.getAbsolutePath(),
+                    "Load Complete", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Error reading JSON: " + ex.getMessage(),
+                    "Load Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Minimal JSON parser for the static_poses section.
+     * Parses the "static_poses" object from the JSON string.
+     */
+    void parseJsonStaticPoses(String json, Map<String, Map<String, float[]>> result) {
+        // Find static_poses section
+        int idx = json.indexOf("\"static_poses\"");
+        if (idx < 0) return;
+
+        // Find the opening brace of the static_poses object
+        idx = json.indexOf('{', idx + 14);
+        if (idx < 0) return;
+
+        int braceDepth = 1;
+        int pos = idx + 1;
+
+        while (pos < json.length() && braceDepth > 0) {
+            // Find next pose name (at depth 1)
+            if (braceDepth == 1) {
+                int nameStart = json.indexOf('"', pos);
+                if (nameStart < 0 || nameStart >= json.length()) break;
+                int nameEnd = json.indexOf('"', nameStart + 1);
+                if (nameEnd < 0) break;
+                String poseName = json.substring(nameStart + 1, nameEnd);
+
+                // Find the joints object
+                int jointsIdx = json.indexOf("\"joints\"", nameEnd);
+                if (jointsIdx < 0) break;
+                int jointsStart = json.indexOf('{', jointsIdx + 8);
+                if (jointsStart < 0) break;
+
+                // Parse joint entries
+                int jointsEnd = findMatchingBrace(json, jointsStart);
+                if (jointsEnd < 0) break;
+                String jointsStr = json.substring(jointsStart + 1, jointsEnd);
+                Map<String, float[]> joints = parseJointEntries(jointsStr);
+                result.put(poseName, joints);
+
+                // Skip past this pose's closing brace (the one after spring_overrides)
+                // Find the closing brace at depth 2 (the pose object)
+                int poseObjStart = json.indexOf('{', nameEnd);
+                if (poseObjStart < 0) break;
+                int poseObjEnd = findMatchingBrace(json, poseObjStart);
+                if (poseObjEnd < 0) break;
+                pos = poseObjEnd + 1;
+            } else {
+                pos++;
+            }
+
+            // Track brace depth for the outer static_poses object
+            // Actually we're handling pose-by-pose, just check if we hit the closing brace
+            // Skip whitespace and commas
+            while (pos < json.length() && (json.charAt(pos) == ' ' || json.charAt(pos) == '\n' ||
+                    json.charAt(pos) == '\r' || json.charAt(pos) == '\t' || json.charAt(pos) == ',')) {
+                pos++;
+            }
+            if (pos < json.length() && json.charAt(pos) == '}') {
+                break; // End of static_poses
+            }
+        }
+    }
+
+    int findMatchingBrace(String s, int openPos) {
+        int depth = 1;
+        for (int i = openPos + 1; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '{' || c == '[') depth++;
+            else if (c == '}' || c == ']') depth--;
+            if (depth == 0) return i;
+        }
+        return -1;
+    }
+
+    Map<String, float[]> parseJointEntries(String jointsStr) {
+        Map<String, float[]> result = new LinkedHashMap<>();
+        int pos = 0;
+        while (pos < jointsStr.length()) {
+            int nameStart = jointsStr.indexOf('"', pos);
+            if (nameStart < 0) break;
+            int nameEnd = jointsStr.indexOf('"', nameStart + 1);
+            if (nameEnd < 0) break;
+            String name = jointsStr.substring(nameStart + 1, nameEnd);
+
+            int arrStart = jointsStr.indexOf('[', nameEnd);
+            if (arrStart < 0) break;
+            int arrEnd = jointsStr.indexOf(']', arrStart);
+            if (arrEnd < 0) break;
+            String arrStr = jointsStr.substring(arrStart + 1, arrEnd);
+            String[] parts = arrStr.split(",");
+            if (parts.length >= 3) {
+                float x = Float.parseFloat(parts[0].trim());
+                float y = Float.parseFloat(parts[1].trim());
+                float z = Float.parseFloat(parts[2].trim());
+                result.put(name, new float[]{x, y, z});
+            }
+            pos = arrEnd + 1;
+        }
+        return result;
+    }
+
+    /**
+     * Try to auto-load JSON on startup for the current archetype.
+     */
+    void tryAutoLoadJson() {
+        File jsonFile = resolveJsonFile(currentArchetype);
+        if (jsonFile.exists()) {
+            loadFromJsonFile(jsonFile);
         }
     }
 

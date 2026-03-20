@@ -36,6 +36,14 @@ public final class PoseData {
         return jointAngles.containsKey(jointName);
     }
 
+    public Map<String, Vector3f> getJointAngles() {
+        return jointAngles;
+    }
+
+    public Map<String, SpringOverride> getSpringOverrides() {
+        return springOverrides;
+    }
+
     public static Builder builder(String name) {
         return new Builder(name);
     }
