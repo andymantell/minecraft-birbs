@@ -529,10 +529,37 @@ public class PoseEditor extends JFrame {
     static class Preset {
         final String name;
         final Map<String, float[]> joints;
+        // If non-null, this is a cyclic preset: basePose + offsetA (phase=0) or offsetB (phase=1)
+        final Map<String, float[]> basePose;    // base pose values (e.g. flying_cruise + legs_tucked)
+        final Map<String, float[]> offsetA;     // cyclic offset A (phase = 0)
+        final Map<String, float[]> offsetB;     // cyclic offset B (phase = 1)
+        final String cyclicName;                // e.g. "wingbeat"
+        final String endpointName;              // e.g. "wings_up"
+
         Preset(String name, Map<String, float[]> joints) {
             this.name = name;
             this.joints = joints;
+            this.basePose = null;
+            this.offsetA = null;
+            this.offsetB = null;
+            this.cyclicName = null;
+            this.endpointName = null;
         }
+
+        /** Constructor for cyclic presets. joints = combined (base + this endpoint's offset). */
+        Preset(String name, Map<String, float[]> joints,
+               Map<String, float[]> basePose, Map<String, float[]> offsetA,
+               Map<String, float[]> offsetB, String cyclicName, String endpointName) {
+            this.name = name;
+            this.joints = joints;
+            this.basePose = basePose;
+            this.offsetA = offsetA;
+            this.offsetB = offsetB;
+            this.cyclicName = cyclicName;
+            this.endpointName = endpointName;
+        }
+
+        boolean isCyclic() { return cyclicName != null; }
     }
 
     static Map<String, List<Preset>> buildPresets() {
@@ -615,6 +642,151 @@ public class PoseEditor extends JFrame {
                 "L_hand", 0f, -1.8f, 0f,
                 "tail_base", 0.1f, 0f, 0f));
 
+        // --- Shared cyclic base poses ---
+        // flying_cruise + legs_tucked (used as base for wingbeat cyclics)
+        Map<String, float[]> flightBase = new LinkedHashMap<>();
+        flightBase.put("chest",        new float[]{1.0f, 0f, 0f});
+        flightBase.put("torso",        new float[]{0.15f, 0f, 0f});
+        flightBase.put("hip",          new float[]{0.1f, 0f, 0f});
+        flightBase.put("neck_lower",   new float[]{0.05f, 0f, -0.05f});
+        flightBase.put("neck_mid",     new float[]{0.0f, 0f, 0f});
+        flightBase.put("neck_upper",   new float[]{0.0f, 0f, 0f});
+        flightBase.put("head",         new float[]{-0.5f, 0f, 0f});
+        flightBase.put("L_upper_wing", new float[]{0f, 0f, -0.1f});
+        flightBase.put("L_forearm",    new float[]{0f, 0f, 0f});
+        flightBase.put("L_hand",       new float[]{0f, 0f, 0f});
+        flightBase.put("tail_base",    new float[]{-0.65f, 0f, 0f});
+        flightBase.put("tail_fan",     new float[]{-0.15f, 0f, 0f});
+        flightBase.put("L_thigh",      new float[]{-1.5f, 0f, 0f});
+        flightBase.put("L_shin",       new float[]{-2.5f, 0f, 0f});
+        flightBase.put("L_tarsus",     new float[]{2.0f, 0f, 0f});
+        flightBase.put("L_foot",       new float[]{-0.8f, 0f, 0f});
+        mirror(flightBase);
+
+        // WINGBEAT offsets (from BaseBirdPoses.WINGBEAT)
+        Map<String, float[]> wingbeatOffA = offsetPose(
+            "L_upper_wing",  0f, 0f, -0.4f,
+            "L_forearm",     0f, 0f, -0.15f,
+            "L_hand",        0f, 0f, -0.1f,
+            "L_scapulars",   0f, 0f, -0.1f,
+            "L_secondaries", 0f, 0f, -0.08f,
+            "L_primaries",   0f, 0f, -0.06f);
+        Map<String, float[]> wingbeatOffB = offsetPose(
+            "L_upper_wing",  0f, 0f, 0.4f,
+            "L_forearm",     0f, 0f, 0.1f,
+            "L_hand",        0f, 0f, 0.08f,
+            "L_scapulars",   0f, 0f, 0.08f,
+            "L_secondaries", 0f, 0f, 0.06f,
+            "L_primaries",   0f, 0f, 0.05f);
+
+        // WALK_CYCLE offsets (from BaseBirdPoses.WALK_CYCLE)
+        Map<String, float[]> walkOffA = pose(
+            "L_thigh",  -0.3f, 0f, 0f,
+            "L_shin",    0.4f, 0f, 0f,
+            "L_tarsus", -0.2f, 0f, 0f,
+            "R_thigh",   0.3f, 0f, 0f,
+            "R_shin",   -0.1f, 0f, 0f,
+            "R_tarsus",  0.1f, 0f, 0f);
+        Map<String, float[]> walkOffB = pose(
+            "L_thigh",   0.3f, 0f, 0f,
+            "L_shin",   -0.1f, 0f, 0f,
+            "L_tarsus",  0.1f, 0f, 0f,
+            "R_thigh",  -0.3f, 0f, 0f,
+            "R_shin",    0.4f, 0f, 0f,
+            "R_tarsus", -0.2f, 0f, 0f);
+        Map<String, float[]> walkBase = new LinkedHashMap<>();  // neutral stand
+
+        // HOP offsets (from PasserinePoses.HOP)
+        Map<String, float[]> hopOffA = pose(
+            "chest",    0.15f, 0f, 0f,
+            "L_thigh",  0.3f,  0f, 0f,
+            "L_shin",   0.5f,  0f, 0f,
+            "L_tarsus", -0.4f, 0f, 0f,
+            "R_thigh",  0.3f,  0f, 0f,
+            "R_shin",   0.5f,  0f, 0f,
+            "R_tarsus", -0.4f, 0f, 0f);
+        Map<String, float[]> hopOffB = pose(
+            "chest",    -0.1f,  0f, 0f,
+            "L_thigh",  -0.15f, 0f, 0f,
+            "L_shin",   -0.1f,  0f, 0f,
+            "L_tarsus",  0.1f,  0f, 0f,
+            "R_thigh",  -0.15f, 0f, 0f,
+            "R_shin",   -0.1f,  0f, 0f,
+            "R_tarsus",  0.1f,  0f, 0f);
+        Map<String, float[]> hopBase = new LinkedHashMap<>();  // neutral stand
+
+        // RAPTOR_WINGBEAT offsets (from RaptorPoses.RAPTOR_WINGBEAT)
+        Map<String, float[]> raptorWingOffA = offsetPose(
+            "L_upper_wing",  0f, 0f, -0.5f,
+            "L_forearm",     0f, 0f, -0.2f,
+            "L_hand",        0f, 0f, -0.15f,
+            "L_scapulars",   0f, 0f, -0.12f,
+            "L_secondaries", 0f, 0f, -0.1f,
+            "L_primaries",   0f, 0f, -0.08f);
+        Map<String, float[]> raptorWingOffB = offsetPose(
+            "L_upper_wing",  0f, 0f, 0.5f,
+            "L_forearm",     0f, 0f, 0.15f,
+            "L_hand",        0f, 0f, 0.1f,
+            "L_scapulars",   0f, 0f, 0.1f,
+            "L_secondaries", 0f, 0f, 0.08f,
+            "L_primaries",   0f, 0f, 0.06f);
+
+        // Raptor flight base (soar pose)
+        Map<String, float[]> raptorFlightBase = new LinkedHashMap<>();
+        raptorFlightBase.put("chest",        new float[]{1.1f, 0f, 0f});
+        raptorFlightBase.put("torso",        new float[]{0.15f, 0f, 0f});
+        raptorFlightBase.put("hip",          new float[]{0.1f, 0f, 0f});
+        raptorFlightBase.put("neck_lower",   new float[]{0.05f, 0f, -0.05f});
+        raptorFlightBase.put("neck_mid",     new float[]{0.0f, 0f, 0f});
+        raptorFlightBase.put("neck_upper",   new float[]{0.0f, 0f, 0f});
+        raptorFlightBase.put("head",         new float[]{-0.5f, 0f, 0f});
+        raptorFlightBase.put("L_upper_wing", new float[]{0f, 0f, -0.4f});
+        raptorFlightBase.put("L_forearm",    new float[]{0f, 0f, -0.05f});
+        raptorFlightBase.put("L_hand",       new float[]{0f, 0f, -0.03f});
+        raptorFlightBase.put("tail_base",    new float[]{-0.7f, 0f, 0f});
+        raptorFlightBase.put("tail_fan",     new float[]{-0.15f, 0f, 0f});
+        raptorFlightBase.put("L_thigh",      new float[]{-1.5f, 0f, 0f});
+        raptorFlightBase.put("L_shin",       new float[]{-2.5f, 0f, 0f});
+        raptorFlightBase.put("L_tarsus",     new float[]{2.0f, 0f, 0f});
+        raptorFlightBase.put("L_foot",       new float[]{-0.8f, 0f, 0f});
+        mirror(raptorFlightBase);
+
+        // WATERFOWL_WINGBEAT offsets (from WaterfowlPoses.WATERFOWL_WINGBEAT)
+        Map<String, float[]> waterfowlWingOffA = offsetPose(
+            "L_upper_wing",  0f, 0f, -0.5f,
+            "L_forearm",     0f, 0f, -0.18f,
+            "L_hand",        0f, 0f, -0.12f,
+            "L_scapulars",   0f, 0f, -0.1f,
+            "L_secondaries", 0f, 0f, -0.08f,
+            "L_primaries",   0f, 0f, -0.06f);
+        Map<String, float[]> waterfowlWingOffB = offsetPose(
+            "L_upper_wing",  0f, 0f, 0.5f,
+            "L_forearm",     0f, 0f, 0.12f,
+            "L_hand",        0f, 0f, 0.1f,
+            "L_scapulars",   0f, 0f, 0.08f,
+            "L_secondaries", 0f, 0f, 0.06f,
+            "L_primaries",   0f, 0f, 0.05f);
+
+        // Waterfowl flight base (flying_cruise)
+        Map<String, float[]> waterfowlFlightBase = new LinkedHashMap<>();
+        waterfowlFlightBase.put("chest",        new float[]{1.0f, 0f, 0f});
+        waterfowlFlightBase.put("torso",        new float[]{0.15f, 0f, 0f});
+        waterfowlFlightBase.put("hip",          new float[]{0.1f, 0f, 0f});
+        waterfowlFlightBase.put("neck_lower",   new float[]{0.05f, 0f, -0.05f});
+        waterfowlFlightBase.put("neck_mid",     new float[]{0.0f, 0f, 0f});
+        waterfowlFlightBase.put("neck_upper",   new float[]{0.0f, 0f, 0f});
+        waterfowlFlightBase.put("head",         new float[]{-0.5f, 0f, 0f});
+        waterfowlFlightBase.put("L_upper_wing", new float[]{0f, 0f, -0.1f});
+        waterfowlFlightBase.put("L_forearm",    new float[]{0f, 0f, 0f});
+        waterfowlFlightBase.put("L_hand",       new float[]{0f, 0f, 0f});
+        waterfowlFlightBase.put("tail_base",    new float[]{-0.65f, 0f, 0f});
+        waterfowlFlightBase.put("tail_fan",     new float[]{-0.15f, 0f, 0f});
+        waterfowlFlightBase.put("L_thigh",      new float[]{-1.5f, 0f, 0f});
+        waterfowlFlightBase.put("L_shin",       new float[]{-2.5f, 0f, 0f});
+        waterfowlFlightBase.put("L_tarsus",     new float[]{2.0f, 0f, 0f});
+        waterfowlFlightBase.put("L_foot",       new float[]{-0.8f, 0f, 0f});
+        mirror(waterfowlFlightBase);
+
         // --- Passerine-specific ---
         List<Preset> passerine = new ArrayList<>(base);
         passerine.add(preset("forage",
@@ -630,6 +802,13 @@ public class PoseEditor extends JFrame {
                 "L_thigh", 0.2f, 0f, 0f,
                 "L_shin", 0.3f, 0f, 0f,
                 "L_tarsus", -0.4f, 0f, 0f));
+        // Cyclic presets for Passerine
+        passerine.addAll(cyclicPresets("wingbeat", "wings_up", "wings_down",
+                flightBase, wingbeatOffA, wingbeatOffB));
+        passerine.addAll(cyclicPresets("walk", "legs_forward", "legs_back",
+                walkBase, walkOffA, walkOffB));
+        passerine.addAll(cyclicPresets("hop", "crouch", "spring",
+                hopBase, hopOffA, hopOffB));
         presets.put("Passerine", passerine);
 
         // --- Raptor-specific ---
@@ -708,6 +887,9 @@ public class PoseEditor extends JFrame {
                 "L_shin", -0.3f, 0f, 0f,
                 "L_tarsus", 0.2f, 0f, 0f,
                 "L_foot", -0.4f, 0f, 0f));
+        // Cyclic presets for Raptor
+        raptor.addAll(cyclicPresets("raptor_wingbeat", "up", "down",
+                raptorFlightBase, raptorWingOffA, raptorWingOffB));
         presets.put("Raptor", raptor);
 
         // --- Waterfowl-specific ---
@@ -739,6 +921,9 @@ public class PoseEditor extends JFrame {
                 "L_thigh", 0.3f, 0f, 0f,
                 "L_shin", 0.3f, 0f, 0f,
                 "L_tarsus", -0.1f, 0f, 0f));
+        // Cyclic presets for Waterfowl
+        waterfowl.addAll(cyclicPresets("waterfowl_wingbeat", "up", "down",
+                waterfowlFlightBase, waterfowlWingOffA, waterfowlWingOffB));
         presets.put("Waterfowl", waterfowl);
 
         return presets;
@@ -748,6 +933,55 @@ public class PoseEditor extends JFrame {
         Map<String, float[]> joints = pose(args);
         mirror(joints);
         return new Preset(name, joints);
+    }
+
+    /**
+     * Build a pair of cyclic presets (endpoint A and B) from a base pose and two offset maps.
+     * The returned list has [endpointA, endpointB].
+     * @param cyclicName  e.g. "wingbeat"
+     * @param nameA       e.g. "wings_up"  (phase=0 endpoint name used in the combo)
+     * @param nameB       e.g. "wings_down" (phase=1 endpoint name)
+     * @param basePose    base pose map (values applied before the offset)
+     * @param offsetA     offset map for endpoint A (raw cyclic offset, no base mixed in)
+     * @param offsetB     offset map for endpoint B
+     */
+    static List<Preset> cyclicPresets(String cyclicName, String nameA, String nameB,
+                                       Map<String, float[]> basePose,
+                                       Map<String, float[]> offsetA,
+                                       Map<String, float[]> offsetB) {
+        // Combined = base + offsetA for the A preset joints shown in sliders
+        Map<String, float[]> combinedA = mergePoseOffset(basePose, offsetA);
+        Map<String, float[]> combinedB = mergePoseOffset(basePose, offsetB);
+
+        String displayNameA = cyclicName + ": " + nameA;
+        String displayNameB = cyclicName + ": " + nameB;
+
+        Preset pA = new Preset(displayNameA, combinedA, basePose, offsetA, offsetB, cyclicName, nameA);
+        Preset pB = new Preset(displayNameB, combinedB, basePose, offsetA, offsetB, cyclicName, nameB);
+        return List.of(pA, pB);
+    }
+
+    /** Merge a base pose with an offset map: result[joint] = base + offset (per-component). */
+    static Map<String, float[]> mergePoseOffset(Map<String, float[]> base, Map<String, float[]> offset) {
+        Map<String, float[]> result = new LinkedHashMap<>(base);
+        for (var entry : offset.entrySet()) {
+            String name = entry.getKey();
+            float[] off = entry.getValue();
+            float[] existing = result.get(name);
+            if (existing != null) {
+                result.put(name, new float[]{existing[0] + off[0], existing[1] + off[1], existing[2] + off[2]});
+            } else {
+                result.put(name, new float[]{off[0], off[1], off[2]});
+            }
+        }
+        return result;
+    }
+
+    /** Build a pose offset map from flat args (like pose()), then auto-mirror L_ entries. */
+    static Map<String, float[]> offsetPose(Object... args) {
+        Map<String, float[]> m = pose(args);
+        mirror(m);
+        return m;
     }
 
     // =========================================================================
@@ -2303,6 +2537,24 @@ public class PoseEditor extends JFrame {
     boolean batchUpdating = false;
     boolean showGeometry = false;
 
+    // --- Cyclic animation editing state ---
+    boolean editingCyclic = false;
+    Map<String, float[]> cyclicBasePose = null;
+    Map<String, float[]> cyclicOffsetA = null;
+    Map<String, float[]> cyclicOffsetB = null;
+    String cyclicAnimName = null;    // e.g. "wingbeat"
+    String cyclicEndpoint = null;    // "A" or "B" — which endpoint the sliders currently show
+    float animPhase = 0f;            // 0.0 = offset A, 1.0 = offset B
+
+    // --- Animation playback ---
+    boolean animPlaying = false;
+    float animSpeed = 1.0f;          // multiplier: 1.0 = 1 full cycle per second
+    javax.swing.Timer animTimer;
+    JSlider phaseSlider;
+    JSlider speedSlider;
+    JButton playPauseBtn;
+    JLabel cyclicStatusLabel;
+
     PreviewPanel previewPanel;
     JTextArea exportTextArea;
     JComboBox<String> archetypeCombo;
@@ -2349,33 +2601,59 @@ public class PoseEditor extends JFrame {
         sb.append("// Exported from PoseEditor — archetype: ").append(currentArchetype)
                 .append(", pose: ").append(currentPoseName).append("\n");
         sb.append("// Timestamp: ").append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("\n");
-        sb.append("public static final PoseData ").append(currentPoseName.toUpperCase())
-                .append(" = PoseData.builder(\"").append(currentPoseName).append("\")\n");
 
-        boolean hasMirror = false;
-        for (var entry : sliderGroups.entrySet()) {
-            String name = entry.getKey();
-            JointSliderGroup g = entry.getValue();
-            float x = g.getX(), y = g.getY(), z = g.getZ();
-            if (x != 0 || y != 0 || z != 0) {
-                // Map slider name to BirdSkeleton constant name
-                String skelName = toSkeletonConstant(name);
-                sb.append("        .joint(BirdSkeleton.").append(skelName).append(", ")
-                        .append(formatFloat(x)).append(", ")
-                        .append(formatFloat(y)).append(", ")
-                        .append(formatFloat(z)).append(")\n");
-                if (name.startsWith("L_")) hasMirror = true;
+        if (editingCyclic && cyclicBasePose != null && cyclicOffsetA != null && cyclicOffsetB != null) {
+            // --- Cyclic export: compute offsets from current slider values ---
+            // Current slider values = base + current offset (at the phase the user last stopped at)
+            // We export both endpoint offsets (A and B) as a CyclicAnimation block.
+            // To compute offsets: offset = currentSliderValue - basePoseValue
+            // We use the stored offsetA and offsetB directly (the user may have modified them
+            // if they edited sliders, in which case we read back slider values for the active endpoint).
+            sb.append("public static final CyclicAnimation ").append(cyclicAnimName.toUpperCase())
+                    .append(" = new CyclicAnimation(\n");
+            sb.append("    \"").append(cyclicAnimName).append("\",\n");
+
+            // Endpoint A
+            sb.append("    PoseData.builder(\"").append(getOffsetAName()).append("\")\n");
+            boolean mirrorA = exportOffsetBlock(sb, cyclicOffsetA);
+            if (mirrorA) sb.append("            .mirror()\n");
+            sb.append("            .build(),\n");
+
+            // Endpoint B
+            sb.append("    PoseData.builder(\"").append(getOffsetBName()).append("\")\n");
+            boolean mirrorB = exportOffsetBlock(sb, cyclicOffsetB);
+            if (mirrorB) sb.append("            .mirror()\n");
+            sb.append("            .build()\n");
+            sb.append(");\n");
+
+            sb.append("\n// Current phase: ").append(String.format("%.2f", animPhase))
+              .append("  (0=").append(getOffsetAName()).append(", 1=").append(getOffsetBName()).append(")\n");
+        } else {
+            // --- Static pose export ---
+            sb.append("public static final PoseData ").append(currentPoseName.toUpperCase())
+                    .append(" = PoseData.builder(\"").append(currentPoseName).append("\")\n");
+
+            boolean hasMirror = false;
+            for (var entry : sliderGroups.entrySet()) {
+                String name = entry.getKey();
+                JointSliderGroup g = entry.getValue();
+                float x = g.getX(), y = g.getY(), z = g.getZ();
+                if (x != 0 || y != 0 || z != 0) {
+                    String skelName = toSkeletonConstant(name);
+                    sb.append("        .joint(BirdSkeleton.").append(skelName).append(", ")
+                            .append(formatFloat(x)).append(", ")
+                            .append(formatFloat(y)).append(", ")
+                            .append(formatFloat(z)).append(")\n");
+                    if (name.startsWith("L_")) hasMirror = true;
+                }
             }
+            if (hasMirror) sb.append("        .mirror()\n");
+            sb.append("        .build();\n");
         }
-        if (hasMirror) {
-            sb.append("        .mirror()\n");
-        }
-        sb.append("        .build();\n");
 
         // Geometry section
         sb.append("\n// Geometry (archetype: ").append(currentArchetype).append(")\n");
         for (Joint j : skeleton.allJoints) {
-            // Skip right-side joints (mirrored from left)
             if (j.name.startsWith("R_")) continue;
             sb.append("// ").append(j.name)
                     .append(": offset(").append(formatGeomFloat(j.offsetX))
@@ -2388,6 +2666,56 @@ public class PoseEditor extends JFrame {
         }
 
         return sb.toString();
+    }
+
+    /** Write .joint() lines for an offset map. Returns true if any L_ joints were written (need .mirror()). */
+    boolean exportOffsetBlock(StringBuilder sb, Map<String, float[]> offset) {
+        boolean hasMirror = false;
+        for (var entry : offset.entrySet()) {
+            String name = entry.getKey();
+            if (name.startsWith("R_")) continue;  // skip; .mirror() handles them
+            float[] v = entry.getValue();
+            if (v[0] != 0 || v[1] != 0 || v[2] != 0) {
+                String skelName = toSkeletonConstant(name);
+                sb.append("            .joint(BirdSkeleton.").append(skelName).append(", ")
+                        .append(formatFloat(v[0])).append(", ")
+                        .append(formatFloat(v[1])).append(", ")
+                        .append(formatFloat(v[2])).append(")\n");
+                if (name.startsWith("L_")) hasMirror = true;
+            }
+        }
+        return hasMirror;
+    }
+
+    String getOffsetAName() {
+        // Reconstruct endpoint A name from current preset name
+        // The preset name format is "cyclicName: endpointName"
+        // offsetA's endpoint is the one stored in the A preset
+        if (cyclicAnimName == null) return "offset_a";
+        List<Preset> presets = allPresets.get(currentArchetype);
+        if (presets == null) return "offset_a";
+        for (Preset p : presets) {
+            if (p.isCyclic() && p.cyclicName.equals(cyclicAnimName)) {
+                if (mapsApproxEqual(p.joints, mergePoseOffset(p.basePose, p.offsetA))) {
+                    return p.endpointName;
+                }
+            }
+        }
+        return "offset_a";
+    }
+
+    String getOffsetBName() {
+        if (cyclicAnimName == null) return "offset_b";
+        List<Preset> presets = allPresets.get(currentArchetype);
+        if (presets == null) return "offset_b";
+        for (Preset p : presets) {
+            if (p.isCyclic() && p.cyclicName.equals(cyclicAnimName)) {
+                if (mapsApproxEqual(p.joints, mergePoseOffset(p.basePose, p.offsetB))) {
+                    return p.endpointName;
+                }
+            }
+        }
+        return "offset_b";
     }
 
     String formatGeomFloat(float v) {
@@ -2490,6 +2818,73 @@ public class PoseEditor extends JFrame {
         });
         leftPanel.add(solidToggle);
 
+        leftPanel.add(Box.createVerticalStrut(16));
+
+        // --- Cyclic status label ---
+        cyclicStatusLabel = new JLabel("Static pose");
+        cyclicStatusLabel.setAlignmentX(0f);
+        cyclicStatusLabel.setFont(new Font("SansSerif", Font.ITALIC, 11));
+        cyclicStatusLabel.setForeground(new Color(100, 100, 100));
+        leftPanel.add(cyclicStatusLabel);
+        leftPanel.add(Box.createVerticalStrut(6));
+
+        // --- Animation Phase slider ---
+        JLabel phaseLabel = new JLabel("Animation Phase:");
+        phaseLabel.setAlignmentX(0f);
+        phaseLabel.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        leftPanel.add(phaseLabel);
+        phaseSlider = new JSlider(0, 100, 0);
+        phaseSlider.setMaximumSize(new Dimension(200, 22));
+        phaseSlider.setAlignmentX(0f);
+        phaseSlider.addChangeListener(e -> {
+            if (batchUpdating) return;
+            animPhase = phaseSlider.getValue() / 100f;
+            if (editingCyclic) {
+                applyPhase(animPhase);
+            }
+        });
+        leftPanel.add(phaseSlider);
+        leftPanel.add(Box.createVerticalStrut(4));
+
+        // --- Play/Pause + Speed controls ---
+        JPanel playRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        playRow.setAlignmentX(0f);
+        playRow.setMaximumSize(new Dimension(200, 32));
+        playPauseBtn = new JButton("Play");
+        playPauseBtn.setFont(new Font("SansSerif", Font.BOLD, 11));
+        playPauseBtn.addActionListener(e -> togglePlayPause());
+        playRow.add(playPauseBtn);
+        leftPanel.add(playRow);
+        leftPanel.add(Box.createVerticalStrut(4));
+
+        JLabel speedLabel = new JLabel("Speed:");
+        speedLabel.setAlignmentX(0f);
+        speedLabel.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        leftPanel.add(speedLabel);
+        // Speed slider: 10..400 represents 0.1x..4.0x (in units of 0.1)
+        speedSlider = new JSlider(1, 40, 10);
+        speedSlider.setMaximumSize(new Dimension(200, 22));
+        speedSlider.setAlignmentX(0f);
+        speedSlider.addChangeListener(e -> {
+            animSpeed = speedSlider.getValue() / 10f;
+            speedLabel.setText(String.format("Speed: %.1fx", animSpeed));
+        });
+        leftPanel.add(speedSlider);
+        leftPanel.add(Box.createVerticalStrut(4));
+
+        // Set up the animation timer (30 fps)
+        animTimer = new javax.swing.Timer(33, e -> {
+            if (!animPlaying || !editingCyclic) return;
+            // Advance phase by speed * (33ms / 1000ms) for one direction, then bounce
+            float delta = animSpeed * 0.033f;
+            animPhase += delta;
+            if (animPhase > 1f) animPhase = 0f;  // wrap
+            batchUpdating = true;
+            phaseSlider.setValue(Math.round(animPhase * 100));
+            batchUpdating = false;
+            applyPhase(animPhase);
+        });
+
         leftPanel.add(Box.createVerticalGlue());
 
         // --- Center panel: preview ---
@@ -2557,6 +2952,17 @@ public class PoseEditor extends JFrame {
 
         // --- Event handlers ---
         archetypeCombo.addActionListener(e -> {
+            // Stop animation when switching archetypes
+            if (animTimer != null && animPlaying) {
+                animPlaying = false;
+                animTimer.stop();
+                if (playPauseBtn != null) playPauseBtn.setText("Play");
+            }
+            editingCyclic = false;
+            cyclicBasePose = null; cyclicOffsetA = null; cyclicOffsetB = null;
+            cyclicAnimName = null; cyclicEndpoint = null;
+            updateCyclicStatusLabel();
+
             currentArchetype = (String) archetypeCombo.getSelectedItem();
             switch (currentArchetype) {
                 case "Passerine": skeleton = buildPasserine(); break;
@@ -2647,6 +3053,47 @@ public class PoseEditor extends JFrame {
         }
         if (found == null) return;
 
+        // Stop animation if switching presets
+        if (animTimer != null && animPlaying) {
+            animPlaying = false;
+            animTimer.stop();
+            if (playPauseBtn != null) playPauseBtn.setText("Play");
+        }
+
+        // Set up cyclic editing state
+        if (found.isCyclic()) {
+            editingCyclic = true;
+            cyclicBasePose = found.basePose;
+            cyclicOffsetA = found.offsetA;
+            cyclicOffsetB = found.offsetB;
+            cyclicAnimName = found.cyclicName;
+            // Determine which endpoint (A or B) this preset represents
+            cyclicEndpoint = found.endpointName.equals(
+                    getEndpointNameA(poseName)) ? "A" : "B";
+            // Determine from the display name which endpoint A is
+            // (first preset of the pair has "A" label in name)
+            cyclicEndpoint = found.joints.equals(mergePoseOffset(found.basePose, found.offsetA))
+                    ? "A" : "B";
+            // Simpler: compare display name to detect "wings_up" vs "wings_down" patterns
+            // The poseA name always ends with ": " + nameA. We stored the endpointName.
+            cyclicEndpoint = found.endpointName;
+            animPhase = isEndpointA(found) ? 0f : 1f;
+            updateCyclicStatusLabel();
+        } else {
+            editingCyclic = false;
+            cyclicBasePose = null;
+            cyclicOffsetA = null;
+            cyclicOffsetB = null;
+            cyclicAnimName = null;
+            cyclicEndpoint = null;
+            updateCyclicStatusLabel();
+        }
+        if (phaseSlider != null) {
+            batchUpdating = true;
+            phaseSlider.setValue(Math.round(animPhase * 100));
+            batchUpdating = false;
+        }
+
         batchUpdating = true;
         // Reset all sliders first
         for (JointSliderGroup g : sliderGroups.values()) {
@@ -2675,6 +3122,90 @@ public class PoseEditor extends JFrame {
         previewPanel.repaint();
         updateExportText();
         captureState();
+    }
+
+    /** True if this preset represents the "A" (phase=0) endpoint. */
+    boolean isEndpointA(Preset p) {
+        if (!p.isCyclic()) return false;
+        // The A endpoint's combined joints match base + offsetA
+        Map<String, float[]> expectedA = mergePoseOffset(p.basePose, p.offsetA);
+        return mapsApproxEqual(p.joints, expectedA);
+    }
+
+    boolean mapsApproxEqual(Map<String, float[]> a, Map<String, float[]> b) {
+        if (a.size() != b.size()) return false;
+        for (var entry : a.entrySet()) {
+            float[] bv = b.get(entry.getKey());
+            if (bv == null) return false;
+            float[] av = entry.getValue();
+            if (Math.abs(av[0]-bv[0]) > 0.001f || Math.abs(av[1]-bv[1]) > 0.001f || Math.abs(av[2]-bv[2]) > 0.001f)
+                return false;
+        }
+        return true;
+    }
+
+    String getEndpointNameA(String displayName) {
+        // e.g. "wingbeat: wings_up" → "wings_up"
+        int idx = displayName.indexOf(": ");
+        return idx >= 0 ? displayName.substring(idx + 2) : displayName;
+    }
+
+    void updateCyclicStatusLabel() {
+        if (cyclicStatusLabel == null) return;
+        if (editingCyclic && cyclicAnimName != null) {
+            cyclicStatusLabel.setText("Editing: " + cyclicAnimName + " [" + cyclicEndpoint + "]");
+            cyclicStatusLabel.setForeground(new Color(0, 100, 180));
+        } else {
+            cyclicStatusLabel.setText("Static pose");
+            cyclicStatusLabel.setForeground(new Color(100, 100, 100));
+        }
+    }
+
+    void togglePlayPause() {
+        if (!editingCyclic) {
+            JOptionPane.showMessageDialog(this,
+                    "Select a cyclic preset (e.g. \"wingbeat: wings_up\") first.",
+                    "No Cyclic Preset Loaded", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        animPlaying = !animPlaying;
+        if (animPlaying) {
+            playPauseBtn.setText("Pause");
+            animTimer.start();
+        } else {
+            playPauseBtn.setText("Play");
+            animTimer.stop();
+        }
+    }
+
+    /**
+     * Apply a blended cyclic pose at the given phase (0=offsetA, 1=offsetB).
+     * Sets slider values to base + lerp(offsetA, offsetB, phase).
+     */
+    void applyPhase(float phase) {
+        if (!editingCyclic || cyclicBasePose == null || cyclicOffsetA == null || cyclicOffsetB == null) return;
+
+        // Collect all joint names across base, offsetA, offsetB
+        Set<String> allJointNames = new LinkedHashSet<>();
+        allJointNames.addAll(cyclicBasePose.keySet());
+        allJointNames.addAll(cyclicOffsetA.keySet());
+        allJointNames.addAll(cyclicOffsetB.keySet());
+
+        batchUpdating = true;
+        for (String name : allJointNames) {
+            JointSliderGroup g = sliderGroups.get(name);
+            if (g == null) continue;  // right-side joints are auto-mirrored
+            float[] baseV = cyclicBasePose.getOrDefault(name, new float[]{0f, 0f, 0f});
+            float[] offAV  = cyclicOffsetA.getOrDefault(name,  new float[]{0f, 0f, 0f});
+            float[] offBV  = cyclicOffsetB.getOrDefault(name,  new float[]{0f, 0f, 0f});
+            float rx = baseV[0] + offAV[0] + (offBV[0] - offAV[0]) * phase;
+            float ry = baseV[1] + offAV[1] + (offBV[1] - offAV[1]) * phase;
+            float rz = baseV[2] + offAV[2] + (offBV[2] - offAV[2]) * phase;
+            g.setValues(rx, ry, rz);
+        }
+        batchUpdating = false;
+        previewPanel.repaint();
+        updateExportText();
     }
 
     void buildSliderPanel() {
