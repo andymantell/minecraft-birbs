@@ -787,6 +787,13 @@ public class PoseEditor extends JFrame {
         // Whether we are dragging the 3D camera
         boolean dragging3DCamera = false;
 
+        // IK drag state
+        boolean ikDragging = false;
+        String ikJointName = null;         // the joint being dragged
+        int ikViewQuadrant = -1;           // 0=FRONT, 1=SIDE, 2=TOP, 3=3D
+        List<String> ikChain = new ArrayList<>();  // chain from effector up to root (inclusive)
+        int ikTargetScreenX, ikTargetScreenY;      // current mouse target in screen coords
+
         PreviewPanel() {
             setPreferredSize(new Dimension(900, 600));
             setOpaque(true);
@@ -867,7 +874,29 @@ public class PoseEditor extends JFrame {
                         }
                     }
 
-                    // Check for 3D camera drag (bottom-right)
+                    // Hit test for joint under cursor — used both for IK drag and selection
+                    Map<String, float[]> poseData = getCurrentPose();
+                    applyPose(skeleton, poseData);
+                    computeFK(skeleton);
+
+                    String hit = hitTestJoint(mx, my, cellW, cellH);
+
+                    // If clicking on a joint body (not a handle), start IK drag
+                    if (hit != null) {
+                        captureState();  // snapshot BEFORE IK starts
+                        ikDragging = true;
+                        ikJointName = hit;
+                        ikViewQuadrant = getQuadrant(mx, my, cellW, cellH);
+                        ikChain = buildIkChain(hit);
+                        ikTargetScreenX = mx;
+                        ikTargetScreenY = my;
+                        selectedJoint = hit;
+                        updateSliderVisibility();
+                        repaint();
+                        return;
+                    }
+
+                    // Check for 3D camera drag (bottom-right, no joint hit)
                     if (mx > cellW && my > cellH) {
                         dragging3DCamera = true;
                         dragStartX = mx;
@@ -876,21 +905,20 @@ public class PoseEditor extends JFrame {
                         dragStartPitch = camPitch;
                     }
 
-                    // Hit test for joint selection
-                    Map<String, float[]> poseData = getCurrentPose();
-                    applyPose(skeleton, poseData);
-                    computeFK(skeleton);
-
-                    String hit = hitTestJoint(mx, my, cellW, cellH);
+                    // No joint hit — deselect
                     selectedJoint = hit;
                     updateSliderVisibility();
-                    if (hit != null) {
-                    }
                     repaint();
                 }
 
                 @Override
                 public void mouseReleased(MouseEvent e) {
+                    if (ikDragging) {
+                        updateExportText();
+                        ikDragging = false;
+                        ikJointName = null;
+                        ikChain.clear();
+                    }
                     draggingAxis = 0;
                     draggingJoint = null;
                     dragging3DCamera = false;
@@ -925,6 +953,26 @@ public class PoseEditor extends JFrame {
 
                 @Override
                 public void mouseDragged(MouseEvent e) {
+                    // IK drag
+                    if (ikDragging && ikJointName != null) {
+                        int w = getWidth(), h = getHeight();
+                        int cellW = w / 2, cellH = h / 2;
+                        ikTargetScreenX = e.getX();
+                        ikTargetScreenY = e.getY();
+
+                        // Convert screen position to world coordinates
+                        Joint draggedJoint = skeleton.jointMap.get(ikJointName);
+                        if (draggedJoint != null && !ikChain.isEmpty()) {
+                            double[] targetWorld = screenToWorld(
+                                    ikTargetScreenX, ikTargetScreenY,
+                                    ikViewQuadrant, cellW, cellH, draggedJoint);
+                            solveIK(targetWorld, 8);
+                            syncIkSliderFields();
+                        }
+                        repaint();
+                        return;
+                    }
+
                     // Handle rotation handle drag
                     if (draggingAxis > 0 && draggingJoint != null) {
                         int dx = e.getX() - handleDragStartX;
@@ -990,6 +1038,232 @@ public class PoseEditor extends JFrame {
 
         float panYForQuadrant(int q) {
             return switch (q) { case 0 -> panFrontY; case 1 -> panSideY; case 2 -> panTopY; default -> pan3DY; };
+        }
+
+        // ----------------------------------------------------------------
+        // IK chain definitions
+        // ----------------------------------------------------------------
+
+        /** Returns the name of the chain root for a given joint name. */
+        String ikChainRoot(String jointName) {
+            // Wing joints → shoulder_mount
+            if (jointName.endsWith("_primaries") || jointName.endsWith("_hand") ||
+                    jointName.endsWith("_secondaries") || jointName.endsWith("_forearm") ||
+                    jointName.endsWith("_scapulars") || jointName.endsWith("_upper_wing")) {
+                return "shoulder_mount";
+            }
+            // Leg joints → hip
+            if (jointName.endsWith("_foot") || jointName.endsWith("_tarsus") ||
+                    jointName.endsWith("_shin") || jointName.endsWith("_thigh")) {
+                return "hip";
+            }
+            // Neck/head + beak joints → chest
+            if (jointName.equals("lower_beak") || jointName.equals("upper_beak") ||
+                    jointName.equals("head") || jointName.equals("neck_upper") ||
+                    jointName.equals("neck_mid") || jointName.equals("neck_lower")) {
+                return "chest";
+            }
+            // Tail joints → chest
+            if (jointName.equals("tail_fan") || jointName.equals("tail_base")) {
+                return "chest";
+            }
+            // Spine joints → chest
+            if (jointName.equals("hip") || jointName.equals("torso") ||
+                    jointName.equals("shoulder_mount")) {
+                return "chest";
+            }
+            return null; // chest itself or unknown — no chain
+        }
+
+        /**
+         * Build the IK chain from the dragged joint back to (and including) the chain root.
+         * The list is ordered: [root, ..., parent_of_dragged, dragged_joint].
+         * The CCD solver walks from index (size-2) down to 0.
+         */
+        List<String> buildIkChain(String draggedJointName) {
+            String root = ikChainRoot(draggedJointName);
+            if (root == null) return new ArrayList<>();
+
+            List<String> chain = new ArrayList<>();
+            chain.add(draggedJointName);
+
+            Joint j = skeleton.jointMap.get(draggedJointName);
+            while (j != null && !j.name.equals(root)) {
+                if (j.parent == null) break;
+                chain.add(0, j.parent.name);
+                if (j.parent.name.equals(root)) break;
+                j = j.parent;
+            }
+            // Ensure root is the first element
+            if (!chain.isEmpty() && !chain.get(0).equals(root)) {
+                chain.add(0, root);
+            }
+            return chain;
+        }
+
+        // ----------------------------------------------------------------
+        // IK solver
+        // ----------------------------------------------------------------
+
+        /**
+         * Convert a screen position back to world coordinates for a 2D orthographic view.
+         * Returns world XYZ with the unused axis taken from the dragged joint's current world pos.
+         */
+        double[] screenToWorld(int sx, int sy, int q, int cellW, int cellH, Joint draggedJoint) {
+            float es = SCALE * zoomForQuadrant(q);
+            float px = panXForQuadrant(q);
+            float py = panYForQuadrant(q);
+            int col = (q == 1 || q == 3) ? 1 : 0;
+            int row = (q == 2 || q == 3) ? 1 : 0;
+
+            // Inverse of toScreenX/toScreenY:
+            // sx = col*cellW + cellW/2 + worldCoord * es + px
+            // => worldCoord = (sx - col*cellW - cellW/2 - px) / es
+            double wA = (sx - col * cellW - cellW / 2.0 - px) / es;
+            double wB = (sy - row * cellH - cellH / 2.0 - py) / es + 19.0;
+
+            double wx = draggedJoint.worldPos[0];
+            double wy = draggedJoint.worldPos[1];
+            double wz = draggedJoint.worldPos[2];
+
+            switch (q) {
+                case 0 -> { wx = wA; wy = wB; }           // FRONT: screen=(worldX, worldY)
+                case 1 -> { wz = wA; wy = wB; }           // SIDE:  screen=(worldZ, worldY)
+                case 2 -> { wx = wA; wz = wB; }           // TOP:   screen=(worldX, worldZ)
+                default -> {
+                    // 3D view: project target onto plane perpendicular to camera at dragged joint's depth
+                    // Approximate by using the two visible axes for the current camera angle
+                    // Use the same simple approach: treat 3D like FRONT (worldX, worldY) for simplicity
+                    wx = wA; wy = wB;
+                }
+            }
+            return new double[]{wx, wy, wz};
+        }
+
+        /**
+         * One CCD step: rotate the given joint so the end effector moves toward the target.
+         * Operates in 2D in the plane of the view quadrant.
+         * Returns the slider-name equivalent (L_ prefix normalised) of the joint that was changed.
+         */
+        void ccdStep(Joint joint, double[] endEffectorPos, double[] targetPos, int q) {
+            double[] jp = joint.worldPos;
+
+            // Vectors from joint to end effector and to target
+            double ex = endEffectorPos[0] - jp[0];
+            double ey = endEffectorPos[1] - jp[1];
+            double ez = endEffectorPos[2] - jp[2];
+
+            double tx = targetPos[0] - jp[0];
+            double ty = targetPos[1] - jp[1];
+            double tz = targetPos[2] - jp[2];
+
+            double angleToEnd, angleToTarget, delta;
+            float damping = 0.5f;
+
+            // Map the joint name to the slider name (L_ for mirrored joints)
+            String sliderName = joint.name.startsWith("R_") ? "L_" + joint.name.substring(2) : joint.name;
+            JointSliderGroup grp = sliderGroups.get(sliderName);
+            if (grp == null) return;
+
+            switch (q) {
+                case 0 -> {  // FRONT view — XY plane: adjust xRot (pitch) and zRot (roll)
+                    // Use zRot for left-right (around Z axis in XY plane)
+                    angleToEnd    = Math.atan2(ey, ex);
+                    angleToTarget = Math.atan2(ty, tx);
+                    delta = normaliseAngle(angleToTarget - angleToEnd) * damping;
+                    float newZ = clampAngle(grp.getZ() + (float) delta);
+                    batchUpdating = true;
+                    grp.zSlider.setValue(Math.round(newZ * 100));
+                    grp.zField.setText(String.format("%.2f", newZ));
+                    batchUpdating = false;
+                }
+                case 1 -> {  // SIDE view — ZY plane: adjust xRot (pitch)
+                    angleToEnd    = Math.atan2(ey, ez);
+                    angleToTarget = Math.atan2(ty, tz);
+                    delta = normaliseAngle(angleToTarget - angleToEnd) * damping;
+                    float newX = clampAngle(grp.getX() + (float) delta);
+                    batchUpdating = true;
+                    grp.xSlider.setValue(Math.round(newX * 100));
+                    grp.xField.setText(String.format("%.2f", newX));
+                    batchUpdating = false;
+                }
+                case 2 -> {  // TOP view — XZ plane: adjust yRot (yaw)
+                    angleToEnd    = Math.atan2(ez, ex);
+                    angleToTarget = Math.atan2(tz, tx);
+                    delta = normaliseAngle(angleToTarget - angleToEnd) * damping;
+                    float newY = clampAngle(grp.getY() + (float) delta);
+                    batchUpdating = true;
+                    grp.ySlider.setValue(Math.round(newY * 100));
+                    grp.yField.setText(String.format("%.2f", newY));
+                    batchUpdating = false;
+                }
+                default -> {  // 3D view: use XY plane (same as FRONT) as approximation
+                    angleToEnd    = Math.atan2(ey, ex);
+                    angleToTarget = Math.atan2(ty, tx);
+                    delta = normaliseAngle(angleToTarget - angleToEnd) * damping;
+                    float newZ = clampAngle(grp.getZ() + (float) delta);
+                    batchUpdating = true;
+                    grp.zSlider.setValue(Math.round(newZ * 100));
+                    grp.zField.setText(String.format("%.2f", newZ));
+                    batchUpdating = false;
+                }
+            }
+        }
+
+        double normaliseAngle(double a) {
+            while (a >  Math.PI) a -= 2 * Math.PI;
+            while (a < -Math.PI) a += 2 * Math.PI;
+            return a;
+        }
+
+        float clampAngle(float a) {
+            return Math.max(-(float) Math.PI, Math.min((float) Math.PI, a));
+        }
+
+        /**
+         * Run full CCD solve: iterate multiple times, each time walking from the joint
+         * just above the end effector toward the root, adjusting each joint to point
+         * the chain at the target.
+         */
+        void solveIK(double[] targetWorldPos, int iterations) {
+            Joint endEffector = skeleton.jointMap.get(ikJointName);
+            if (endEffector == null || ikChain.size() < 2) return;
+
+            for (int iter = 0; iter < iterations; iter++) {
+                // Walk from second-to-last joint (parent of dragged) toward root
+                for (int i = ikChain.size() - 2; i >= 0; i--) {
+                    String jName = ikChain.get(i);
+                    Joint joint = skeleton.jointMap.get(jName);
+                    if (joint == null) continue;
+
+                    // Recompute FK so world positions are current
+                    Map<String, float[]> poseData = getCurrentPose();
+                    applyPose(skeleton, poseData);
+                    computeFK(skeleton);
+
+                    // End effector current world pos
+                    double[] endPos = skeleton.jointMap.get(ikJointName).worldPos.clone();
+
+                    ccdStep(joint, endPos, targetWorldPos, ikViewQuadrant);
+                }
+                // Final FK recompute after each full pass
+                Map<String, float[]> poseData = getCurrentPose();
+                applyPose(skeleton, poseData);
+                computeFK(skeleton);
+            }
+        }
+
+        /** Push all IK chain joint values into their sliders' text fields (already done per-step, but ensure fields are synced). */
+        void syncIkSliderFields() {
+            for (String jName : ikChain) {
+                String sliderName = jName.startsWith("R_") ? "L_" + jName.substring(2) : jName;
+                JointSliderGroup grp = sliderGroups.get(sliderName);
+                if (grp != null) {
+                    grp.xField.setText(String.format("%.2f", grp.getX()));
+                    grp.yField.setText(String.format("%.2f", grp.getY()));
+                    grp.zField.setText(String.format("%.2f", grp.getZ()));
+                }
+            }
         }
 
         /** Hit test rotation handles around selected joint. Returns axis (1/2/3) or 0 for no hit. */
@@ -1373,6 +1647,11 @@ public class PoseEditor extends JFrame {
             drawPanel(g, View.TOP,   cellW, cellH, 0, 1, "TOP (from -Y)",   zoomTop,   panTopX,   panTopY);
             draw3DPanel(g, cellW, cellH, 1, 1, "3D (drag to rotate)", zoom3D, pan3DX, pan3DY);
 
+            // Draw IK drag overlay
+            if (ikDragging && ikJointName != null) {
+                drawIkOverlay(g, cellW, cellH);
+            }
+
             // Draw drag tooltip
             if (draggingAxis > 0 && draggingJoint != null) {
                 String sliderName = draggingJoint.startsWith("R_") ?
@@ -1406,6 +1685,71 @@ public class PoseEditor extends JFrame {
 
             // Legend
             drawLegend(g, w, h);
+        }
+
+        void drawIkOverlay(Graphics2D g, int cellW, int cellH) {
+            int q = ikViewQuadrant;
+            float es = SCALE * zoomForQuadrant(q);
+            float px = panXForQuadrant(q);
+            float py = panYForQuadrant(q);
+            int col = (q == 1 || q == 3) ? 1 : 0;
+            int row = (q == 2 || q == 3) ? 1 : 0;
+
+            // Clip to the quadrant panel so drawing doesn't bleed
+            Shape oldClip = g.getClip();
+            g.setClip(col * cellW, row * cellH, cellW, cellH);
+
+            // Highlight all joints in the IK chain with a glow ring
+            for (String jName : ikChain) {
+                Joint j = skeleton.jointMap.get(jName);
+                if (j == null) continue;
+                int jx, jy;
+                if (q < 3) {
+                    View view = q == 0 ? View.FRONT : q == 1 ? View.SIDE : View.TOP;
+                    double[] p2d = project(j.worldPos, view);
+                    jx = toScreenX(p2d[0], cellW, col, row, es, px);
+                    jy = toScreenY(p2d[1], cellH, col, row, es, py);
+                } else {
+                    double[] p3 = project3D(j.worldPos, cellW, cellH, col, row, es, px, py);
+                    jx = (int) p3[0];
+                    jy = (int) p3[1];
+                }
+                // Glow ring around chain joint
+                g.setColor(new Color(255, 220, 60, 120));
+                g.setStroke(new BasicStroke(3f));
+                g.drawOval(jx - 8, jy - 8, 16, 16);
+            }
+
+            // Draw dashed line from end effector to mouse cursor target
+            Joint endJoint = skeleton.jointMap.get(ikJointName);
+            if (endJoint != null) {
+                int ex, ey;
+                if (q < 3) {
+                    View view = q == 0 ? View.FRONT : q == 1 ? View.SIDE : View.TOP;
+                    double[] p2d = project(endJoint.worldPos, view);
+                    ex = toScreenX(p2d[0], cellW, col, row, es, px);
+                    ey = toScreenY(p2d[1], cellH, col, row, es, py);
+                } else {
+                    double[] p3 = project3D(endJoint.worldPos, cellW, cellH, col, row, es, px, py);
+                    ex = (int) p3[0];
+                    ey = (int) p3[1];
+                }
+
+                g.setColor(new Color(255, 200, 40, 200));
+                g.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER,
+                        10f, new float[]{5f, 4f}, 0f));
+                g.drawLine(ex, ey, ikTargetScreenX, ikTargetScreenY);
+
+                // Small crosshair at target
+                g.setStroke(new BasicStroke(2f));
+                g.setColor(new Color(255, 200, 40, 220));
+                int cs = 6;
+                g.drawLine(ikTargetScreenX - cs, ikTargetScreenY, ikTargetScreenX + cs, ikTargetScreenY);
+                g.drawLine(ikTargetScreenX, ikTargetScreenY - cs, ikTargetScreenX, ikTargetScreenY + cs);
+                g.drawOval(ikTargetScreenX - 4, ikTargetScreenY - 4, 8, 8);
+            }
+
+            g.setClip(oldClip);
         }
 
         void drawLegend(Graphics2D g, int w, int h) {
