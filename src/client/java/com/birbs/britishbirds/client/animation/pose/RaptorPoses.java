@@ -20,11 +20,13 @@ public final class RaptorPoses {
      * Tail fanned as a rudder. Legs tucked.
      */
     public static final PoseData SOAR = PoseData.builder("soar")
-            .joint(BirdSkeleton.CHEST,      -0.3f, 0f, 0f)
-            .joint(BirdSkeleton.NECK_LOWER,  0.1f, 0f, 0f)
-            .joint(BirdSkeleton.NECK_MID,    0.05f, 0f, 0f)
-            .joint(BirdSkeleton.NECK_UPPER,  0.05f, 0f, 0f)
-            .joint(BirdSkeleton.HEAD,        0.1f, 0f, 0f)
+            .joint(BirdSkeleton.CHEST,      -1.1f, 0f, 0f)   // body nearly horizontal
+            .joint(BirdSkeleton.TORSO,      -0.15f, 0f, 0f)
+            .joint(BirdSkeleton.HIP,        -0.1f, 0f, 0f)
+            .joint(BirdSkeleton.NECK_LOWER, -0.1f, 0f, 0f)   // neck extends forward
+            .joint(BirdSkeleton.NECK_MID,   -0.05f, 0f, 0f)
+            .joint(BirdSkeleton.NECK_UPPER, -0.05f, 0f, 0f)
+            .joint(BirdSkeleton.HEAD,        0.15f, 0f, 0f)   // slight uptilt to scan
             // Wings spread wide — upper wing swept out, forearm extended, hand extended
             .joint(BirdSkeleton.L_UPPER_WING, 0f, 0f, -1.4f)
             .joint(BirdSkeleton.L_FOREARM,    0f, 0f, -0.1f)
@@ -101,11 +103,12 @@ public final class RaptorPoses {
      * Slower, softer springs on trailing feathers for loose trailing effect.
      */
     public static final PoseData HOVER = PoseData.builder("hover")
-            .joint(BirdSkeleton.CHEST,      -0.1f, 0f, 0f)  // body nearly upright
-            .joint(BirdSkeleton.NECK_LOWER,  0.05f, 0f, 0f)
-            .joint(BirdSkeleton.NECK_MID,    0.05f, 0f, 0f)
-            .joint(BirdSkeleton.NECK_UPPER,  0.05f, 0f, 0f)
-            .joint(BirdSkeleton.HEAD,        0.1f,  0f, 0f)  // head forward to scan ground
+            .joint(BirdSkeleton.CHEST,      -0.6f, 0f, 0f)  // angled forward but not flat
+            .joint(BirdSkeleton.TORSO,      -0.1f, 0f, 0f)
+            .joint(BirdSkeleton.NECK_LOWER, -0.05f, 0f, 0f) // neck extends forward
+            .joint(BirdSkeleton.NECK_MID,    0.0f, 0f, 0f)
+            .joint(BirdSkeleton.NECK_UPPER,  0.0f, 0f, 0f)
+            .joint(BirdSkeleton.HEAD,        0.3f,  0f, 0f)  // head tilted down to scan ground
             // Wings spread wide for hovering
             .joint(BirdSkeleton.L_UPPER_WING, 0f, 0f, -1.0f)
             .joint(BirdSkeleton.L_FOREARM,    0f, 0f, -0.15f)
