@@ -29,3 +29,4 @@ tools/*_b64.txt
 .superpowers/
 tools/exported_pose.java
 tools/hs_err_*
+tools/exported_*.java

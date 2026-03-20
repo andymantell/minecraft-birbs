@@ -569,13 +569,21 @@ public class PoseEditor extends JFrame {
         centerSplit.setResizeWeight(0.7);
         centerSplit.setDividerLocation(700);
 
-        // --- Top heading bar ---
-        headingLabel = new JLabel("  Passerine \u2014 perched");
-        headingLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
-        headingLabel.setForeground(Color.WHITE);
-        headingLabel.setOpaque(true);
-        headingLabel.setBackground(new Color(50, 90, 160));
-        headingLabel.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+        // --- Top heading bar (full-width, tall, unmissable) ---
+        headingLabel = new JLabel("  Passerine \u2014 perched") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setColor(new Color(60, 90, 140));
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.setColor(new Color(220, 230, 245));
+                g2.setFont(new Font("SansSerif", Font.PLAIN, 14));
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.drawString(getText().trim(), 12, 22);
+            }
+        };
+        headingLabel.setPreferredSize(new Dimension(0, 32));
+        headingLabel.setMinimumSize(new Dimension(0, 32));
 
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.add(headingLabel, BorderLayout.NORTH);
@@ -730,17 +738,18 @@ public class PoseEditor extends JFrame {
             lbl.setFont(new Font("SansSerif", Font.BOLD, 10));
             lbl.setAlignmentX(0f);
             poseBtnPanel.add(lbl);
-            JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 2));
-            row.setAlignmentX(0f);
             for (PosePresets.Preset p : staticPresets) {
                 JButton btn = makePresetButton(p, btnFont);
-                row.add(btn);
+                btn.setAlignmentX(0f);
+                btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 26));
+                btn.setHorizontalAlignment(SwingConstants.LEFT);
+                poseBtnPanel.add(btn);
                 poseButtons.put(p.name, btn);
             }
-            poseBtnPanel.add(row);
         }
 
         if (!cyclicPresetsList.isEmpty()) {
+            poseBtnPanel.add(Box.createVerticalStrut(4));
             JLabel lbl = new JLabel("Cyclic:");
             lbl.setFont(new Font("SansSerif", Font.BOLD, 10));
             lbl.setAlignmentX(0f);
@@ -751,8 +760,10 @@ public class PoseEditor extends JFrame {
                 groups.computeIfAbsent(groupName, k -> new ArrayList<>()).add(p);
             }
             for (var entry : groups.entrySet()) {
+                // Cyclic pairs still go side by side (they're related)
                 JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 1));
                 row.setAlignmentX(0f);
+                row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
                 for (PosePresets.Preset p : entry.getValue()) {
                     JButton btn = makePresetButton(p, btnFont);
                     row.add(btn);
@@ -781,19 +792,13 @@ public class PoseEditor extends JFrame {
         for (var entry : poseButtons.entrySet()) {
             boolean active = entry.getKey().equals(currentPoseName);
             JButton btn = entry.getValue();
+            String label = PosePresets.shortenPresetName(entry.getKey());
+            btn.setText(active ? "\u25B8 " + label : label);
+            btn.setFont(new Font("SansSerif", Font.PLAIN, 11));
             if (active) {
-                // Bold text + thick dark blue border + forced repaint
-                btn.setText("\u25B6 " + PosePresets.shortenPresetName(entry.getKey()));
-                btn.setFont(btn.getFont().deriveFont(Font.BOLD, 12f));
-                btn.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(30, 70, 180), 3),
-                    BorderFactory.createEmptyBorder(3, 8, 3, 8)));
+                btn.setBackground(new Color(180, 210, 245));
             } else {
-                btn.setText(PosePresets.shortenPresetName(entry.getKey()));
-                btn.setFont(btn.getFont().deriveFont(Font.PLAIN, 11f));
-                btn.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(160, 160, 160), 1),
-                    BorderFactory.createEmptyBorder(2, 6, 2, 6)));
+                btn.setBackground(null);
             }
         }
         if (poseBtnPanel != null) poseBtnPanel.repaint();
