@@ -47,13 +47,18 @@ public class PoseEditor extends JFrame {
     static class Joint {
         final String name;
         final Joint parent;
-        final float offsetX, offsetY, offsetZ;
+        float offsetX, offsetY, offsetZ;
         float angleX, angleY, angleZ;
-        final float boxOriginX, boxOriginY, boxOriginZ;
-        final float boxW, boxH, boxD;
+        float boxOriginX, boxOriginY, boxOriginZ;
+        float boxW, boxH, boxD;
         double[] worldPos = new double[3];
         double[][] worldRot = identity();
         final Color colour;
+
+        // Default geometry (set once at construction, used for preset resets)
+        final float defaultOffsetX, defaultOffsetY, defaultOffsetZ;
+        final float defaultBoxW, defaultBoxH, defaultBoxD;
+        final float defaultBoxOriginX, defaultBoxOriginY, defaultBoxOriginZ;
 
         Joint(String name, Joint parent,
               float offsetX, float offsetY, float offsetZ,
@@ -72,6 +77,36 @@ public class PoseEditor extends JFrame {
             this.boxH = boxH;
             this.boxD = boxD;
             this.colour = colour;
+            // Store defaults
+            this.defaultOffsetX = offsetX;
+            this.defaultOffsetY = offsetY;
+            this.defaultOffsetZ = offsetZ;
+            this.defaultBoxW = boxW;
+            this.defaultBoxH = boxH;
+            this.defaultBoxD = boxD;
+            this.defaultBoxOriginX = boxOriginX;
+            this.defaultBoxOriginY = boxOriginY;
+            this.defaultBoxOriginZ = boxOriginZ;
+        }
+
+        /** Recompute boxOrigin from current dimensions, preserving the original origin/size ratio. */
+        void recomputeBoxOrigin() {
+            boxOriginX = defaultBoxW != 0 ? defaultBoxOriginX * (boxW / defaultBoxW) : -(boxW / 2f);
+            boxOriginY = defaultBoxH != 0 ? defaultBoxOriginY * (boxH / defaultBoxH) : -(boxH / 2f);
+            boxOriginZ = defaultBoxD != 0 ? defaultBoxOriginZ * (boxD / defaultBoxD) : -(boxD / 2f);
+        }
+
+        /** Reset geometry to archetype defaults. */
+        void resetGeometry() {
+            offsetX = defaultOffsetX;
+            offsetY = defaultOffsetY;
+            offsetZ = defaultOffsetZ;
+            boxW = defaultBoxW;
+            boxH = defaultBoxH;
+            boxD = defaultBoxD;
+            boxOriginX = defaultBoxOriginX;
+            boxOriginY = defaultBoxOriginY;
+            boxOriginZ = defaultBoxOriginZ;
         }
     }
 
@@ -853,41 +888,77 @@ public class PoseEditor extends JFrame {
     // Slider system
     // =========================================================================
 
-    /** One joint's 3 sliders + text fields. */
+    /** One joint's 3 rotation sliders + 6 geometry sliders + text fields. */
     class JointSliderGroup {
         final String jointName;
         final JSlider xSlider, ySlider, zSlider;
         final JTextField xField, yField, zField;
 
+        // Geometry sliders: offset X/Y/Z and size W/H/D
+        final JSlider offXSlider, offYSlider, offZSlider;
+        final JTextField offXField, offYField, offZField;
+        final JSlider sizeWSlider, sizeHSlider, sizeDSlider;
+        final JTextField sizeWField, sizeHField, sizeDField;
+        JPanel geometryPanel;
+
         JointSliderGroup(String jointName) {
             this.jointName = jointName;
-            xSlider = makeSlider();
-            ySlider = makeSlider();
-            zSlider = makeSlider();
-            xField = makeField();
-            yField = makeField();
-            zField = makeField();
+            xSlider = makeRotSlider();
+            ySlider = makeRotSlider();
+            zSlider = makeRotSlider();
+            xField = makeField("0.00");
+            yField = makeField("0.00");
+            zField = makeField("0.00");
 
-            linkSliderAndField(xSlider, xField);
-            linkSliderAndField(ySlider, yField);
-            linkSliderAndField(zSlider, zField);
+            linkRotSliderAndField(xSlider, xField);
+            linkRotSliderAndField(ySlider, yField);
+            linkRotSliderAndField(zSlider, zField);
+
+            // Offset sliders: -100 to 100 => -10.0 to 10.0 (step 0.1)
+            offXSlider = makeGeomSlider(-100, 100, 0);
+            offYSlider = makeGeomSlider(-100, 100, 0);
+            offZSlider = makeGeomSlider(-100, 100, 0);
+            offXField = makeField("0.0");
+            offYField = makeField("0.0");
+            offZField = makeField("0.0");
+
+            // Size sliders: 2 to 40 => 0.5 to 10.0 (step 0.25, slider in units of 0.25)
+            sizeWSlider = makeGeomSlider(2, 40, 4);
+            sizeHSlider = makeGeomSlider(2, 40, 4);
+            sizeDSlider = makeGeomSlider(2, 40, 4);
+            sizeWField = makeField("1.0");
+            sizeHField = makeField("1.0");
+            sizeDField = makeField("1.0");
+
+            linkOffsetSliderAndField(offXSlider, offXField);
+            linkOffsetSliderAndField(offYSlider, offYField);
+            linkOffsetSliderAndField(offZSlider, offZField);
+            linkSizeSliderAndField(sizeWSlider, sizeWField);
+            linkSizeSliderAndField(sizeHSlider, sizeHField);
+            linkSizeSliderAndField(sizeDSlider, sizeDField);
         }
 
-        JSlider makeSlider() {
+        JSlider makeRotSlider() {
             // Range: -314 to 314 (representing -pi to pi, scaled by 100)
             JSlider s = new JSlider(-314, 314, 0);
             s.setPreferredSize(new Dimension(120, 20));
             return s;
         }
 
-        JTextField makeField() {
-            JTextField f = new JTextField("0.00", 5);
+        JSlider makeGeomSlider(int min, int max, int value) {
+            JSlider s = new JSlider(min, max, value);
+            s.setPreferredSize(new Dimension(120, 18));
+            return s;
+        }
+
+        JTextField makeField(String initial) {
+            JTextField f = new JTextField(initial, 5);
             f.setFont(new Font("Monospaced", Font.PLAIN, 11));
             f.setHorizontalAlignment(JTextField.RIGHT);
             return f;
         }
 
-        void linkSliderAndField(JSlider slider, JTextField field) {
+        void linkRotSliderAndField(JSlider slider, JTextField field) {
             slider.addChangeListener(e -> {
                 if (!batchUpdating) {
                     float val = slider.getValue() / 100f;
@@ -912,6 +983,73 @@ public class PoseEditor extends JFrame {
             });
         }
 
+        void linkOffsetSliderAndField(JSlider slider, JTextField field) {
+            slider.addChangeListener(e -> {
+                if (!batchUpdating) {
+                    float val = slider.getValue() / 10f;
+                    field.setText(String.format("%.1f", val));
+                    applyGeometryToJoint();
+                    previewPanel.repaint();
+                    updateExportText();
+                }
+            });
+            field.addActionListener(e -> {
+                try {
+                    float val = Float.parseFloat(field.getText().trim());
+                    val = Math.max(-10f, Math.min(10f, val));
+                    batchUpdating = true;
+                    slider.setValue(Math.round(val * 10));
+                    batchUpdating = false;
+                    field.setText(String.format("%.1f", val));
+                    applyGeometryToJoint();
+                    previewPanel.repaint();
+                    updateExportText();
+                } catch (NumberFormatException ex) {
+                    // ignore bad input
+                }
+            });
+        }
+
+        void linkSizeSliderAndField(JSlider slider, JTextField field) {
+            slider.addChangeListener(e -> {
+                if (!batchUpdating) {
+                    float val = slider.getValue() * 0.25f;
+                    field.setText(String.format("%.2f", val));
+                    applyGeometryToJoint();
+                    previewPanel.repaint();
+                    updateExportText();
+                }
+            });
+            field.addActionListener(e -> {
+                try {
+                    float val = Float.parseFloat(field.getText().trim());
+                    val = Math.max(0.5f, Math.min(10f, val));
+                    batchUpdating = true;
+                    slider.setValue(Math.round(val / 0.25f));
+                    batchUpdating = false;
+                    field.setText(String.format("%.2f", val));
+                    applyGeometryToJoint();
+                    previewPanel.repaint();
+                    updateExportText();
+                } catch (NumberFormatException ex) {
+                    // ignore bad input
+                }
+            });
+        }
+
+        /** Push geometry slider values into the Joint object. */
+        void applyGeometryToJoint() {
+            Joint j = skeleton.jointMap.get(jointName);
+            if (j == null) return;
+            j.offsetX = offXSlider.getValue() / 10f;
+            j.offsetY = offYSlider.getValue() / 10f;
+            j.offsetZ = offZSlider.getValue() / 10f;
+            j.boxW = sizeWSlider.getValue() * 0.25f;
+            j.boxH = sizeHSlider.getValue() * 0.25f;
+            j.boxD = sizeDSlider.getValue() * 0.25f;
+            j.recomputeBoxOrigin();
+        }
+
         float getX() { return xSlider.getValue() / 100f; }
         float getY() { return ySlider.getValue() / 100f; }
         float getZ() { return zSlider.getValue() / 100f; }
@@ -923,6 +1061,22 @@ public class PoseEditor extends JFrame {
             xField.setText(String.format("%.2f", x));
             yField.setText(String.format("%.2f", y));
             zField.setText(String.format("%.2f", z));
+        }
+
+        /** Set geometry sliders from a Joint's current values. */
+        void setGeometryFromJoint(Joint j) {
+            offXSlider.setValue(Math.round(j.offsetX * 10));
+            offYSlider.setValue(Math.round(j.offsetY * 10));
+            offZSlider.setValue(Math.round(j.offsetZ * 10));
+            offXField.setText(String.format("%.1f", j.offsetX));
+            offYField.setText(String.format("%.1f", j.offsetY));
+            offZField.setText(String.format("%.1f", j.offsetZ));
+            sizeWSlider.setValue(Math.round(j.boxW / 0.25f));
+            sizeHSlider.setValue(Math.round(j.boxH / 0.25f));
+            sizeDSlider.setValue(Math.round(j.boxD / 0.25f));
+            sizeWField.setText(String.format("%.2f", j.boxW));
+            sizeHField.setText(String.format("%.2f", j.boxH));
+            sizeDField.setText(String.format("%.2f", j.boxD));
         }
 
         JPanel buildPanel() {
@@ -938,19 +1092,47 @@ public class PoseEditor extends JFrame {
             p.add(nameLabel, c);
             c.gridwidth = 1;
 
-            addRow(p, c, 1, "xRot", xSlider, xField);
-            addRow(p, c, 2, "yRot", ySlider, yField);
-            addRow(p, c, 3, "zRot", zSlider, zField);
+            addRow(p, c, 1, "xRot", xSlider, xField, false);
+            addRow(p, c, 2, "yRot", ySlider, yField, false);
+            addRow(p, c, 3, "zRot", zSlider, zField, false);
+
+            // Geometry sub-panel (hidden by default)
+            geometryPanel = new JPanel(new GridBagLayout());
+            geometryPanel.setBackground(new Color(235, 240, 248));
+            geometryPanel.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(180, 190, 210)),
+                    BorderFactory.createEmptyBorder(2, 2, 2, 2)));
+            GridBagConstraints gc = new GridBagConstraints();
+            gc.insets = new Insets(1, 2, 1, 2);
+            gc.fill = GridBagConstraints.HORIZONTAL;
+
+            addRow(geometryPanel, gc, 0, "Offset X", offXSlider, offXField, true);
+            addRow(geometryPanel, gc, 1, "Offset Y", offYSlider, offYField, true);
+            addRow(geometryPanel, gc, 2, "Offset Z", offZSlider, offZField, true);
+            addRow(geometryPanel, gc, 3, "Size W", sizeWSlider, sizeWField, true);
+            addRow(geometryPanel, gc, 4, "Size H", sizeHSlider, sizeHField, true);
+            addRow(geometryPanel, gc, 5, "Size D", sizeDSlider, sizeDField, true);
+
+            geometryPanel.setVisible(showGeometry);
+
+            c.gridx = 0; c.gridy = 4; c.gridwidth = 3;
+            p.add(geometryPanel, c);
 
             return p;
         }
 
-        void addRow(JPanel p, GridBagConstraints c, int row, String label, JSlider slider, JTextField field) {
+        void addRow(JPanel p, GridBagConstraints c, int row, String label,
+                    JSlider slider, JTextField field, boolean isGeometry) {
             c.gridy = row;
             c.gridx = 0; c.weightx = 0;
             JLabel lbl = new JLabel(label);
-            lbl.setFont(new Font("SansSerif", Font.PLAIN, 10));
-            lbl.setForeground(new Color(100, 100, 100));
+            if (isGeometry) {
+                lbl.setFont(new Font("SansSerif", Font.PLAIN, 9));
+                lbl.setForeground(new Color(80, 90, 120));
+            } else {
+                lbl.setFont(new Font("SansSerif", Font.PLAIN, 10));
+                lbl.setForeground(new Color(100, 100, 100));
+            }
             p.add(lbl, c);
             c.gridx = 1; c.weightx = 1.0;
             p.add(slider, c);
@@ -969,6 +1151,7 @@ public class PoseEditor extends JFrame {
     Map<String, List<Preset>> allPresets;
     Map<String, JointSliderGroup> sliderGroups = new LinkedHashMap<>();
     boolean batchUpdating = false;
+    boolean showGeometry = false;
 
     PreviewPanel previewPanel;
     JTextArea exportTextArea;
@@ -976,6 +1159,7 @@ public class PoseEditor extends JFrame {
     JComboBox<String> poseCombo;
     JPanel sliderPanel;
     JScrollPane sliderScrollPane;
+    JCheckBox geometryToggle;
 
     // =========================================================================
     // Build current pose from sliders
@@ -1034,7 +1218,28 @@ public class PoseEditor extends JFrame {
             sb.append("        .mirror()\n");
         }
         sb.append("        .build();\n");
+
+        // Geometry section
+        sb.append("\n// Geometry (archetype: ").append(currentArchetype).append(")\n");
+        for (Joint j : skeleton.allJoints) {
+            // Skip right-side joints (mirrored from left)
+            if (j.name.startsWith("R_")) continue;
+            sb.append("// ").append(j.name)
+                    .append(": offset(").append(formatGeomFloat(j.offsetX))
+                    .append(", ").append(formatGeomFloat(j.offsetY))
+                    .append(", ").append(formatGeomFloat(j.offsetZ))
+                    .append(") size(").append(formatGeomFloat(j.boxW))
+                    .append(", ").append(formatGeomFloat(j.boxH))
+                    .append(", ").append(formatGeomFloat(j.boxD))
+                    .append(")\n");
+        }
+
         return sb.toString();
+    }
+
+    String formatGeomFloat(float v) {
+        if (v == (int) v) return String.format("%.1f", v);
+        return String.format("%.2f", v);
     }
 
     String toSkeletonConstant(String jointName) {
@@ -1102,6 +1307,12 @@ public class PoseEditor extends JFrame {
         JButton resetBtn = new JButton("Reset All to Zero");
         resetBtn.setAlignmentX(0f);
         leftPanel.add(resetBtn);
+        leftPanel.add(Box.createVerticalStrut(16));
+
+        geometryToggle = new JCheckBox("Show Geometry Controls");
+        geometryToggle.setAlignmentX(0f);
+        geometryToggle.setSelected(false);
+        leftPanel.add(geometryToggle);
         leftPanel.add(Box.createVerticalGlue());
 
         // --- Center panel: preview ---
@@ -1156,6 +1367,7 @@ public class PoseEditor extends JFrame {
                 case "Waterfowl": skeleton = buildWaterfowl(); break;
             }
             updatePoseCombo();
+            initGeometrySliders();
             previewPanel.repaint();
             updateExportText();
         });
@@ -1167,10 +1379,31 @@ public class PoseEditor extends JFrame {
             for (JointSliderGroup g : sliderGroups.values()) {
                 g.setValues(0, 0, 0);
             }
+            // Reset geometry to defaults
+            for (Joint j : skeleton.allJoints) {
+                j.resetGeometry();
+            }
+            for (var gEntry : sliderGroups.entrySet()) {
+                Joint j = skeleton.jointMap.get(gEntry.getKey());
+                if (j != null) {
+                    gEntry.getValue().setGeometryFromJoint(j);
+                }
+            }
             batchUpdating = false;
             currentPoseName = "custom";
             previewPanel.repaint();
             updateExportText();
+        });
+
+        geometryToggle.addActionListener(e -> {
+            showGeometry = geometryToggle.isSelected();
+            for (JointSliderGroup g : sliderGroups.values()) {
+                if (g.geometryPanel != null) {
+                    g.geometryPanel.setVisible(showGeometry);
+                }
+            }
+            sliderPanel.revalidate();
+            sliderPanel.repaint();
         });
 
         exportBtn.addActionListener(e -> {
@@ -1221,6 +1454,16 @@ public class PoseEditor extends JFrame {
         for (JointSliderGroup g : sliderGroups.values()) {
             g.setValues(0, 0, 0);
         }
+        // Reset geometry to archetype defaults
+        for (Joint j : skeleton.allJoints) {
+            j.resetGeometry();
+        }
+        for (var gEntry : sliderGroups.entrySet()) {
+            Joint j = skeleton.jointMap.get(gEntry.getKey());
+            if (j != null) {
+                gEntry.getValue().setGeometryFromJoint(j);
+            }
+        }
         // Apply preset values (only left-side and non-mirrored joints)
         for (var entry : found.joints.entrySet()) {
             String name = entry.getKey();
@@ -1245,8 +1488,22 @@ public class PoseEditor extends JFrame {
         addSliderSection("Tail", TAIL_JOINTS, TAIL_YELLOW);
         addSliderSection("Left Leg (R auto-mirrors)", LEFT_LEG_JOINTS, LEG_ORANGE);
 
+        // Initialise geometry sliders from skeleton defaults
+        initGeometrySliders();
+
         sliderPanel.add(Box.createVerticalGlue());
         sliderPanel.revalidate();
+    }
+
+    void initGeometrySliders() {
+        batchUpdating = true;
+        for (var entry : sliderGroups.entrySet()) {
+            Joint j = skeleton.jointMap.get(entry.getKey());
+            if (j != null) {
+                entry.getValue().setGeometryFromJoint(j);
+            }
+        }
+        batchUpdating = false;
     }
 
     void addSliderSection(String title, String[] jointNames, Color colour) {
