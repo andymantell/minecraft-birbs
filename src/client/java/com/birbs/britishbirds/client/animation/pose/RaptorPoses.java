@@ -95,6 +95,58 @@ public final class RaptorPoses {
             .mirror()
             .build();
 
+    /**
+     * Hover: body nearly vertical, wings beating rapidly, legs dangling.
+     * Used by barn owl during quartering flight over fields.
+     * Slower, softer springs on trailing feathers for loose trailing effect.
+     */
+    public static final PoseData HOVER = PoseData.builder("hover")
+            .joint(BirdSkeleton.CHEST,      -0.1f, 0f, 0f)  // body nearly upright
+            .joint(BirdSkeleton.NECK_LOWER,  0.05f, 0f, 0f)
+            .joint(BirdSkeleton.NECK_MID,    0.05f, 0f, 0f)
+            .joint(BirdSkeleton.NECK_UPPER,  0.05f, 0f, 0f)
+            .joint(BirdSkeleton.HEAD,        0.1f,  0f, 0f)  // head forward to scan ground
+            // Wings spread wide for hovering
+            .joint(BirdSkeleton.L_UPPER_WING, 0f, 0f, -1.0f)
+            .joint(BirdSkeleton.L_FOREARM,    0f, 0f, -0.15f)
+            .joint(BirdSkeleton.L_HAND,       0f, 0f, -0.1f)
+            .joint(BirdSkeleton.TAIL_BASE,  -0.3f, 0f, 0f)
+            .joint(BirdSkeleton.TAIL_FAN,   -0.1f, 0f, 0f)
+            // Legs dangling down for strike readiness
+            .joint(BirdSkeleton.L_THIGH,     0.3f, 0f, 0f)
+            .joint(BirdSkeleton.L_SHIN,      0.1f, 0f, 0f)
+            .joint(BirdSkeleton.L_TARSUS,   -0.1f, 0f, 0f)
+            .mirror()
+            // Loose trailing feathers during hover
+            .spring(BirdSkeleton.L_SCAPULARS,   10f, 1.5f)
+            .spring(BirdSkeleton.L_SECONDARIES, 10f, 1.5f)
+            .spring(BirdSkeleton.L_PRIMARIES,    8f, 1.0f)
+            .mirror()
+            .build();
+
+    /**
+     * Strike: legs extended forward for prey grab, wings swept back,
+     * body pitching down. Used at the moment of prey contact.
+     */
+    public static final PoseData STRIKE = PoseData.builder("strike")
+            .joint(BirdSkeleton.CHEST,       0.4f, 0f, 0f)
+            .joint(BirdSkeleton.NECK_LOWER, -0.1f, 0f, 0f)
+            .joint(BirdSkeleton.NECK_MID,   -0.05f, 0f, 0f)
+            .joint(BirdSkeleton.NECK_UPPER, -0.05f, 0f, 0f)
+            .joint(BirdSkeleton.HEAD,       -0.2f, 0f, 0f)  // looking down at prey
+            // Wings swept back to brake
+            .joint(BirdSkeleton.L_UPPER_WING, 0f, 0f, -0.6f)
+            .joint(BirdSkeleton.L_FOREARM,    0f, 0f, -0.3f)
+            .joint(BirdSkeleton.L_HAND,       0f, 0f, -0.2f)
+            .joint(BirdSkeleton.TAIL_BASE,  -0.6f, 0f, 0f)   // tail as brake
+            // Legs extended forward — talons out
+            .joint(BirdSkeleton.L_THIGH,    -0.6f, 0f, 0f)
+            .joint(BirdSkeleton.L_SHIN,     -0.3f, 0f, 0f)
+            .joint(BirdSkeleton.L_TARSUS,    0.2f, 0f, 0f)
+            .joint(BirdSkeleton.L_FOOT,     -0.4f, 0f, 0f)   // talons spread
+            .mirror()
+            .build();
+
     // =========================================================================
     // Partial Overlays
     // =========================================================================
@@ -102,6 +154,18 @@ public final class RaptorPoses {
     /** Alert head scan — sharp raptor head turn to one side. */
     public static final PoseData HEAD_SCAN = PoseData.builder("head_scan")
             .joint(BirdSkeleton.HEAD, 0f, 0.4f, 0f)
+            .build();
+
+    /** Owl head turn left — wider rotation than standard raptor (owls rotate ~270 degrees). */
+    public static final PoseData OWL_HEAD_LEFT = PoseData.builder("owl_head_left")
+            .joint(BirdSkeleton.HEAD, 0f, -0.5f, 0f)
+            .joint(BirdSkeleton.NECK_UPPER, 0f, -0.15f, 0f)
+            .build();
+
+    /** Owl head turn right. */
+    public static final PoseData OWL_HEAD_RIGHT = PoseData.builder("owl_head_right")
+            .joint(BirdSkeleton.HEAD, 0f, 0.5f, 0f)
+            .joint(BirdSkeleton.NECK_UPPER, 0f, 0.15f, 0f)
             .build();
 
     // =========================================================================
