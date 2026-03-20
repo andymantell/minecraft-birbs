@@ -883,20 +883,8 @@ public class PoseEditor extends JFrame {
 
                     String hit = hitTestJoint(mx, my, cellW, cellH);
                     selectedJoint = hit;
+                    updateSliderVisibility();
                     if (hit != null) {
-                        // Scroll the matching slider group into view
-                        String sliderName = hit.startsWith("R_") ? "L_" + hit.substring(2) : hit;
-                        JointSliderGroup grp = sliderGroups.get(sliderName);
-                        if (grp != null && grp.xSlider.getParent() != null) {
-                            // Walk up to find the JPanel built by buildPanel()
-                            java.awt.Component comp = grp.xSlider.getParent();
-                            while (comp != null && comp != sliderPanel) {
-                                if (comp instanceof JPanel) {
-                                    ((JComponent) comp).scrollRectToVisible(comp.getBounds());
-                                }
-                                comp = comp.getParent();
-                            }
-                        }
                     }
                     repaint();
                 }
@@ -1126,7 +1114,7 @@ public class PoseEditor extends JFrame {
                 sx[i] = toScreenX(p2d[0], cellW, col, row, scale, panX);
                 sy[i] = toScreenY(p2d[1], cellH, col, row, scale, panY);
             }
-            Color fill = new Color(j.colour.getRed(), j.colour.getGreen(), j.colour.getBlue(), 60);
+            Color fill = new Color(j.colour.getRed(), j.colour.getGreen(), j.colour.getBlue(), solidFill ? 200 : 60);
             g.setColor(fill);
             int[][] faces = {
                     {0,1,2,3},{4,5,6,7},{0,3,7,4},{1,2,6,5},{0,1,5,4},{3,2,6,7}
@@ -1270,6 +1258,9 @@ public class PoseEditor extends JFrame {
                 }
             }
 
+            // XYZ axis indicator in bottom-left corner
+            drawAxisIndicator(g, view, cellW, cellH, col, row);
+
             g.setClip(oldClip);
         }
 
@@ -1283,7 +1274,7 @@ public class PoseEditor extends JFrame {
                 sy[i] = (int) p3[1];
                 depths[i] = p3[2];
             }
-            Color fill = new Color(j.colour.getRed(), j.colour.getGreen(), j.colour.getBlue(), 60);
+            Color fill = new Color(j.colour.getRed(), j.colour.getGreen(), j.colour.getBlue(), solidFill ? 200 : 60);
             g.setColor(fill);
             int[][] faces = {
                     {0,1,2,3},{4,5,6,7},{0,3,7,4},{1,2,6,5},{0,1,5,4},{3,2,6,7}
@@ -1336,8 +1327,15 @@ public class PoseEditor extends JFrame {
             Shape oldClip = g.getClip();
             g.setClip(x0, y0, cellW, cellH);
 
-            for (Joint j : skeleton.allJoints) drawCuboid3D(g, j, cellW, cellH, col, row, es, panX, panY);
-            for (Joint j : skeleton.allJoints) drawJointDot3D(g, j, cellW, cellH, col, row, es, panX, panY);
+            // Sort joints by depth (painter's algorithm: draw furthest first)
+            List<Joint> sorted = new ArrayList<>(skeleton.allJoints);
+            sorted.sort((a, b) -> {
+                double[] pa = project3D(a.worldPos, cellW, cellH, col, row, es, panX, panY);
+                double[] pb = project3D(b.worldPos, cellW, cellH, col, row, es, panX, panY);
+                return Double.compare(pb[2], pa[2]);  // furthest (largest z) first
+            });
+            for (Joint j : sorted) drawCuboid3D(g, j, cellW, cellH, col, row, es, panX, panY);
+            for (Joint j : sorted) drawJointDot3D(g, j, cellW, cellH, col, row, es, panX, panY);
 
             // Draw handles on selected joint
             if (selectedJoint != null) {
@@ -1349,6 +1347,9 @@ public class PoseEditor extends JFrame {
                     drawHandles(g, sel, jx, jy);
                 }
             }
+
+            // 3D axis indicator that rotates with camera
+            drawAxisIndicator3D(g, cellW, cellH, col, row);
 
             g.setClip(oldClip);
         }
@@ -1424,6 +1425,76 @@ public class PoseEditor extends JFrame {
                 g.drawString(label, x+14, y);
                 y += 14;
             }
+        }
+
+        /** Draw XYZ axis indicator in a panel corner. */
+        void drawAxisIndicator(Graphics2D g, View view, int cellW, int cellH, int col, int row) {
+            int cx = col * cellW + 40;  // bottom-left of panel
+            int cy = row * cellH + cellH - 30;
+            int len = 25;
+
+            g.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.setFont(new Font("SansSerif", Font.BOLD, 10));
+
+            // Determine which screen directions correspond to X, Y, Z in this view
+            // In MC model space: +X=right, +Y=down, +Z=back
+            switch (view) {
+                case FRONT -> {  // looking from +Z: screen X=world X, screen Y=world Y
+                    drawAxisArrow(g, cx, cy, cx + len, cy, Color.RED, "X");       // right
+                    drawAxisArrow(g, cx, cy, cx, cy - len, Color.GREEN, "Y(-up)"); // up (Y is inverted)
+                }
+                case SIDE -> {   // looking from +X: screen X=world Z, screen Y=world Y
+                    drawAxisArrow(g, cx, cy, cx + len, cy, Color.BLUE, "Z");
+                    drawAxisArrow(g, cx, cy, cx, cy - len, Color.GREEN, "Y(-up)");
+                }
+                case TOP -> {    // looking from -Y: screen X=world X, screen Y=world Z
+                    drawAxisArrow(g, cx, cy, cx + len, cy, Color.RED, "X");
+                    drawAxisArrow(g, cx, cy, cx, cy - len, Color.BLUE, "Z(-fwd)");
+                }
+            }
+        }
+
+        /** Draw XYZ axis indicator for 3D view using camera rotation. */
+        void drawAxisIndicator3D(Graphics2D g, int cellW, int cellH, int col, int row) {
+            int cx = col * cellW + 40;
+            int cy = row * cellH + cellH - 30;
+            int len = 25;
+
+            g.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.setFont(new Font("SansSerif", Font.BOLD, 10));
+
+            double cosY = Math.cos(camYaw), sinY = Math.sin(camYaw);
+            double cosP = Math.cos(camPitch), sinP = Math.sin(camPitch);
+
+            // X axis (1,0,0) -> rotated by yaw then pitch
+            double xx = cosY, xz = -sinY;
+            double xy2 = -xz * sinP;
+            drawAxisArrow(g, cx, cy, cx + (int)(xx * len), cy + (int)(xy2 * len), Color.RED, "X");
+
+            // Y axis (0,1,0) -> rotated by pitch only
+            double yy = cosP, yz = sinP;
+            drawAxisArrow(g, cx, cy, cx, cy + (int)(yy * len), Color.GREEN, "Y");
+
+            // Z axis (0,0,1) -> rotated by yaw then pitch
+            double zx = sinY, zz = cosY;
+            double zy2 = -zz * sinP;
+            drawAxisArrow(g, cx, cy, cx + (int)(zx * len), cy + (int)(zy2 * len), Color.BLUE, "Z");
+        }
+
+        void drawAxisArrow(Graphics2D g, int x1, int y1, int x2, int y2, Color color, String label) {
+            int dx = x2 - x1, dy = y2 - y1;
+            if (dx == 0 && dy == 0) return;  // degenerate
+            g.setColor(color);
+            g.drawLine(x1, y1, x2, y2);
+            // Arrowhead
+            double angle = Math.atan2(dy, dx);
+            int ax1 = x2 - (int)(7 * Math.cos(angle - 0.4));
+            int ay1 = y2 - (int)(7 * Math.sin(angle - 0.4));
+            int ax2 = x2 - (int)(7 * Math.cos(angle + 0.4));
+            int ay2 = y2 - (int)(7 * Math.sin(angle + 0.4));
+            g.fillPolygon(new int[]{x2, ax1, ax2}, new int[]{y2, ay1, ay2}, 3);
+            // Label
+            g.drawString(label, x2 + 3, y2 - 3);
         }
     }
 
@@ -1777,6 +1848,9 @@ public class PoseEditor extends JFrame {
     JPanel sliderPanel;
     JScrollPane sliderScrollPane;
     JCheckBox geometryToggle;
+    boolean solidFill = false;
+    Map<String, JPanel> jointToSection = new HashMap<>();  // joint name -> its section panel
+    List<JPanel> allSections = new ArrayList<>();
 
     // =========================================================================
     // Build current pose from sliders
@@ -1944,6 +2018,16 @@ public class PoseEditor extends JFrame {
         geometryToggle.setAlignmentX(0f);
         geometryToggle.setSelected(false);
         leftPanel.add(geometryToggle);
+
+        JCheckBox solidToggle = new JCheckBox("Solid Fill");
+        solidToggle.setAlignmentX(0f);
+        solidToggle.setSelected(false);
+        solidToggle.addActionListener(e -> {
+            solidFill = solidToggle.isSelected();
+            previewPanel.repaint();
+        });
+        leftPanel.add(solidToggle);
+
         leftPanel.add(Box.createVerticalGlue());
 
         // --- Center panel: preview ---
@@ -2177,12 +2261,32 @@ public class PoseEditor extends JFrame {
             sliderGroups.put(name, group);
             section.add(group.buildPanel());
             section.add(Box.createVerticalStrut(2));
+            jointToSection.put(name, section);
+            // Also map R_ mirror to same section
+            if (name.startsWith("L_")) {
+                jointToSection.put("R_" + name.substring(2), section);
+            }
         }
 
         section.setAlignmentX(0f);
         section.setMaximumSize(new Dimension(Integer.MAX_VALUE, section.getPreferredSize().height + 200));
+        allSections.add(section);
         sliderPanel.add(section);
         sliderPanel.add(Box.createVerticalStrut(4));
+    }
+
+    void updateSliderVisibility() {
+        String sel = previewPanel.selectedJoint;
+        if (sel == null) {
+            // Nothing selected — show all sections
+            for (JPanel s : allSections) s.setVisible(true);
+        } else {
+            // Show only the section containing the selected joint
+            JPanel activeSection = jointToSection.get(sel);
+            for (JPanel s : allSections) s.setVisible(s == activeSection);
+        }
+        sliderPanel.revalidate();
+        sliderPanel.repaint();
     }
 
     File resolveOutputFile(String filename) {

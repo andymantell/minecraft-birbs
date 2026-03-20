@@ -21,24 +21,24 @@ public final class BaseBirdPoses {
     // Static Poses
     // =========================================================================
 
-    /** Resting on a branch — relaxed S-curve neck, wings folded tight via yRot Z-fold, legs gripping. */
+    /** Resting on a branch — tuned in PoseEditor 2026-03-20. */
     public static final PoseData PERCHED = PoseData.builder("perched")
-            .joint(BirdSkeleton.CHEST,       0.1f,  0f, 0f)
-            .joint(BirdSkeleton.NECK_LOWER, -0.15f, 0f, 0f)
-            .joint(BirdSkeleton.NECK_MID,   -0.1f,  0f, 0f)
-            .joint(BirdSkeleton.NECK_UPPER, -0.1f,  0f, 0f)
-            .joint(BirdSkeleton.HEAD,       -0.05f, 0f, 0f)
-            // Wings folded via yRot Z-fold pattern
-            .joint(BirdSkeleton.L_UPPER_WING, 0f, -1.5f, 0.3f)
+            .joint(BirdSkeleton.CHEST,        0.1f, 0f, 0f)
+            .joint(BirdSkeleton.NECK_LOWER,   0.42f, 0f, 0f)
+            .joint(BirdSkeleton.NECK_MID,    -0.1f, 0f, 0f)
+            .joint(BirdSkeleton.NECK_UPPER,  -0.1f, 0f, 0f)
+            .joint(BirdSkeleton.HEAD,        -0.05f, 0f, 0f)
+            // Wings folded — tuned via editor
+            .joint(BirdSkeleton.L_UPPER_WING, 1.16f, -0.02f, 1.35f)
             .joint(BirdSkeleton.L_SCAPULARS,  0f, -0.2f, 0f)
-            .joint(BirdSkeleton.L_FOREARM,    0f,  2.2f, 0f)
-            .joint(BirdSkeleton.L_SECONDARIES,0f, -0.15f, 0f)
-            .joint(BirdSkeleton.L_HAND,       0f, -1.8f, 0f)
-            .joint(BirdSkeleton.L_PRIMARIES,  0f, -0.1f, 0f)
-            .joint(BirdSkeleton.TAIL_BASE,  -0.2f, 0f, 0f)
-            .joint(BirdSkeleton.L_THIGH,     0.1f, 0f, 0f)
-            .joint(BirdSkeleton.L_SHIN,      0.3f, 0f, 0f)
-            .joint(BirdSkeleton.L_TARSUS,   -0.4f, 0f, 0f)
+            .joint(BirdSkeleton.L_FOREARM,    0f, 0.08f, 0.2f)
+            .joint(BirdSkeleton.L_SECONDARIES,0f, -0.15f, 0.08f)
+            .joint(BirdSkeleton.L_HAND,       0f, 0.05f, 0.36f)
+            .joint(BirdSkeleton.L_PRIMARIES,  0.05f, -0.1f, -0.17f)
+            .joint(BirdSkeleton.TAIL_BASE,   -0.2f, 0f, 0f)
+            .joint(BirdSkeleton.L_THIGH,      0.1f, 0f, 0f)
+            .joint(BirdSkeleton.L_SHIN,       0.3f, 0f, 0f)
+            .joint(BirdSkeleton.L_TARSUS,    -0.4f, 0f, 0f)
             .mirror()
             .build();
 
