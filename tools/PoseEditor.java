@@ -1155,6 +1155,7 @@ public class PoseEditor extends JFrame {
                 public void mouseReleased(MouseEvent e) {
                     if (ikDragging) {
                         updateExportText();
+                        if (editingCyclic) updateCurrentEndpointFromSliders();
                         ikDragging = false;
                         ikJointName = null;
                         ikChain.clear();
@@ -2273,7 +2274,27 @@ public class PoseEditor extends JFrame {
             slider.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mousePressed(MouseEvent e) {
-                    if (!batchUpdating) captureState();
+                    if (!batchUpdating) {
+                        captureState();
+                        // Auto-pause and snap to endpoint when editing during cyclic mode
+                        if (editingCyclic && animPlaying) {
+                            animPlaying = false;
+                            animTimer.stop();
+                            if (playPauseBtn != null) playPauseBtn.setText("Play");
+                            // Snap to nearest endpoint
+                            float snapPhase = animPhase < 0.5f ? 0f : 1f;
+                            cyclicEndpoint = snapPhase == 0f ? "A" : "B";
+                            animPhase = snapPhase;
+                            batchUpdating = true;
+                            phaseSlider.setValue(Math.round(snapPhase * 100));
+                            batchUpdating = false;
+                            applyPhase(snapPhase);
+                        }
+                    }
+                }
+                @Override
+                public void mouseReleased(MouseEvent e) {
+                    if (!batchUpdating && editingCyclic) updateCurrentEndpointFromSliders();
                 }
             });
             slider.addChangeListener(e -> {
@@ -2295,6 +2316,7 @@ public class PoseEditor extends JFrame {
                     previewPanel.repaint();
                     updateExportText();
                     captureState();
+                    if (editingCyclic) updateCurrentEndpointFromSliders();
                 } catch (NumberFormatException ex) {
                     // ignore bad input
                 }
@@ -3086,17 +3108,10 @@ public class PoseEditor extends JFrame {
             cyclicOffsetA = found.offsetA;
             cyclicOffsetB = found.offsetB;
             cyclicAnimName = found.cyclicName;
-            // Determine which endpoint (A or B) this preset represents
-            cyclicEndpoint = found.endpointName.equals(
-                    getEndpointNameA(poseName)) ? "A" : "B";
-            // Determine from the display name which endpoint A is
-            // (first preset of the pair has "A" label in name)
-            cyclicEndpoint = found.joints.equals(mergePoseOffset(found.basePose, found.offsetA))
-                    ? "A" : "B";
-            // Simpler: compare display name to detect "wings_up" vs "wings_down" patterns
-            // The poseA name always ends with ": " + nameA. We stored the endpointName.
-            cyclicEndpoint = found.endpointName;
-            animPhase = isEndpointA(found) ? 0f : 1f;
+            // Determine A or B based on phase
+            boolean isA = isEndpointA(found);
+            cyclicEndpoint = isA ? "A" : "B";
+            animPhase = isA ? 0f : 1f;
             updateCyclicStatusLabel();
         } else {
             editingCyclic = false;
@@ -3190,11 +3205,19 @@ public class PoseEditor extends JFrame {
         }
         animPlaying = !animPlaying;
         if (animPlaying) {
-            playPauseBtn.setText("Pause");
+            animElapsedTicks = 0f;  // restart from beginning
+            playPauseBtn.setText("Stop");
             animTimer.start();
         } else {
+            // Stop: snap back to current endpoint for editing
             playPauseBtn.setText("Play");
             animTimer.stop();
+            float snapPhase = "A".equals(cyclicEndpoint) ? 0f : 1f;
+            animPhase = snapPhase;
+            batchUpdating = true;
+            phaseSlider.setValue(Math.round(snapPhase * 100));
+            batchUpdating = false;
+            applyPhase(snapPhase);
         }
     }
 
@@ -3202,8 +3225,29 @@ public class PoseEditor extends JFrame {
      * Apply a blended cyclic pose at the given phase (0=offsetA, 1=offsetB).
      * Sets slider values to base + lerp(offsetA, offsetB, phase).
      */
+    /** Capture current slider values as the active endpoint's offset (slider value - base). */
+    void updateCurrentEndpointFromSliders() {
+        if (!editingCyclic || cyclicBasePose == null) return;
+        Map<String, float[]> target = "A".equals(cyclicEndpoint) ? cyclicOffsetA :
+                                      "B".equals(cyclicEndpoint) ? cyclicOffsetB : null;
+        if (target == null) return;
+        for (var entry : sliderGroups.entrySet()) {
+            String name = entry.getKey();
+            JointSliderGroup g = entry.getValue();
+            float[] baseV = cyclicBasePose.getOrDefault(name, new float[]{0f, 0f, 0f});
+            // offset = current slider value - base
+            target.put(name, new float[]{
+                g.getX() - baseV[0],
+                g.getY() - baseV[1],
+                g.getZ() - baseV[2]
+            });
+        }
+    }
+
     void applyPhase(float phase) {
         if (!editingCyclic || cyclicBasePose == null || cyclicOffsetA == null || cyclicOffsetB == null) return;
+
+        // Don't capture here — captured on slider change instead
 
         // Collect all joint names across base, offsetA, offsetB
         Set<String> allJointNames = new LinkedHashSet<>();
