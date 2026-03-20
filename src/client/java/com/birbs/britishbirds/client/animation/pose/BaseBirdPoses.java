@@ -46,31 +46,35 @@ public final class BaseBirdPoses {
             .mirror()
             .build();
 
-    /** Level sustained flight — body pitched forward, wings spread, neck compensating. */
+    /** Level sustained flight — body nearly horizontal, wings spread, neck compensating up. */
     public static final PoseData FLYING_CRUISE = PoseData.builder("flying_cruise")
-            .joint(BirdSkeleton.CHEST,      -0.6f, 0f, 0f)
-            .joint(BirdSkeleton.NECK_LOWER,  0.2f, 0f, 0f)
-            .joint(BirdSkeleton.NECK_MID,    0.1f, 0f, 0f)
-            .joint(BirdSkeleton.NECK_UPPER,  0.1f, 0f, 0f)
-            .joint(BirdSkeleton.HEAD,        0.15f, 0f, 0f)
+            .joint(BirdSkeleton.CHEST,      -1.2f, 0f, 0f)   // strong forward pitch
+            .joint(BirdSkeleton.TORSO,      -0.2f, 0f, 0f)   // torso follows
+            .joint(BirdSkeleton.HIP,        -0.15f, 0f, 0f)  // hip aligns with body
+            .joint(BirdSkeleton.NECK_LOWER,  0.4f, 0f, 0f)   // neck compensates up
+            .joint(BirdSkeleton.NECK_MID,    0.3f, 0f, 0f)
+            .joint(BirdSkeleton.NECK_UPPER,  0.2f, 0f, 0f)
+            .joint(BirdSkeleton.HEAD,        0.25f, 0f, 0f)   // head looks forward
             .joint(BirdSkeleton.L_UPPER_WING, 0f, 0f, -0.3f)
             .joint(BirdSkeleton.L_FOREARM,    0f, 0f, -0.2f)
             .joint(BirdSkeleton.L_HAND,       0f, 0f, -0.1f)
-            .joint(BirdSkeleton.TAIL_BASE,  -0.4f, 0f, 0f)
+            .joint(BirdSkeleton.TAIL_BASE,  -0.3f, 0f, 0f)   // tail extends behind
             .mirror()
             .build();
 
-    /** Steep launch — body pitched steeply, wings spread wide. */
+    /** Steep launch — body pitched steeply, wings spread wide, powerful upward thrust. */
     public static final PoseData FLYING_TAKEOFF = PoseData.builder("flying_takeoff")
-            .joint(BirdSkeleton.CHEST,      -0.8f, 0f, 0f)
-            .joint(BirdSkeleton.NECK_LOWER,  0.2f, 0f, 0f)
-            .joint(BirdSkeleton.NECK_MID,    0.1f, 0f, 0f)
-            .joint(BirdSkeleton.NECK_UPPER,  0.1f, 0f, 0f)
-            .joint(BirdSkeleton.HEAD,        0.15f, 0f, 0f)
+            .joint(BirdSkeleton.CHEST,      -1.4f, 0f, 0f)   // steeper than cruise
+            .joint(BirdSkeleton.TORSO,      -0.3f, 0f, 0f)
+            .joint(BirdSkeleton.HIP,        -0.2f, 0f, 0f)
+            .joint(BirdSkeleton.NECK_LOWER,  0.5f, 0f, 0f)   // neck cranes up
+            .joint(BirdSkeleton.NECK_MID,    0.35f, 0f, 0f)
+            .joint(BirdSkeleton.NECK_UPPER,  0.25f, 0f, 0f)
+            .joint(BirdSkeleton.HEAD,        0.25f, 0f, 0f)
             .joint(BirdSkeleton.L_UPPER_WING, 0f, 0f, -0.5f)
             .joint(BirdSkeleton.L_FOREARM,    0f, 0f, -0.2f)
             .joint(BirdSkeleton.L_HAND,       0f, 0f, -0.1f)
-            .joint(BirdSkeleton.TAIL_BASE,  -0.5f, 0f, 0f)
+            .joint(BirdSkeleton.TAIL_BASE,  -0.4f, 0f, 0f)   // tail fans for lift
             .mirror()
             .build();
 
