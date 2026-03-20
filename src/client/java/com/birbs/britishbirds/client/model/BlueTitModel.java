@@ -8,6 +8,7 @@ import com.birbs.britishbirds.client.animation.pose.PasserinePoses;
 import com.birbs.britishbirds.client.animation.pose.PoseData;
 import com.birbs.britishbirds.client.animation.pose.PoseResolver;
 import com.birbs.britishbirds.client.animation.procedural.Breathing;
+import com.birbs.britishbirds.client.animation.procedural.HeadCock;
 import com.birbs.britishbirds.client.animation.procedural.HeadTracking;
 import com.birbs.britishbirds.client.animation.procedural.LandingImpact;
 import com.birbs.britishbirds.client.animation.procedural.MovementDrag;
@@ -559,6 +560,7 @@ public class BlueTitModel extends AbstractBirdModel<BlueTitRenderState> {
         behaviours.add(new LandingImpact());
         behaviours.add(new MovementDrag());
         behaviours.add(new StartleResponse());
+        behaviours.add(new HeadCock());              // blue tit's rapid head-cocking
     }
 
     // =========================================================================
@@ -581,7 +583,8 @@ public class BlueTitModel extends AbstractBirdModel<BlueTitRenderState> {
             resolver.removeOverlay("legs_tucked");
             resolver.removeOverlay("head_tilt");
         } else if (state.isFlying) {
-            resolver.setBasePose(BaseBirdPoses.FLYING_CRUISE, 3.0f);
+            // Slow transition (2.0f) from perched to flying for natural wing-spread
+            resolver.setBasePose(BaseBirdPoses.FLYING_CRUISE, 2.0f);
             // Convert flapAngle to 0..1 phase
             float flapPhase = state.flapAngle * 0.5f + 0.5f;
             resolver.setActiveCyclic(BaseBirdPoses.WINGBEAT, flapPhase);
@@ -595,12 +598,14 @@ public class BlueTitModel extends AbstractBirdModel<BlueTitRenderState> {
             resolver.removeOverlay("legs_tucked");
             resolver.removeOverlay("head_tilt");
         } else {
-            resolver.setBasePose(BaseBirdPoses.PERCHED, 2.0f);
+            // Slow settle (1.5f) so wings fold gradually on landing
+            resolver.setBasePose(BaseBirdPoses.PERCHED, 1.5f);
             resolver.removeOverlay("legs_tucked");
 
             if (state.walkAnimationSpeed > 0.01f) {
-                float walkPhase = (float) (Math.sin(state.walkAnimationPos * 0.6662f) * 0.5f + 0.5f);
-                resolver.setActiveCyclic(BaseBirdPoses.WALK_CYCLE, walkPhase);
+                // Hopping: both legs together, faster cycle than walking
+                float hopPhase = (float) (Math.sin(state.walkAnimationPos * 1.2f) * 0.5f + 0.5f);
+                resolver.setActiveCyclic(PasserinePoses.HOP, hopPhase);
                 resolver.removeOverlay("head_tilt");
             } else {
                 resolver.clearCyclic();

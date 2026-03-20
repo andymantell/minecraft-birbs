@@ -563,24 +563,24 @@ public class PeregrineFalconModel extends AbstractBirdModel<PeregrineFalconRende
         PoseResolver resolver = getResolver(state);
 
         if (state.isStooping) {
-            // Stoop: wings locked tight, body diving — the peregrine's signature
-            resolver.setBasePose(RaptorPoses.STOOP, 6.0f);
-            resolver.clearCyclic();
+            // Progressive stoop: fast transition (4.0f) locks wings tight for dive
+            resolver.setBasePose(RaptorPoses.STOOP, 4.0f);
+            resolver.clearCyclic();  // no wingbeat during stoop — wings locked
             resolver.addOverlay(BaseBirdPoses.LEGS_TUCKED, 1.0f);
         } else if (state.isFlying) {
             // Soaring detection: if flapAngle is very small, wings spread wide
             if (Math.abs(state.flapAngle) < 0.1f) {
-                resolver.setBasePose(RaptorPoses.SOAR, 3.0f);
+                resolver.setBasePose(RaptorPoses.SOAR, 2.0f);
                 resolver.clearCyclic();
             } else {
-                resolver.setBasePose(BaseBirdPoses.FLYING_CRUISE, 3.0f);
+                resolver.setBasePose(BaseBirdPoses.FLYING_CRUISE, 2.0f);
                 float flapPhase = state.flapAngle * 0.5f + 0.5f;
                 resolver.setActiveCyclic(RaptorPoses.RAPTOR_WINGBEAT, flapPhase);
             }
             resolver.addOverlay(BaseBirdPoses.LEGS_TUCKED, 1.0f);
         } else {
-            // Perched: bolt-upright raptor stance
-            resolver.setBasePose(RaptorPoses.RAPTOR_PERCH, 2.0f);
+            // Perched: slow settle (1.5f) so wings fold gradually on landing
+            resolver.setBasePose(RaptorPoses.RAPTOR_PERCH, 1.5f);
             resolver.removeOverlay("legs_tucked");
 
             if (state.walkAnimationSpeed > 0.01f) {
@@ -593,10 +593,6 @@ public class PeregrineFalconModel extends AbstractBirdModel<PeregrineFalconRende
                 int tick = (int) state.ageInTicks % 120;
                 if (tick < 30) {
                     resolver.addOverlay(RaptorPoses.HEAD_SCAN, 1.0f);
-                } else if (tick < 60) {
-                    // Reverse head scan (look the other way) — use negative weight trick
-                    // Actually, just remove and let natural spring return handle it
-                    resolver.removeOverlay("head_scan");
                 } else {
                     resolver.removeOverlay("head_scan");
                 }

@@ -205,12 +205,19 @@ public class PoseResolver {
             joint.setTarget(angleX, angleY, angleZ);
 
             // ------------------------------------------------------------------
-            // Step 6: Apply spring overrides from the current base pose
+            // Step 6: Apply spring overrides from the current base pose and overlays
             // ------------------------------------------------------------------
             if (currentBasePose != null) {
                 PoseData.SpringOverride so = currentBasePose.getSpringOverride(name);
                 if (so != null) {
                     // Preserve the existing maxVelocity; only stiffness and damping are overridden.
+                    joint.setSpring(so.stiffness(), so.damping(), joint.maxVelocity);
+                }
+            }
+            // Overlays can also carry spring overrides (e.g. owl loose feathers)
+            for (ActiveOverlay ao : overlays) {
+                PoseData.SpringOverride so = ao.pose.getSpringOverride(name);
+                if (so != null) {
                     joint.setSpring(so.stiffness(), so.damping(), joint.maxVelocity);
                 }
             }

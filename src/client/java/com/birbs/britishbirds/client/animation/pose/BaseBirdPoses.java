@@ -69,8 +69,8 @@ public final class BaseBirdPoses {
             .joint(BirdSkeleton.NECK_MID,    0.0f, 0f, 0f)
             .joint(BirdSkeleton.NECK_UPPER,  0.0f, 0f, 0f)
             .joint(BirdSkeleton.HEAD,       -0.5f, 0f, 0f)    // head up to look ahead
-            // Wings spread via zRot (lateral geometry)
-            .joint(BirdSkeleton.L_UPPER_WING, 0f, 0f, -0.3f)  // zRot spread
+            // Wings spread via zRot — slight dihedral (nearly flat, slight downward angle)
+            .joint(BirdSkeleton.L_UPPER_WING, 0f, 0f, -0.1f)  // zRot: gentle spread
             .joint(BirdSkeleton.L_FOREARM,    0f, 0f, 0f)
             .joint(BirdSkeleton.L_HAND,       0f, 0f, 0f)
             // Tail counteracts body pitch

@@ -11,6 +11,7 @@ import com.birbs.britishbirds.client.animation.procedural.Breathing;
 import com.birbs.britishbirds.client.animation.procedural.HeadTracking;
 import com.birbs.britishbirds.client.animation.procedural.LandingImpact;
 import com.birbs.britishbirds.client.animation.procedural.MovementDrag;
+import com.birbs.britishbirds.client.animation.procedural.SlowHeadScan;
 import com.birbs.britishbirds.client.animation.procedural.StartleResponse;
 import com.birbs.britishbirds.client.animation.procedural.WeightShift;
 import com.birbs.britishbirds.client.renderer.BarnOwlRenderState;
@@ -32,6 +33,20 @@ import java.util.Map;
  * 512x512 texture. ModelPart hierarchy mirrors the BirdSkeleton joint tree.
  */
 public class BarnOwlModel extends AbstractBirdModel<BarnOwlRenderState> {
+
+    // =========================================================================
+    // Owl loose feathers overlay — softer springs for silent, fluid flight
+    // =========================================================================
+
+    /** Loose trailing feathers for owl's characteristically silent, fluid flight. */
+    private static final PoseData OWL_LOOSE_FEATHERS = PoseData.builder("owl_loose_feathers")
+            .spring(BirdSkeleton.L_SCAPULARS, 8f, 1.0f)
+            .spring(BirdSkeleton.L_SECONDARIES, 8f, 1.0f)
+            .spring(BirdSkeleton.L_PRIMARIES, 6f, 0.8f)
+            .spring(BirdSkeleton.R_SCAPULARS, 8f, 1.0f)
+            .spring(BirdSkeleton.R_SECONDARIES, 8f, 1.0f)
+            .spring(BirdSkeleton.R_PRIMARIES, 6f, 0.8f)
+            .build();
 
     // All 32 skeleton-driven parts
     private final ModelPart chest;
@@ -523,6 +538,7 @@ public class BarnOwlModel extends AbstractBirdModel<BarnOwlRenderState> {
         behaviours.add(new LandingImpact());
         behaviours.add(new MovementDrag());
         behaviours.add(new StartleResponse());
+        behaviours.add(new SlowHeadScan());          // owl's slow deliberate head rotation
     }
 
     // =========================================================================
@@ -545,41 +561,28 @@ public class BarnOwlModel extends AbstractBirdModel<BarnOwlRenderState> {
             float hoverFlap = (float) (Math.sin(state.ageInTicks * 1.5f) * 0.5f + 0.5f);
             resolver.setActiveCyclic(RaptorPoses.RAPTOR_WINGBEAT, hoverFlap);
             resolver.removeOverlay("legs_tucked");
-            resolver.removeOverlay("owl_head_left");
-            resolver.removeOverlay("owl_head_right");
+            // Loose trailing feathers for silent, fluid flight
+            resolver.addOverlay(OWL_LOOSE_FEATHERS, 1.0f);
         } else if (state.isFlying) {
-            // Sustained flight — slow deep wing strokes
-            resolver.setBasePose(BaseBirdPoses.FLYING_CRUISE, 3.0f);
+            // Sustained flight — slow transition (2.0f) for natural wing-spread
+            resolver.setBasePose(BaseBirdPoses.FLYING_CRUISE, 2.0f);
             float flapPhase = state.flapAngle * 0.5f + 0.5f;
             resolver.setActiveCyclic(RaptorPoses.RAPTOR_WINGBEAT, flapPhase);
             resolver.addOverlay(BaseBirdPoses.LEGS_TUCKED, 1.0f);
-            resolver.removeOverlay("owl_head_left");
-            resolver.removeOverlay("owl_head_right");
+            // Loose trailing feathers for silent, fluid flight
+            resolver.addOverlay(OWL_LOOSE_FEATHERS, 1.0f);
         } else {
-            // Perched — tall upright raptor stance
-            resolver.setBasePose(RaptorPoses.RAPTOR_PERCH, 2.0f);
+            // Perched — slow settle (1.5f) so wings fold gradually on landing
+            resolver.setBasePose(RaptorPoses.RAPTOR_PERCH, 1.5f);
             resolver.removeOverlay("legs_tucked");
+            resolver.removeOverlay("owl_loose_feathers");
 
             if (state.walkAnimationSpeed > 0.01f) {
                 float walkPhase = (float) (Math.sin(state.walkAnimationPos * 0.6662f) * 0.5f + 0.5f);
                 resolver.setActiveCyclic(BaseBirdPoses.WALK_CYCLE, walkPhase);
-                resolver.removeOverlay("owl_head_left");
-                resolver.removeOverlay("owl_head_right");
             } else {
                 resolver.clearCyclic();
-
-                // Nocturnal head rotation cycle — looking side to side
-                int headCycle = (int) state.ageInTicks % 80;
-                if (headCycle < 20) {
-                    resolver.addOverlay(RaptorPoses.OWL_HEAD_RIGHT, 1.0f);
-                    resolver.removeOverlay("owl_head_left");
-                } else if (headCycle < 40) {
-                    resolver.removeOverlay("owl_head_right");
-                    resolver.addOverlay(RaptorPoses.OWL_HEAD_LEFT, 1.0f);
-                } else {
-                    resolver.removeOverlay("owl_head_left");
-                    resolver.removeOverlay("owl_head_right");
-                }
+                // SlowHeadScan procedural behaviour now handles head rotation
             }
         }
     }

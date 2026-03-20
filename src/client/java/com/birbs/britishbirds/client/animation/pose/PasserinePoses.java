@@ -21,19 +21,25 @@ public final class PasserinePoses {
      */
     public static final CyclicAnimation HOP = new CyclicAnimation(
             "hop",
+            // Phase A: crouch (both legs bend together, body drops)
             PoseData.builder("hop_crouch")
-                    .joint(BirdSkeleton.CHEST,    0.15f, 0f, 0f)
-                    .joint(BirdSkeleton.L_THIGH,  0.4f,  0f, 0f)
-                    .joint(BirdSkeleton.L_SHIN,   0.6f,  0f, 0f)
-                    .joint(BirdSkeleton.L_TARSUS, -0.5f, 0f, 0f)
-                    .mirror()
+                    .joint(BirdSkeleton.CHEST,    0.15f, 0f, 0f)   // body dips
+                    .joint(BirdSkeleton.L_THIGH,  0.3f,  0f, 0f)
+                    .joint(BirdSkeleton.L_SHIN,   0.5f,  0f, 0f)
+                    .joint(BirdSkeleton.L_TARSUS, -0.4f, 0f, 0f)
+                    .joint(BirdSkeleton.R_THIGH,  0.3f,  0f, 0f)   // SAME as left — both legs together
+                    .joint(BirdSkeleton.R_SHIN,   0.5f,  0f, 0f)
+                    .joint(BirdSkeleton.R_TARSUS, -0.4f, 0f, 0f)
                     .build(),
+            // Phase B: spring (both legs extend together, body rises)
             PoseData.builder("hop_spring")
-                    .joint(BirdSkeleton.CHEST,    -0.1f, 0f, 0f)
-                    .joint(BirdSkeleton.L_THIGH,  -0.2f, 0f, 0f)
+                    .joint(BirdSkeleton.CHEST,    -0.1f, 0f, 0f)   // body lifts
+                    .joint(BirdSkeleton.L_THIGH,  -0.15f, 0f, 0f)
                     .joint(BirdSkeleton.L_SHIN,   -0.1f, 0f, 0f)
                     .joint(BirdSkeleton.L_TARSUS,  0.1f, 0f, 0f)
-                    .mirror()
+                    .joint(BirdSkeleton.R_THIGH,  -0.15f, 0f, 0f)
+                    .joint(BirdSkeleton.R_SHIN,   -0.1f, 0f, 0f)
+                    .joint(BirdSkeleton.R_TARSUS,  0.1f, 0f, 0f)
                     .build()
     );
 

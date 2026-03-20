@@ -11,6 +11,7 @@ import com.birbs.britishbirds.client.animation.procedural.HeadTracking;
 import com.birbs.britishbirds.client.animation.procedural.LandingImpact;
 import com.birbs.britishbirds.client.animation.procedural.MovementDrag;
 import com.birbs.britishbirds.client.animation.procedural.StartleResponse;
+import com.birbs.britishbirds.client.animation.procedural.TailBob;
 import com.birbs.britishbirds.client.animation.procedural.WeightShift;
 import com.birbs.britishbirds.client.renderer.RobinRenderState;
 import net.minecraft.client.model.geom.ModelPart;
@@ -474,6 +475,7 @@ public class RobinModel extends AbstractBirdModel<RobinRenderState> {
         behaviours.add(new LandingImpact());
         behaviours.add(new MovementDrag());
         behaviours.add(new StartleResponse());
+        behaviours.add(new TailBob());              // robin's characteristic tail-bob
     }
 
     // =========================================================================
@@ -490,7 +492,8 @@ public class RobinModel extends AbstractBirdModel<RobinRenderState> {
         PoseResolver resolver = getResolver(state);
 
         if (state.isFlying) {
-            resolver.setBasePose(BaseBirdPoses.FLYING_CRUISE, 3.0f);
+            // Slow transition (2.0f) from perched to flying for natural wing-spread
+            resolver.setBasePose(BaseBirdPoses.FLYING_CRUISE, 2.0f);
             // Convert flapAngle (-amplitude..+amplitude) to a 0..1 phase
             float flapPhase = state.flapAngle * 0.5f + 0.5f;
             resolver.setActiveCyclic(BaseBirdPoses.WINGBEAT, flapPhase);
@@ -502,12 +505,14 @@ public class RobinModel extends AbstractBirdModel<RobinRenderState> {
             resolver.setActiveCyclic(PasserinePoses.PECK, peckPhase);
             resolver.removeOverlay("legs_tucked");
         } else {
-            resolver.setBasePose(BaseBirdPoses.PERCHED, 2.0f);
+            // Slow settle (1.5f) so wings fold gradually on landing
+            resolver.setBasePose(BaseBirdPoses.PERCHED, 1.5f);
             resolver.removeOverlay("legs_tucked");
 
             if (state.walkAnimationSpeed > 0.01f) {
-                float walkPhase = (float) (Math.sin(state.walkAnimationPos * 0.6662f) * 0.5f + 0.5f);
-                resolver.setActiveCyclic(BaseBirdPoses.WALK_CYCLE, walkPhase);
+                // Hopping: both legs together, faster cycle than walking
+                float hopPhase = (float) (Math.sin(state.walkAnimationPos * 1.2f) * 0.5f + 0.5f);
+                resolver.setActiveCyclic(PasserinePoses.HOP, hopPhase);
             } else {
                 resolver.clearCyclic();
 
