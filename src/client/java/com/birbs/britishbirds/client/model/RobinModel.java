@@ -1,9 +1,7 @@
 package com.birbs.britishbirds.client.model;
 
 import com.birbs.britishbirds.client.animation.BirdSkeleton;
-import com.birbs.britishbirds.client.animation.SkeletonModelMapper;
 import com.birbs.britishbirds.client.animation.pose.BaseBirdPoses;
-import com.birbs.britishbirds.client.animation.pose.CyclicAnimation;
 import com.birbs.britishbirds.client.animation.pose.PasserinePoses;
 import com.birbs.britishbirds.client.animation.pose.PoseResolver;
 import com.birbs.britishbirds.client.animation.procedural.Breathing;
@@ -18,8 +16,6 @@ import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.*;
 
-import java.util.Map;
-
 /**
  * Robin model rebuilt on the skeletal animation system.
  * Uses the universal 32-joint bird skeleton with spring-driven animation,
@@ -30,94 +26,13 @@ import java.util.Map;
  */
 public class RobinModel extends AbstractBirdModel<RobinRenderState> {
 
-    // All 32 skeleton-driven parts
-    private final ModelPart chest;
-    private final ModelPart shoulderMount;
-    private final ModelPart torso;
-    private final ModelPart hip;
-    private final ModelPart neckLower;
-    private final ModelPart neckMid;
-    private final ModelPart neckUpper;
-    private final ModelPart head;
-    private final ModelPart upperBeak;
-    private final ModelPart lowerBeak;
-    private final ModelPart lUpperWing;
-    private final ModelPart lScapulars;
-    private final ModelPart lForearm;
-    private final ModelPart lSecondaries;
-    private final ModelPart lHand;
-    private final ModelPart lPrimaries;
-    private final ModelPart rUpperWing;
-    private final ModelPart rScapulars;
-    private final ModelPart rForearm;
-    private final ModelPart rSecondaries;
-    private final ModelPart rHand;
-    private final ModelPart rPrimaries;
-    private final ModelPart tailBase;
-    private final ModelPart tailFan;
-    private final ModelPart lThigh;
-    private final ModelPart lShin;
-    private final ModelPart lTarsus;
-    private final ModelPart lFoot;
-    private final ModelPart rThigh;
-    private final ModelPart rShin;
-    private final ModelPart rTarsus;
-    private final ModelPart rFoot;
-
     // Decorative (not skeleton-driven)
     private final ModelPart breast;
     private final ModelPart crown;
 
     public RobinModel(ModelPart root) {
         super(root);
-
-        // Navigate the ModelPart hierarchy to store references
-        this.chest = root.getChild("chest");
-
-        // Spine chain off chest
-        this.shoulderMount = this.chest.getChild("shoulder_mount");
-        this.torso = this.chest.getChild("torso");
-        this.hip = this.chest.getChild("hip");
-
-        // Neck chain off chest
-        this.neckLower = this.chest.getChild("neck_lower");
-        this.neckMid = this.neckLower.getChild("neck_mid");
-        this.neckUpper = this.neckMid.getChild("neck_upper");
-        this.head = this.neckUpper.getChild("head");
-        this.upperBeak = this.head.getChild("upper_beak");
-        this.lowerBeak = this.head.getChild("lower_beak");
-
-        // Left wing chain off shoulder_mount
-        this.lUpperWing = this.shoulderMount.getChild("L_upper_wing");
-        this.lScapulars = this.lUpperWing.getChild("L_scapulars");
-        this.lForearm = this.lUpperWing.getChild("L_forearm");
-        this.lSecondaries = this.lForearm.getChild("L_secondaries");
-        this.lHand = this.lForearm.getChild("L_hand");
-        this.lPrimaries = this.lHand.getChild("L_primaries");
-
-        // Right wing chain off shoulder_mount
-        this.rUpperWing = this.shoulderMount.getChild("R_upper_wing");
-        this.rScapulars = this.rUpperWing.getChild("R_scapulars");
-        this.rForearm = this.rUpperWing.getChild("R_forearm");
-        this.rSecondaries = this.rForearm.getChild("R_secondaries");
-        this.rHand = this.rForearm.getChild("R_hand");
-        this.rPrimaries = this.rHand.getChild("R_primaries");
-
-        // Tail chain off chest
-        this.tailBase = this.chest.getChild("tail_base");
-        this.tailFan = this.tailBase.getChild("tail_fan");
-
-        // Left leg chain off hip
-        this.lThigh = this.hip.getChild("L_thigh");
-        this.lShin = this.lThigh.getChild("L_shin");
-        this.lTarsus = this.lShin.getChild("L_tarsus");
-        this.lFoot = this.lTarsus.getChild("L_foot");
-
-        // Right leg chain off hip
-        this.rThigh = this.hip.getChild("R_thigh");
-        this.rShin = this.rThigh.getChild("R_shin");
-        this.rTarsus = this.rShin.getChild("R_tarsus");
-        this.rFoot = this.rTarsus.getChild("R_foot");
+        initCommonParts(root);
 
         // Decorative parts
         this.breast = this.chest.getChild("breast");
@@ -419,48 +334,6 @@ public class RobinModel extends AbstractBirdModel<RobinRenderState> {
                 PartPose.offset(0.0f, 1.5f, 0.0f));
 
         return LayerDefinition.create(meshDefinition, 512, 512);
-    }
-
-    // =========================================================================
-    // Skeleton binding
-    // =========================================================================
-
-    @Override
-    protected void buildMapper(ModelPart root) {
-        this.mapper = SkeletonModelMapper.builder()
-                .bind(BirdSkeleton.CHEST,          chest)
-                .bind(BirdSkeleton.SHOULDER_MOUNT, shoulderMount)
-                .bind(BirdSkeleton.TORSO,          torso)
-                .bind(BirdSkeleton.HIP,            hip)
-                .bind(BirdSkeleton.NECK_LOWER,     neckLower)
-                .bind(BirdSkeleton.NECK_MID,       neckMid)
-                .bind(BirdSkeleton.NECK_UPPER,     neckUpper)
-                .bind(BirdSkeleton.HEAD,           head)
-                .bind(BirdSkeleton.UPPER_BEAK,     upperBeak)
-                .bind(BirdSkeleton.LOWER_BEAK,     lowerBeak)
-                .bind(BirdSkeleton.L_UPPER_WING,   lUpperWing)
-                .bind(BirdSkeleton.L_SCAPULARS,    lScapulars)
-                .bind(BirdSkeleton.L_FOREARM,      lForearm)
-                .bind(BirdSkeleton.L_SECONDARIES,  lSecondaries)
-                .bind(BirdSkeleton.L_HAND,         lHand)
-                .bind(BirdSkeleton.L_PRIMARIES,    lPrimaries)
-                .bind(BirdSkeleton.R_UPPER_WING,   rUpperWing)
-                .bind(BirdSkeleton.R_SCAPULARS,    rScapulars)
-                .bind(BirdSkeleton.R_FOREARM,      rForearm)
-                .bind(BirdSkeleton.R_SECONDARIES,  rSecondaries)
-                .bind(BirdSkeleton.R_HAND,         rHand)
-                .bind(BirdSkeleton.R_PRIMARIES,    rPrimaries)
-                .bind(BirdSkeleton.TAIL_BASE,      tailBase)
-                .bind(BirdSkeleton.TAIL_FAN,       tailFan)
-                .bind(BirdSkeleton.L_THIGH,        lThigh)
-                .bind(BirdSkeleton.L_SHIN,         lShin)
-                .bind(BirdSkeleton.L_TARSUS,       lTarsus)
-                .bind(BirdSkeleton.L_FOOT,         lFoot)
-                .bind(BirdSkeleton.R_THIGH,        rThigh)
-                .bind(BirdSkeleton.R_SHIN,         rShin)
-                .bind(BirdSkeleton.R_TARSUS,       rTarsus)
-                .bind(BirdSkeleton.R_FOOT,         rFoot)
-                .build();
     }
 
     // =========================================================================

@@ -20,13 +20,15 @@ import java.util.Map;
 /**
  * Base model class that drives the skeletal animation pipeline for all British birds.
  *
- * <p>Subclasses must:
+ * <p>Provides all 32 standard skeleton-driven ModelPart fields and a default
+ * {@link #buildMapper(ModelPart)} implementation. Subclasses must:
  * <ol>
- *   <li>Store their own ModelPart field references in their constructor.
- *   <li>Call {@link #initSkeleton(ModelPart)} at the END of their constructor,
- *       after all ModelPart fields are assigned.
- *   <li>Implement {@link #buildMapper(ModelPart)} to bind skeleton joints to ModelParts.
+ *   <li>Call {@link #initCommonParts(ModelPart)} in their constructor to assign
+ *       the 32 common ModelPart fields.
+ *   <li>Assign any species-specific decorative ModelPart fields.
+ *   <li>Call {@link #initSkeleton(ModelPart)} at the END of their constructor.
  *   <li>Implement {@link #configureBehaviours()} to add procedural behaviours.
+ *   <li>Optionally override {@link #buildMapper(ModelPart)} to add extra bindings.
  * </ol>
  *
  * <p>The animation pipeline in {@link #setupAnim} runs each frame:
@@ -44,6 +46,18 @@ public abstract class AbstractBirdModel<S extends BirdRenderState> extends Entit
         final PoseResolver poseResolver = new PoseResolver();
         long lastRenderedTick = 0;
     }
+
+    // -------------------------------------------------------------------------
+    // Common 32-joint skeleton ModelPart fields
+    // -------------------------------------------------------------------------
+
+    protected ModelPart chest, shoulderMount, torso, hip;
+    protected ModelPart neckLower, neckMid, neckUpper, head, upperBeak, lowerBeak;
+    protected ModelPart lUpperWing, lScapulars, lForearm, lSecondaries, lHand, lPrimaries;
+    protected ModelPart rUpperWing, rScapulars, rForearm, rSecondaries, rHand, rPrimaries;
+    protected ModelPart tailBase, tailFan;
+    protected ModelPart lThigh, lShin, lTarsus, lFoot;
+    protected ModelPart rThigh, rShin, rTarsus, rFoot;
 
     // -------------------------------------------------------------------------
     // Fields
@@ -78,14 +92,109 @@ public abstract class AbstractBirdModel<S extends BirdRenderState> extends Entit
     }
 
     // -------------------------------------------------------------------------
+    // Common ModelPart initialisation
+    // -------------------------------------------------------------------------
+
+    /**
+     * Navigates the standard ModelPart hierarchy and assigns all 32 common
+     * skeleton-driven fields. Call this in the subclass constructor before
+     * {@link #initSkeleton(ModelPart)}.
+     */
+    protected void initCommonParts(ModelPart root) {
+        this.chest = root.getChild("chest");
+
+        // Spine chain off chest
+        this.shoulderMount = this.chest.getChild("shoulder_mount");
+        this.torso = this.chest.getChild("torso");
+        this.hip = this.chest.getChild("hip");
+
+        // Neck chain off chest
+        this.neckLower = this.chest.getChild("neck_lower");
+        this.neckMid = this.neckLower.getChild("neck_mid");
+        this.neckUpper = this.neckMid.getChild("neck_upper");
+        this.head = this.neckUpper.getChild("head");
+        this.upperBeak = this.head.getChild("upper_beak");
+        this.lowerBeak = this.head.getChild("lower_beak");
+
+        // Left wing chain off shoulder_mount
+        this.lUpperWing = this.shoulderMount.getChild("L_upper_wing");
+        this.lScapulars = this.lUpperWing.getChild("L_scapulars");
+        this.lForearm = this.lUpperWing.getChild("L_forearm");
+        this.lSecondaries = this.lForearm.getChild("L_secondaries");
+        this.lHand = this.lForearm.getChild("L_hand");
+        this.lPrimaries = this.lHand.getChild("L_primaries");
+
+        // Right wing chain off shoulder_mount
+        this.rUpperWing = this.shoulderMount.getChild("R_upper_wing");
+        this.rScapulars = this.rUpperWing.getChild("R_scapulars");
+        this.rForearm = this.rUpperWing.getChild("R_forearm");
+        this.rSecondaries = this.rForearm.getChild("R_secondaries");
+        this.rHand = this.rForearm.getChild("R_hand");
+        this.rPrimaries = this.rHand.getChild("R_primaries");
+
+        // Tail chain off chest
+        this.tailBase = this.chest.getChild("tail_base");
+        this.tailFan = this.tailBase.getChild("tail_fan");
+
+        // Left leg chain off hip
+        this.lThigh = this.hip.getChild("L_thigh");
+        this.lShin = this.lThigh.getChild("L_shin");
+        this.lTarsus = this.lShin.getChild("L_tarsus");
+        this.lFoot = this.lTarsus.getChild("L_foot");
+
+        // Right leg chain off hip
+        this.rThigh = this.hip.getChild("R_thigh");
+        this.rShin = this.rThigh.getChild("R_shin");
+        this.rTarsus = this.rShin.getChild("R_tarsus");
+        this.rFoot = this.rTarsus.getChild("R_foot");
+    }
+
+    // -------------------------------------------------------------------------
     // Abstract methods for subclasses
     // -------------------------------------------------------------------------
 
     /**
      * Creates a {@link SkeletonModelMapper} that binds skeleton joint names to
-     * the subclass's ModelPart fields, and assigns it to {@link #mapper}.
+     * ModelPart fields, and assigns it to {@link #mapper}.
+     * <p>The default implementation binds all 32 standard joints. Subclasses
+     * only need to override this if they add extra bindings.
      */
-    protected abstract void buildMapper(ModelPart root);
+    protected void buildMapper(ModelPart root) {
+        this.mapper = SkeletonModelMapper.builder()
+                .bind(BirdSkeleton.CHEST,          chest)
+                .bind(BirdSkeleton.SHOULDER_MOUNT, shoulderMount)
+                .bind(BirdSkeleton.TORSO,          torso)
+                .bind(BirdSkeleton.HIP,            hip)
+                .bind(BirdSkeleton.NECK_LOWER,     neckLower)
+                .bind(BirdSkeleton.NECK_MID,       neckMid)
+                .bind(BirdSkeleton.NECK_UPPER,     neckUpper)
+                .bind(BirdSkeleton.HEAD,           head)
+                .bind(BirdSkeleton.UPPER_BEAK,     upperBeak)
+                .bind(BirdSkeleton.LOWER_BEAK,     lowerBeak)
+                .bind(BirdSkeleton.L_UPPER_WING,   lUpperWing)
+                .bind(BirdSkeleton.L_SCAPULARS,    lScapulars)
+                .bind(BirdSkeleton.L_FOREARM,      lForearm)
+                .bind(BirdSkeleton.L_SECONDARIES,  lSecondaries)
+                .bind(BirdSkeleton.L_HAND,         lHand)
+                .bind(BirdSkeleton.L_PRIMARIES,    lPrimaries)
+                .bind(BirdSkeleton.R_UPPER_WING,   rUpperWing)
+                .bind(BirdSkeleton.R_SCAPULARS,    rScapulars)
+                .bind(BirdSkeleton.R_FOREARM,      rForearm)
+                .bind(BirdSkeleton.R_SECONDARIES,  rSecondaries)
+                .bind(BirdSkeleton.R_HAND,         rHand)
+                .bind(BirdSkeleton.R_PRIMARIES,    rPrimaries)
+                .bind(BirdSkeleton.TAIL_BASE,      tailBase)
+                .bind(BirdSkeleton.TAIL_FAN,       tailFan)
+                .bind(BirdSkeleton.L_THIGH,        lThigh)
+                .bind(BirdSkeleton.L_SHIN,         lShin)
+                .bind(BirdSkeleton.L_TARSUS,       lTarsus)
+                .bind(BirdSkeleton.L_FOOT,         lFoot)
+                .bind(BirdSkeleton.R_THIGH,        rThigh)
+                .bind(BirdSkeleton.R_SHIN,         rShin)
+                .bind(BirdSkeleton.R_TARSUS,       rTarsus)
+                .bind(BirdSkeleton.R_FOOT,         rFoot)
+                .build();
+    }
 
     /**
      * Adds {@link ProceduralBehaviour} instances to {@link #behaviours}.

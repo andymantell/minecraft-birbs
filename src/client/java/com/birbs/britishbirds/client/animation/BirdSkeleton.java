@@ -117,6 +117,12 @@ public class BirdSkeleton {
                 Collections.unmodifiableList(jointList),
                 Collections.unmodifiableMap(jointIndex));
 
+        // Verify joint count matches BirdSkeletonState's array sizing
+        if (skeleton.jointList.size() != BirdSkeletonState.JOINT_COUNT) {
+            throw new IllegalStateException("BirdSkeleton has " + skeleton.jointList.size() +
+                    " joints but BirdSkeletonState.JOINT_COUNT is " + BirdSkeletonState.JOINT_COUNT);
+        }
+
         // Apply default spring tuning
         applyDefaultTuning(skeleton);
 
