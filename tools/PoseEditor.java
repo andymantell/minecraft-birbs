@@ -121,6 +121,7 @@ public class PoseEditor extends JFrame {
     JSlider phaseSlider;
     JSlider speedSlider;
     JPanel animControlsPanel;
+    JLabel headingLabel;
     boolean mirrorLegs = true;
     JPanel rLegSection = null;
     JButton playPauseBtn;
@@ -392,7 +393,10 @@ public class PoseEditor extends JFrame {
         JPanel leftPanel = new JPanel();
         leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
         leftPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
-        leftPanel.setPreferredSize(new Dimension(200, 0));
+        leftPanel.setPreferredSize(new Dimension(220, 0));
+
+        // Heading showing current archetype + pose
+        // Heading moved to top bar (see below)
 
         JLabel archLabel = new JLabel("Archetype:");
         archLabel.setAlignmentX(0f);
@@ -565,7 +569,16 @@ public class PoseEditor extends JFrame {
         centerSplit.setResizeWeight(0.7);
         centerSplit.setDividerLocation(700);
 
+        // --- Top heading bar ---
+        headingLabel = new JLabel("  Passerine \u2014 perched");
+        headingLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
+        headingLabel.setForeground(Color.WHITE);
+        headingLabel.setOpaque(true);
+        headingLabel.setBackground(new Color(50, 90, 160));
+        headingLabel.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+
         JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.add(headingLabel, BorderLayout.NORTH);
         mainPanel.add(leftPanel, BorderLayout.WEST);
         mainPanel.add(centerSplit, BorderLayout.CENTER);
         mainPanel.add(bottomPanel, BorderLayout.SOUTH);
@@ -765,16 +778,33 @@ public class PoseEditor extends JFrame {
     }
 
     void updateActivePoseButton() {
-        Color highlight = new Color(180, 220, 255);
-        Color normal = null;
         for (var entry : poseButtons.entrySet()) {
             boolean active = entry.getKey().equals(currentPoseName);
             JButton btn = entry.getValue();
-            btn.setBackground(active ? highlight : normal);
-            btn.setOpaque(active);
-            btn.setBorderPainted(true);
+            if (active) {
+                // Bold text + thick dark blue border + forced repaint
+                btn.setText("\u25B6 " + PosePresets.shortenPresetName(entry.getKey()));
+                btn.setFont(btn.getFont().deriveFont(Font.BOLD, 12f));
+                btn.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(30, 70, 180), 3),
+                    BorderFactory.createEmptyBorder(3, 8, 3, 8)));
+            } else {
+                btn.setText(PosePresets.shortenPresetName(entry.getKey()));
+                btn.setFont(btn.getFont().deriveFont(Font.PLAIN, 11f));
+                btn.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(160, 160, 160), 1),
+                    BorderFactory.createEmptyBorder(2, 6, 2, 6)));
+            }
         }
         if (poseBtnPanel != null) poseBtnPanel.repaint();
+        updateHeading();
+    }
+
+    void updateHeading() {
+        if (headingLabel != null) {
+            String poseName = currentPoseName != null ? currentPoseName.replace('_', ' ') : "none";
+            headingLabel.setText(currentArchetype + " — " + poseName);
+        }
     }
 
     // =========================================================================
