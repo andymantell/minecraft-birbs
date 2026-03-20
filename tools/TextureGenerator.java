@@ -2,24 +2,353 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import java.io.File;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
- * Generates 64x64 bird textures with accurate colours, gradient shading,
- * and feather detail patterns from ornithological research.
+ * Generates 512x512 bird textures for the universal 32-cuboid skeleton layout.
+ *
+ * Uses a "virtual body painting" approach: defines a continuous colour field
+ * for the whole bird body, then samples per-cuboid-face UV regions from it
+ * to ensure seam colour continuity between adjacent cuboids.
  *
  * Minecraft cuboid UV mapping: for a box at texOffs(u,v) with dimensions (w,h,d):
  *   Top face:    (u+d,     v,       w, d)
  *   Bottom face: (u+d+w,   v,       w, d)
- *   Front face:  (u+d,     v+d,     w, h)
- *   Back face:   (u+d+w+d, v+d,     w, h)
  *   Left face:   (u,       v+d,     d, h)
+ *   Front face:  (u+d,     v+d,     w, h)
  *   Right face:  (u+d+w,   v+d,     d, h)
- *
- * Updated for new higher-fidelity models with more cuboids per bird.
+ *   Back face:   (u+2d+w,  v+d,     w, h)
  */
 public class TextureGenerator {
 
-    static final int SIZE = 64;
+    static final int SIZE = 512;
+
+    // =========================================================================
+    // Joint name constants (mirror BirdSkeleton)
+    // =========================================================================
+    static final String CHEST          = "chest";
+    static final String SHOULDER_MOUNT = "shoulder_mount";
+    static final String TORSO          = "torso";
+    static final String HIP            = "hip";
+    static final String NECK_LOWER     = "neck_lower";
+    static final String NECK_MID       = "neck_mid";
+    static final String NECK_UPPER     = "neck_upper";
+    static final String HEAD           = "head";
+    static final String UPPER_BEAK     = "upper_beak";
+    static final String LOWER_BEAK     = "lower_beak";
+    static final String L_UPPER_WING   = "L_upper_wing";
+    static final String L_SCAPULARS    = "L_scapulars";
+    static final String L_FOREARM      = "L_forearm";
+    static final String L_SECONDARIES  = "L_secondaries";
+    static final String L_HAND         = "L_hand";
+    static final String L_PRIMARIES    = "L_primaries";
+    static final String R_UPPER_WING   = "R_upper_wing";
+    static final String R_SCAPULARS    = "R_scapulars";
+    static final String R_FOREARM      = "R_forearm";
+    static final String R_SECONDARIES  = "R_secondaries";
+    static final String R_HAND         = "R_hand";
+    static final String R_PRIMARIES    = "R_primaries";
+    static final String TAIL_BASE      = "tail_base";
+    static final String TAIL_FAN       = "tail_fan";
+    static final String L_THIGH        = "L_thigh";
+    static final String L_SHIN         = "L_shin";
+    static final String L_TARSUS       = "L_tarsus";
+    static final String L_FOOT         = "L_foot";
+    static final String R_THIGH        = "R_thigh";
+    static final String R_SHIN         = "R_shin";
+    static final String R_TARSUS       = "R_tarsus";
+    static final String R_FOOT         = "R_foot";
+
+    // =========================================================================
+    // UV layout computation (mirrors BirdUVLayout logic, standalone for tool)
+    // =========================================================================
+
+    /**
+     * Row-packing algorithm: pack cuboid UV faces left-to-right, top-to-bottom.
+     * Returns map of joint name -> {u, v} texture offset.
+     */
+    static Map<String, int[]> computeLayout(Map<String, int[]> cuboidDimensions) {
+        Map<String, int[]> offsets = new LinkedHashMap<>();
+        int cursorX = 0;
+        int cursorY = 0;
+        int rowHeight = 0;
+
+        for (Map.Entry<String, int[]> entry : cuboidDimensions.entrySet()) {
+            String name = entry.getKey();
+            int[] dims = entry.getValue();
+            int w = dims[0], h = dims[1], d = dims[2];
+            int uvWidth = 2 * (d + w);
+            int uvHeight = d + h;
+
+            if (cursorX + uvWidth > SIZE) {
+                cursorX = 0;
+                cursorY += rowHeight;
+                rowHeight = 0;
+            }
+
+            offsets.put(name, new int[]{cursorX, cursorY});
+            cursorX += uvWidth;
+            rowHeight = Math.max(rowHeight, uvHeight);
+        }
+        return offsets;
+    }
+
+    static Map<String, int[]> defaultPasserineDimensions() {
+        Map<String, int[]> dims = new LinkedHashMap<>();
+        dims.put(CHEST,          new int[]{3, 3, 4});
+        dims.put(SHOULDER_MOUNT, new int[]{2, 2, 2});
+        dims.put(TORSO,          new int[]{3, 3, 4});
+        dims.put(HIP,            new int[]{2, 2, 3});
+        dims.put(NECK_LOWER,     new int[]{2, 1, 1});
+        dims.put(NECK_MID,       new int[]{2, 1, 1});
+        dims.put(NECK_UPPER,     new int[]{2, 1, 1});
+        dims.put(HEAD,           new int[]{4, 4, 4});
+        dims.put(UPPER_BEAK,     new int[]{1, 1, 2});
+        dims.put(LOWER_BEAK,     new int[]{1, 1, 2});
+        dims.put(L_UPPER_WING,   new int[]{4, 1, 4});
+        dims.put(L_SCAPULARS,    new int[]{3, 1, 3});
+        dims.put(L_FOREARM,      new int[]{3, 1, 3});
+        dims.put(L_SECONDARIES,  new int[]{3, 1, 3});
+        dims.put(L_HAND,         new int[]{3, 1, 2});
+        dims.put(L_PRIMARIES,    new int[]{3, 1, 2});
+        dims.put(R_UPPER_WING,   new int[]{4, 1, 4});
+        dims.put(R_SCAPULARS,    new int[]{3, 1, 3});
+        dims.put(R_FOREARM,      new int[]{3, 1, 3});
+        dims.put(R_SECONDARIES,  new int[]{3, 1, 3});
+        dims.put(R_HAND,         new int[]{3, 1, 2});
+        dims.put(R_PRIMARIES,    new int[]{3, 1, 2});
+        dims.put(TAIL_BASE,      new int[]{2, 1, 2});
+        dims.put(TAIL_FAN,       new int[]{2, 1, 4});
+        dims.put(L_THIGH,        new int[]{1, 1, 1});
+        dims.put(L_SHIN,         new int[]{1, 2, 1});
+        dims.put(L_TARSUS,       new int[]{1, 2, 1});
+        dims.put(L_FOOT,         new int[]{2, 1, 2});
+        dims.put(R_THIGH,        new int[]{1, 1, 1});
+        dims.put(R_SHIN,         new int[]{1, 2, 1});
+        dims.put(R_TARSUS,       new int[]{1, 2, 1});
+        dims.put(R_FOOT,         new int[]{2, 1, 2});
+        return dims;
+    }
+
+    // Barn owl / peregrine / mallard need larger dimensions for some parts
+    static Map<String, int[]> barnOwlDimensions() {
+        Map<String, int[]> dims = new LinkedHashMap<>();
+        dims.put(CHEST,          new int[]{5, 5, 6});
+        dims.put(SHOULDER_MOUNT, new int[]{3, 3, 3});
+        dims.put(TORSO,          new int[]{4, 4, 5});
+        dims.put(HIP,            new int[]{4, 3, 5});
+        dims.put(NECK_LOWER,     new int[]{2, 2, 1});
+        dims.put(NECK_MID,       new int[]{2, 2, 1});
+        dims.put(NECK_UPPER,     new int[]{2, 2, 1});
+        dims.put(HEAD,           new int[]{5, 5, 5});
+        dims.put(UPPER_BEAK,     new int[]{1, 1, 1});
+        dims.put(LOWER_BEAK,     new int[]{1, 1, 1});
+        dims.put(L_UPPER_WING,   new int[]{6, 2, 6});
+        dims.put(L_SCAPULARS,    new int[]{5, 2, 4});
+        dims.put(L_FOREARM,      new int[]{5, 2, 5});
+        dims.put(L_SECONDARIES,  new int[]{5, 2, 4});
+        dims.put(L_HAND,         new int[]{5, 1, 3});
+        dims.put(L_PRIMARIES,    new int[]{5, 1, 3});
+        dims.put(R_UPPER_WING,   new int[]{6, 2, 6});
+        dims.put(R_SCAPULARS,    new int[]{5, 2, 4});
+        dims.put(R_FOREARM,      new int[]{5, 2, 5});
+        dims.put(R_SECONDARIES,  new int[]{5, 2, 4});
+        dims.put(R_HAND,         new int[]{5, 1, 3});
+        dims.put(R_PRIMARIES,    new int[]{5, 1, 3});
+        dims.put(TAIL_BASE,      new int[]{3, 1, 3});
+        dims.put(TAIL_FAN,       new int[]{4, 1, 4});
+        dims.put(L_THIGH,        new int[]{1, 1, 1});
+        dims.put(L_SHIN,         new int[]{1, 3, 1});
+        dims.put(L_TARSUS,       new int[]{1, 2, 1});
+        dims.put(L_FOOT,         new int[]{2, 1, 2});
+        dims.put(R_THIGH,        new int[]{1, 1, 1});
+        dims.put(R_SHIN,         new int[]{1, 3, 1});
+        dims.put(R_TARSUS,       new int[]{1, 2, 1});
+        dims.put(R_FOOT,         new int[]{2, 1, 2});
+        return dims;
+    }
+
+    static Map<String, int[]> peregrineDimensions() {
+        Map<String, int[]> dims = new LinkedHashMap<>();
+        dims.put(CHEST,          new int[]{6, 5, 6});
+        dims.put(SHOULDER_MOUNT, new int[]{3, 3, 3});
+        dims.put(TORSO,          new int[]{4, 4, 6});
+        dims.put(HIP,            new int[]{3, 3, 4});
+        dims.put(NECK_LOWER,     new int[]{2, 2, 1});
+        dims.put(NECK_MID,       new int[]{2, 2, 1});
+        dims.put(NECK_UPPER,     new int[]{2, 2, 1});
+        dims.put(HEAD,           new int[]{3, 3, 3});
+        dims.put(UPPER_BEAK,     new int[]{1, 1, 2});
+        dims.put(LOWER_BEAK,     new int[]{1, 1, 2});
+        dims.put(L_UPPER_WING,   new int[]{5, 1, 5});
+        dims.put(L_SCAPULARS,    new int[]{4, 1, 3});
+        dims.put(L_FOREARM,      new int[]{4, 1, 4});
+        dims.put(L_SECONDARIES,  new int[]{4, 1, 3});
+        dims.put(L_HAND,         new int[]{5, 1, 3});
+        dims.put(L_PRIMARIES,    new int[]{5, 1, 2});
+        dims.put(R_UPPER_WING,   new int[]{5, 1, 5});
+        dims.put(R_SCAPULARS,    new int[]{4, 1, 3});
+        dims.put(R_FOREARM,      new int[]{4, 1, 4});
+        dims.put(R_SECONDARIES,  new int[]{4, 1, 3});
+        dims.put(R_HAND,         new int[]{5, 1, 3});
+        dims.put(R_PRIMARIES,    new int[]{5, 1, 2});
+        dims.put(TAIL_BASE,      new int[]{3, 1, 4});
+        dims.put(TAIL_FAN,       new int[]{2, 1, 4});
+        dims.put(L_THIGH,        new int[]{1, 2, 1});
+        dims.put(L_SHIN,         new int[]{1, 3, 1});
+        dims.put(L_TARSUS,       new int[]{1, 2, 1});
+        dims.put(L_FOOT,         new int[]{2, 1, 2});
+        dims.put(R_THIGH,        new int[]{1, 2, 1});
+        dims.put(R_SHIN,         new int[]{1, 3, 1});
+        dims.put(R_TARSUS,       new int[]{1, 2, 1});
+        dims.put(R_FOOT,         new int[]{2, 1, 2});
+        return dims;
+    }
+
+    static Map<String, int[]> mallardDimensions() {
+        Map<String, int[]> dims = new LinkedHashMap<>();
+        dims.put(CHEST,          new int[]{5, 5, 6});
+        dims.put(SHOULDER_MOUNT, new int[]{3, 3, 3});
+        dims.put(TORSO,          new int[]{5, 5, 6});
+        dims.put(HIP,            new int[]{3, 3, 4});
+        dims.put(NECK_LOWER,     new int[]{3, 2, 2});
+        dims.put(NECK_MID,       new int[]{3, 2, 2});
+        dims.put(NECK_UPPER,     new int[]{3, 2, 2});
+        dims.put(HEAD,           new int[]{4, 4, 4});
+        dims.put(UPPER_BEAK,     new int[]{3, 1, 3});
+        dims.put(LOWER_BEAK,     new int[]{3, 1, 3});
+        dims.put(L_UPPER_WING,   new int[]{5, 1, 6});
+        dims.put(L_SCAPULARS,    new int[]{4, 1, 4});
+        dims.put(L_FOREARM,      new int[]{4, 1, 5});
+        dims.put(L_SECONDARIES,  new int[]{4, 1, 4});
+        dims.put(L_HAND,         new int[]{4, 1, 3});
+        dims.put(L_PRIMARIES,    new int[]{4, 1, 2});
+        dims.put(R_UPPER_WING,   new int[]{5, 1, 6});
+        dims.put(R_SCAPULARS,    new int[]{4, 1, 4});
+        dims.put(R_FOREARM,      new int[]{4, 1, 5});
+        dims.put(R_SECONDARIES,  new int[]{4, 1, 4});
+        dims.put(R_HAND,         new int[]{4, 1, 3});
+        dims.put(R_PRIMARIES,    new int[]{4, 1, 2});
+        dims.put(TAIL_BASE,      new int[]{4, 1, 4});
+        dims.put(TAIL_FAN,       new int[]{3, 1, 4});
+        dims.put(L_THIGH,        new int[]{1, 1, 1});
+        dims.put(L_SHIN,         new int[]{1, 2, 1});
+        dims.put(L_TARSUS,       new int[]{1, 2, 1});
+        dims.put(L_FOOT,         new int[]{3, 1, 3});
+        dims.put(R_THIGH,        new int[]{1, 1, 1});
+        dims.put(R_SHIN,         new int[]{1, 2, 1});
+        dims.put(R_TARSUS,       new int[]{1, 2, 1});
+        dims.put(R_FOOT,         new int[]{3, 1, 3});
+        return dims;
+    }
+
+    // =========================================================================
+    // Body region classification for virtual body painting
+    // =========================================================================
+
+    /** Which body region a cuboid belongs to, for colour lookup. */
+    enum BodyRegion {
+        BACK, BELLY, HEAD_TOP, HEAD_SIDE, THROAT, WING, WING_TIP, TAIL, LEG, FOOT, BEAK, NECK, RUMP
+    }
+
+    static BodyRegion getBodyRegion(String joint) {
+        return switch (joint) {
+            case CHEST, TORSO -> BodyRegion.BACK;  // top=back, front=belly, sides=flanks
+            case SHOULDER_MOUNT -> BodyRegion.BACK;
+            case HIP -> BodyRegion.RUMP;
+            case NECK_LOWER, NECK_MID, NECK_UPPER -> BodyRegion.NECK;
+            case HEAD -> BodyRegion.HEAD_TOP;
+            case UPPER_BEAK, LOWER_BEAK -> BodyRegion.BEAK;
+            case L_UPPER_WING, L_SCAPULARS, R_UPPER_WING, R_SCAPULARS -> BodyRegion.WING;
+            case L_FOREARM, L_SECONDARIES, R_FOREARM, R_SECONDARIES -> BodyRegion.WING;
+            case L_HAND, L_PRIMARIES, R_HAND, R_PRIMARIES -> BodyRegion.WING_TIP;
+            case TAIL_BASE, TAIL_FAN -> BodyRegion.TAIL;
+            case L_THIGH, L_SHIN, L_TARSUS, R_THIGH, R_SHIN, R_TARSUS -> BodyRegion.LEG;
+            case L_FOOT, R_FOOT -> BodyRegion.FOOT;
+            default -> BodyRegion.BACK;
+        };
+    }
+
+    // =========================================================================
+    // Species colour palettes — defines continuous body colour for each species
+    // =========================================================================
+
+    /**
+     * A species palette maps body region + face direction to a colour.
+     * Face directions: top, bottom, front, back, left, right.
+     */
+    static class BodyPalette {
+        Color back, belly, flanks, headTop, headSide, headFront, throat;
+        Color neckBack, neckFront;
+        Color wingUpper, wingLower, wingTip;
+        Color tail, tailUnder, rump;
+        Color leg, foot, beak;
+        Color eye;
+
+        // Extra colours for species-specific detail
+        Color accent1, accent2, accent3;
+
+        Color getTop(BodyRegion region)    { return getForFace(region, "top"); }
+        Color getBottom(BodyRegion region) { return getForFace(region, "bottom"); }
+        Color getFront(BodyRegion region)  { return getForFace(region, "front"); }
+        Color getBack(BodyRegion region)   { return getForFace(region, "back"); }
+        Color getLeft(BodyRegion region)   { return getForFace(region, "left"); }
+        Color getRight(BodyRegion region)  { return getForFace(region, "right"); }
+
+        Color getForFace(BodyRegion region, String face) {
+            return switch (region) {
+                case BACK -> switch (face) {
+                    case "top" -> back;
+                    case "bottom" -> belly;
+                    case "front" -> belly;
+                    case "back" -> back;
+                    default -> flanks;
+                };
+                case BELLY -> belly;
+                case RUMP -> switch (face) {
+                    case "top" -> rump != null ? rump : back;
+                    case "bottom" -> belly;
+                    default -> flanks;
+                };
+                case NECK -> switch (face) {
+                    case "top", "back" -> neckBack != null ? neckBack : back;
+                    case "front", "bottom" -> neckFront != null ? neckFront : belly;
+                    default -> flanks;
+                };
+                case HEAD_TOP -> switch (face) {
+                    case "top" -> headTop;
+                    case "bottom" -> throat;
+                    case "front" -> headFront != null ? headFront : headTop;
+                    case "back" -> headTop;
+                    default -> headSide;
+                };
+                case HEAD_SIDE -> headSide;
+                case THROAT -> throat;
+                case WING -> switch (face) {
+                    case "top" -> wingUpper;
+                    case "bottom" -> wingLower;
+                    default -> wingUpper;
+                };
+                case WING_TIP -> switch (face) {
+                    case "top" -> wingTip != null ? wingTip : wingUpper;
+                    case "bottom" -> wingLower;
+                    default -> wingTip != null ? wingTip : wingUpper;
+                };
+                case TAIL -> switch (face) {
+                    case "bottom" -> tailUnder != null ? tailUnder : tail;
+                    default -> tail;
+                };
+                case LEG -> leg;
+                case FOOT -> foot;
+                case BEAK -> beak;
+            };
+        }
+    }
+
+    // =========================================================================
+    // Main entry point
+    // =========================================================================
 
     public static void main(String[] args) throws Exception {
         String basePath = "src/main/resources/assets/britishbirds/textures/entity";
@@ -35,991 +364,915 @@ public class TextureGenerator {
         generateMallardFemale(basePath + "/mallard/mallard_female.png");
         generateMallardDuckling(basePath + "/mallard/mallard_duckling.png");
 
-        // Spawn egg textures (16x16)
+        // Spawn egg textures (16x16) — unchanged
         String itemPath = "src/main/resources/assets/britishbirds/textures/item";
         generateSpawnEgg(itemPath + "/robin_spawn_egg.png",
-                new Color(0x6B, 0x6B, 0x3A), new Color(0xD4, 0x60, 0x2A)); // olive + orange breast
+                new Color(0x6B, 0x6B, 0x3A), new Color(0xD4, 0x60, 0x2A));
         generateSpawnEgg(itemPath + "/blue_tit_spawn_egg.png",
-                new Color(0xFF, 0xE0, 0x20), new Color(0x2A, 0x7A, 0xC4)); // yellow + blue cap
+                new Color(0xFF, 0xE0, 0x20), new Color(0x2A, 0x7A, 0xC4));
         generateSpawnEgg(itemPath + "/barn_owl_spawn_egg.png",
-                new Color(0xC4, 0xA0, 0x55), new Color(0xF0, 0xE8, 0xD0)); // golden buff + cream face
+                new Color(0xC4, 0xA0, 0x55), new Color(0xF0, 0xE8, 0xD0));
         generateSpawnEgg(itemPath + "/peregrine_falcon_spawn_egg.png",
-                new Color(0x4A, 0x55, 0x68), new Color(0xE8, 0xE0, 0xD5)); // slate grey + pale barred
+                new Color(0x4A, 0x55, 0x68), new Color(0xE8, 0xE0, 0xD5));
         generateSpawnEgg(itemPath + "/mallard_spawn_egg.png",
-                new Color(0x2D, 0x6B, 0x33), new Color(0x8B, 0x45, 0x13)); // iridescent green + chestnut
+                new Color(0x2D, 0x6B, 0x33), new Color(0x8B, 0x45, 0x13));
 
         System.out.println("All textures generated!");
     }
 
+    // =========================================================================
+    // Unified body-paint generator
+    // =========================================================================
+
+    /**
+     * Paint all cuboid UV regions for a bird using a virtual body painting approach.
+     * For each cuboid, determine its body region, look up colours from the palette,
+     * and fill each face with the appropriate colour including gradients.
+     */
+    static void paintBird(BufferedImage img, Graphics2D g,
+                          Map<String, int[]> dims, Map<String, int[]> layout,
+                          BodyPalette palette) {
+        for (Map.Entry<String, int[]> entry : layout.entrySet()) {
+            String joint = entry.getKey();
+            int[] uv = entry.getValue();
+            int[] d = dims.get(joint);
+            if (d == null) continue;
+
+            int u = uv[0], v = uv[1];
+            int w = d[0], h = d[1], depth = d[2];
+
+            BodyRegion region = getBodyRegion(joint);
+
+            Color top    = palette.getTop(region);
+            Color bottom = palette.getBottom(region);
+            Color front  = palette.getFront(region);
+            Color back   = palette.getBack(region);
+            Color left   = palette.getLeft(region);
+            Color right  = palette.getRight(region);
+
+            fillBox(g, u, v, w, h, depth, top, bottom, front, back, left, right);
+        }
+    }
+
+    /**
+     * Add detail pass: eyes on left and right side faces of the HEAD cuboid.
+     *
+     * UV face layout for a cuboid at texOffs(u,v) with dims (w,h,d):
+     *   Left face:  (u,       v+d, d, h)
+     *   Right face: (u+d+w,   v+d, d, h)
+     *
+     * Eyes are placed in the upper third of the side face, toward the front
+     * (higher x on left face = closer to front, lower x on right face = closer to front).
+     * Each eye is 1-2 dark pixels with a highlight pixel for realism.
+     */
+    static void addEyes(BufferedImage img, Map<String, int[]> layout, Map<String, int[]> dims,
+                        Color eyeColor) {
+        int[] headUV = layout.get(HEAD);
+        int[] headDims = dims.get(HEAD);
+        if (headUV == null || headDims == null) return;
+
+        int u = headUV[0], v = headUV[1];
+        int w = headDims[0], h = headDims[1], d = headDims[2];
+
+        // Eye Y position: upper third of the side face (which starts at v+d, height h)
+        int eyeY = v + d + Math.max(1, h / 4);
+
+        // Eye highlight colour (white glint)
+        Color highlight = new Color(0xEE, 0xEE, 0xEE);
+
+        // Left side face starts at (u, v+d), width=d, height=h
+        // Place eye toward the front edge (higher x within the face)
+        int leftFaceStartX = u;
+        int leftEyeX = leftFaceStartX + Math.max(0, d - d / 3 - 1);
+        safeSetRGB(img, leftEyeX, eyeY, eyeColor);
+        if (d > 2) safeSetRGB(img, leftEyeX - 1, eyeY, eyeColor);
+        // Highlight pixel above-right of eye
+        safeSetRGB(img, leftEyeX, eyeY - 1, highlight);
+
+        // Right side face starts at (u+d+w, v+d), width=d, height=h
+        // Place eye toward the front edge (lower x within the face)
+        int rightFaceStartX = u + d + w;
+        int rightEyeX = rightFaceStartX + Math.max(0, d / 3);
+        safeSetRGB(img, rightEyeX, eyeY, eyeColor);
+        if (d > 2) safeSetRGB(img, rightEyeX + 1, eyeY, eyeColor);
+        // Highlight pixel above-left of eye
+        safeSetRGB(img, rightEyeX, eyeY - 1, highlight);
+    }
+
+    /**
+     * Explicitly paint ALL 6 faces of a beak cuboid with the given colour.
+     * Small cuboids (1x1x2 etc.) can be missed by gradient/speckle passes,
+     * so we force-fill every face to ensure the beak is fully coloured.
+     */
+    static void paintBeakCuboid(Graphics2D g, Map<String, int[]> layout, Map<String, int[]> dims,
+                                String joint, Color beakColor) {
+        int[] uv = layout.get(joint);
+        int[] d = dims.get(joint);
+        if (uv == null || d == null) return;
+
+        int u = uv[0], v = uv[1];
+        int w = d[0], h = d[1], depth = d[2];
+
+        fillBox(g, u, v, w, h, depth, beakColor, beakColor, beakColor, beakColor, beakColor, beakColor);
+    }
+
+    /**
+     * Paint both beak cuboids with a single colour, ensuring full coverage.
+     */
+    static void paintBeaks(Graphics2D g, Map<String, int[]> layout, Map<String, int[]> dims,
+                           Color beakColor) {
+        paintBeakCuboid(g, layout, dims, UPPER_BEAK, beakColor);
+        paintBeakCuboid(g, layout, dims, LOWER_BEAK, beakColor);
+    }
+
+    /**
+     * Ensure head-to-neck colour continuity: paint the back face of the head
+     * and the top/front of neck_upper to share a compatible transition colour.
+     */
+    static void blendHeadNeck(Graphics2D g, BufferedImage img,
+                              Map<String, int[]> layout, Map<String, int[]> dims,
+                              Color headBackColor, Color neckTopColor) {
+        // Head back face: at (u + 2*d + w, v + d) with size (w, h)
+        int[] headUV = layout.get(HEAD);
+        int[] headDims = dims.get(HEAD);
+        if (headUV != null && headDims != null) {
+            int u = headUV[0], v = headUV[1];
+            int w = headDims[0], h = headDims[1], d = headDims[2];
+            // Paint the lower portion of head back face with a blend toward neck colour
+            int blendRows = Math.max(1, h / 3);
+            for (int row = 0; row < blendRows; row++) {
+                float ratio = (float)(row + 1) / blendRows;
+                Color blended = blendColors(headBackColor, neckTopColor, ratio);
+                int py = v + d + h - blendRows + row;
+                for (int px = u + 2 * d + w; px < u + 2 * d + 2 * w; px++) {
+                    safeSetRGB(img, px, py, blended);
+                }
+            }
+        }
+
+        // Neck upper top face: at (u+d, v, w, d)
+        int[] neckUV = layout.get(NECK_UPPER);
+        int[] neckDims = dims.get(NECK_UPPER);
+        if (neckUV != null && neckDims != null) {
+            int u = neckUV[0], v = neckUV[1];
+            int w = neckDims[0], h = neckDims[1], d = neckDims[2];
+            // Fill top face with the blend colour
+            fillFace(g, u + d, v, w, d, neckTopColor);
+        }
+    }
+
+    static Color blendColors(Color a, Color b, float ratio) {
+        int r = (int)(a.getRed() + ratio * (b.getRed() - a.getRed()));
+        int gr = (int)(a.getGreen() + ratio * (b.getGreen() - a.getGreen()));
+        int bl = (int)(a.getBlue() + ratio * (b.getBlue() - a.getBlue()));
+        return new Color(clamp(r), clamp(gr), clamp(bl));
+    }
+
+    // ---- Species-specific face markings ----
+
+    /**
+     * Blue tit: dark eye stripe through the eye on both side faces of the head.
+     */
+    static void addBlueTitEyeStripe(BufferedImage img, Map<String, int[]> layout,
+                                     Map<String, int[]> dims, Color stripeColor) {
+        int[] headUV = layout.get(HEAD);
+        int[] headDims = dims.get(HEAD);
+        if (headUV == null || headDims == null) return;
+
+        int u = headUV[0], v = headUV[1];
+        int w = headDims[0], h = headDims[1], d = headDims[2];
+
+        // Stripe runs horizontally through the eye level on each side face
+        int eyeY = v + d + Math.max(1, h / 4);
+
+        // Left side face: full-width stripe at eye level
+        for (int x = u; x < u + d; x++) {
+            safeSetRGB(img, x, eyeY, stripeColor);
+            if (h > 3) safeSetRGB(img, x, eyeY + 1, stripeColor);
+        }
+
+        // Right side face
+        for (int x = u + d + w; x < u + d + w + d; x++) {
+            safeSetRGB(img, x, eyeY, stripeColor);
+            if (h > 3) safeSetRGB(img, x, eyeY + 1, stripeColor);
+        }
+    }
+
+    /**
+     * Peregrine: moustachial stripe below the eye on both side faces.
+     */
+    static void addPeregrineMoustache(BufferedImage img, Map<String, int[]> layout,
+                                       Map<String, int[]> dims, Color stripeColor) {
+        int[] headUV = layout.get(HEAD);
+        int[] headDims = dims.get(HEAD);
+        if (headUV == null || headDims == null) return;
+
+        int u = headUV[0], v = headUV[1];
+        int w = headDims[0], h = headDims[1], d = headDims[2];
+
+        // Moustachial stripe: below eye, in lower half of side face
+        int stripeY = v + d + Math.max(1, h / 2);
+
+        // Left side face: stripe from center to front edge
+        for (int x = u + d / 3; x < u + d; x++) {
+            safeSetRGB(img, x, stripeY, stripeColor);
+            if (h > 3) safeSetRGB(img, x, stripeY + 1, stripeColor);
+        }
+
+        // Right side face: stripe from front edge to center
+        for (int x = u + d + w; x < u + d + w + d - d / 3; x++) {
+            safeSetRGB(img, x, stripeY, stripeColor);
+            if (h > 3) safeSetRGB(img, x, stripeY + 1, stripeColor);
+        }
+    }
+
+    /**
+     * Barn owl: heart-shaped facial disc. Cream front face with golden-brown
+     * rim painted on the side faces near the front edge.
+     */
+    static void addBarnOwlFacialDisc(Graphics2D g, BufferedImage img,
+                                      Map<String, int[]> layout, Map<String, int[]> dims,
+                                      Color discCenter, Color discRim) {
+        int[] headUV = layout.get(HEAD);
+        int[] headDims = dims.get(HEAD);
+        if (headUV == null || headDims == null) return;
+
+        int u = headUV[0], v = headUV[1];
+        int w = headDims[0], h = headDims[1], d = headDims[2];
+
+        // Paint front face with cream disc centre
+        fillFace(g, u + d, v + d, w, h, discCenter);
+
+        // Paint disc rim on sides: a column near the front edge of each side face
+        // Left side face: rightmost column (nearest to front face)
+        for (int y = v + d; y < v + d + h; y++) {
+            safeSetRGB(img, u + d - 1, y, discRim);
+            if (d > 2) safeSetRGB(img, u + d - 2, y, discRim);
+        }
+
+        // Right side face: leftmost column (nearest to front face)
+        for (int y = v + d; y < v + d + h; y++) {
+            safeSetRGB(img, u + d + w, y, discRim);
+            if (d > 2) safeSetRGB(img, u + d + w + 1, y, discRim);
+        }
+
+        // Top edge of front face: darker rim
+        for (int x = u + d; x < u + d + w; x++) {
+            safeSetRGB(img, x, v + d, discRim);
+        }
+
+        // Bottom edge of front face: V-shape for heart
+        for (int x = u + d; x < u + d + w; x++) {
+            safeSetRGB(img, x, v + d + h - 1, discRim);
+        }
+    }
+
+    static void addWingBarring(BufferedImage img, Map<String, int[]> layout, Map<String, int[]> dims,
+                               String joint, Color barColor, int spacing) {
+        int[] uv = layout.get(joint);
+        int[] d = dims.get(joint);
+        if (uv == null || d == null) return;
+
+        int u = uv[0], v = uv[1];
+        int w = d[0], h = d[1], depth = d[2];
+
+        // Bar across the front face area: (u+depth, v+depth, w, h)
+        for (int y = v + depth; y < v + depth + h; y++) {
+            if ((y - v - depth) % spacing == 0) {
+                for (int x = u + depth; x < u + depth + w; x++) {
+                    safeSetRGB(img, x, y, barColor);
+                }
+            }
+        }
+    }
+
+    static void addSpecklesOnCuboid(BufferedImage img, Map<String, int[]> layout,
+                                     Map<String, int[]> dims, String joint,
+                                     Color dark, Color light) {
+        int[] uv = layout.get(joint);
+        int[] d = dims.get(joint);
+        if (uv == null || d == null) return;
+
+        int u = uv[0], v = uv[1];
+        int w = d[0], h = d[1], depth = d[2];
+        int uvW = 2 * (depth + w);
+        int uvH = depth + h;
+
+        addSpeckles(img, u, v, uvW, uvH, dark, light);
+    }
+
+    static void addGradientOnTop(BufferedImage img, Map<String, int[]> layout,
+                                  Map<String, int[]> dims, String joint,
+                                  Color from, Color to) {
+        int[] uv = layout.get(joint);
+        int[] d = dims.get(joint);
+        if (uv == null || d == null) return;
+
+        int u = uv[0], v = uv[1];
+        int w = d[0], depth = d[2];
+
+        // Top face: (u+d, v, w, d)
+        addGradientHorizontal(img, u + depth, v, w, depth, from, to);
+    }
+
+    static void addGradientOnFront(BufferedImage img, Map<String, int[]> layout,
+                                    Map<String, int[]> dims, String joint,
+                                    Color from, Color to) {
+        int[] uv = layout.get(joint);
+        int[] d = dims.get(joint);
+        if (uv == null || d == null) return;
+
+        int u = uv[0], v = uv[1];
+        int w = d[0], h = d[1], depth = d[2];
+
+        // Front face: (u+d, v+d, w, h)
+        addGradientVertical(img, u + depth, v + depth, w, h, from, to);
+    }
+
+    // =========================================================================
     // === ROBIN ===
-    // Body:      texOffs(0,0),   5x5x5
-    // Breast:    texOffs(0,10),  4x3x2
-    // Head:      texOffs(0,15),  4x4x4
-    // Beak:      texOffs(16,15), 1x1x2
-    // Crown:     texOffs(22,15), 3x1x3
-    // L Wing:    texOffs(20,0),  1x4x5
-    // L WingTip: texOffs(32,0),  1x3x3
-    // Tail:      texOffs(0,23),  3x1x3
-    // TailTip:   texOffs(12,23), 2x1x2
-    // Legs:      texOffs(0,27),  1x4x1
-    // Feet:      texOffs(4,27),  2x1x2
+    // =========================================================================
+
+    static BodyPalette robinPalette() {
+        BodyPalette p = new BodyPalette();
+        p.back      = new Color(0x6B, 0x6B, 0x3A);  // olive brown
+        p.belly     = new Color(0xF0, 0xED, 0xE0);  // off-white
+        p.flanks    = new Color(0x6B, 0x6B, 0x3A);
+        p.headTop   = new Color(0x6B, 0x6B, 0x3A);
+        p.headSide  = new Color(0x6B, 0x6B, 0x3A);
+        p.headFront = new Color(0xD4, 0x60, 0x2A);  // orange-red face
+        p.throat    = new Color(0xD4, 0x60, 0x2A);
+        p.neckBack  = new Color(0x6B, 0x6B, 0x3A);
+        p.neckFront = new Color(0xD4, 0x60, 0x2A);
+        p.wingUpper = new Color(0x4A, 0x3B, 0x2A);  // dark brown
+        p.wingLower = new Color(0x5A, 0x4B, 0x3A);
+        p.wingTip   = new Color(0x4A, 0x3B, 0x2A);
+        p.tail      = new Color(0x4A, 0x3B, 0x2A);
+        p.tailUnder = new Color(0x5A, 0x4B, 0x3A);
+        p.rump      = new Color(0x6B, 0x6B, 0x3A);
+        p.leg       = new Color(0xC4, 0xA8, 0x82);  // pink-brown
+        p.foot      = new Color(0xC4, 0xA8, 0x82);
+        p.beak      = new Color(0x33, 0x22, 0x11);  // near black
+        p.eye       = new Color(0x11, 0x11, 0x11);
+        p.accent1   = new Color(0xC0, 0x50, 0x20);  // deep orange
+        p.accent2   = new Color(0x8B, 0x9D, 0xAF);  // blue-grey border
+        p.accent3   = new Color(0x7B, 0x7B, 0x48);  // light olive
+        return p;
+    }
 
     static void generateRobin(String path) throws Exception {
+        Map<String, int[]> dims = defaultPasserineDimensions();
+        Map<String, int[]> layout = computeLayout(dims);
         BufferedImage img = createImage();
         Graphics2D g = img.createGraphics();
         clearImage(g);
 
-        Color oliveBrown = new Color(0x6B, 0x6B, 0x3A);
-        Color oliveDark = new Color(0x5A, 0x5A, 0x2E);
-        Color oliveLight = new Color(0x7B, 0x7B, 0x48);
-        Color orangeRed = new Color(0xD4, 0x60, 0x2A);
-        Color orangeDeep = new Color(0xC0, 0x50, 0x20);
-        Color offWhite = new Color(0xF0, 0xED, 0xE0);
-        Color darkBrown = new Color(0x4A, 0x3B, 0x2A);
-        Color warmBuff = new Color(0xC4, 0xA8, 0x82);
-        Color blueGrey = new Color(0x8B, 0x9D, 0xAF);
-        Color pinkBrown = new Color(0xC4, 0xA8, 0x82);
-        Color black = new Color(0x33, 0x22, 0x11);
-        Color eye = new Color(0x11, 0x11, 0x11);
+        BodyPalette p = robinPalette();
+        paintBird(img, g, dims, layout, p);
 
-        // Body: texOffs(0,0), w=5, h=5, d=5
-        fillBox(g, 0, 0, 5, 5, 5, oliveBrown, offWhite, orangeRed, oliveBrown, oliveBrown, oliveBrown);
-        // Gradient shading on top: lighter center, darker edges
-        addGradientHorizontal(img, 5, 0, 5, 5, oliveLight, oliveDark);
-        // Side gradient: olive top to buff/grey border to orange
-        for (int y = 5; y < 10; y++) {
-            Color c = y < 7 ? oliveBrown : (y < 8 ? blueGrey : warmBuff);
-            for (int x = 0; x < 5; x++) img.setRGB(x, y, c.getRGB());
-            for (int x = 10; x < 15; x++) img.setRGB(x, y, c.getRGB());
-        }
+        // Detail: orange breast gradient on chest front
+        addGradientOnFront(img, layout, dims, CHEST, p.throat, p.accent1);
+        addGradientOnFront(img, layout, dims, TORSO, p.accent1, p.belly);
 
-        // Breast: texOffs(0,10), w=4, h=3, d=2
-        fillBox(g, 0, 10, 4, 3, 2, orangeRed, offWhite, orangeDeep, orangeRed, orangeRed, orangeRed);
-        // Gradient on breast front: deeper orange at center
-        addGradientVertical(img, 2, 12, 4, 3, orangeRed, orangeDeep);
+        // Gradient on back (top face)
+        addGradientOnTop(img, layout, dims, CHEST, p.accent3, p.back);
 
-        // Head: texOffs(0,15), w=4, h=4, d=4
-        fillBox(g, 0, 15, 4, 4, 4, oliveBrown, orangeRed, orangeRed, oliveBrown, oliveBrown, oliveBrown);
-        // Eyes on side faces
-        img.setRGB(1, 20, eye.getRGB());
-        img.setRGB(2, 20, eye.getRGB());
-        img.setRGB(9, 20, eye.getRGB());
-        img.setRGB(10, 20, eye.getRGB());
-        // Orange cheeks blending into sides
-        img.setRGB(0, 21, orangeRed.getRGB());
-        img.setRGB(1, 21, orangeRed.getRGB());
-        img.setRGB(11, 21, orangeRed.getRGB());
-        img.setRGB(10, 21, orangeRed.getRGB());
+        // Wing detail: olive fringes
+        addWingBarring(img, layout, dims, L_UPPER_WING, new Color(0xC4, 0xA8, 0x82), 3);
+        addWingBarring(img, layout, dims, R_UPPER_WING, new Color(0xC4, 0xA8, 0x82), 3);
 
-        // Beak: texOffs(16,15), 1x1x2 - dark fine pointed
-        fillBox(g, 16, 15, 1, 1, 2, black, black, black, black, black, black);
+        // Explicitly paint beaks
+        paintBeaks(g, layout, dims, p.beak);
 
-        // Crown: texOffs(22,15), 3x1x3
-        fillBox(g, 22, 15, 3, 1, 3, oliveLight, oliveBrown, oliveBrown, oliveBrown, oliveBrown, oliveBrown);
+        // Head-neck colour continuity
+        blendHeadNeck(g, img, layout, dims, p.headTop, p.neckBack);
 
-        // Wings: texOffs(20,0), w=1, h=4, d=5 — dark brown with olive fringes
-        fillBox(g, 20, 0, 1, 4, 5, darkBrown, darkBrown, darkBrown, darkBrown, darkBrown, darkBrown);
-        // Olive fringes on top edge
-        for (int x = 25; x < 26; x++) {
-            img.setRGB(x, 0, oliveBrown.getRGB());
-            img.setRGB(x, 1, oliveBrown.getRGB());
-            img.setRGB(x, 2, oliveLight.getRGB());
-        }
-        // Wing bar detail
-        for (int x = 25; x < 26; x++) {
-            img.setRGB(x, 6, warmBuff.getRGB());
-        }
-
-        // Wing tip: texOffs(32,0), 1x3x3
-        fillBox(g, 32, 0, 1, 3, 3, darkBrown, darkBrown, darkBrown, darkBrown, darkBrown, darkBrown);
-
-        // Tail: texOffs(0,23), w=3, h=1, d=3
-        fillBox(g, 0, 23, 3, 1, 3, darkBrown, darkBrown, darkBrown, darkBrown, darkBrown, darkBrown);
-        // Lighter tail edges
-        img.setRGB(3, 23, oliveBrown.getRGB());
-        img.setRGB(5, 23, oliveBrown.getRGB());
-
-        // Tail tip: texOffs(12,23), 2x1x2
-        fillBox(g, 12, 23, 2, 1, 2, darkBrown, darkBrown, darkBrown, darkBrown, darkBrown, darkBrown);
-
-        // Legs: texOffs(0,27), w=1, h=4, d=1
-        fillBox(g, 0, 27, 1, 4, 1, pinkBrown, pinkBrown, pinkBrown, pinkBrown, pinkBrown, pinkBrown);
-
-        // Feet: texOffs(4,27), w=2, h=1, d=2
-        fillBox(g, 4, 27, 2, 1, 2, pinkBrown, pinkBrown, pinkBrown, pinkBrown, pinkBrown, pinkBrown);
+        // Eyes
+        addEyes(img, layout, dims, p.eye);
 
         g.dispose();
+        fillTransparentPixels(img);
         save(img, path);
         System.out.println("Generated: " + path);
     }
 
     static void generateRobinJuvenile(String path) throws Exception {
+        Map<String, int[]> dims = defaultPasserineDimensions();
+        Map<String, int[]> layout = computeLayout(dims);
         BufferedImage img = createImage();
         Graphics2D g = img.createGraphics();
         clearImage(g);
 
+        BodyPalette p = new BodyPalette();
         Color speckledBrown = new Color(0x8B, 0x73, 0x55);
-        Color darkSpeckle = new Color(0x6B, 0x5B, 0x3A);
         Color goldenBuff = new Color(0xA8, 0x90, 0x70);
-        Color pinkBrown = new Color(0xC4, 0xA8, 0x82);
-        Color black = new Color(0x33, 0x22, 0x11);
-        Color eye = new Color(0x11, 0x11, 0x11);
+        p.back = speckledBrown; p.belly = goldenBuff; p.flanks = speckledBrown;
+        p.headTop = speckledBrown; p.headSide = speckledBrown; p.headFront = speckledBrown;
+        p.throat = goldenBuff; p.neckBack = speckledBrown; p.neckFront = goldenBuff;
+        p.wingUpper = new Color(0x6B, 0x5B, 0x3A); p.wingLower = speckledBrown;
+        p.wingTip = new Color(0x6B, 0x5B, 0x3A);
+        p.tail = new Color(0x6B, 0x5B, 0x3A); p.tailUnder = speckledBrown;
+        p.rump = speckledBrown;
+        p.leg = new Color(0xC4, 0xA8, 0x82); p.foot = new Color(0xC4, 0xA8, 0x82);
+        p.beak = new Color(0x33, 0x22, 0x11);
+        p.eye = new Color(0x11, 0x11, 0x11);
 
-        // Body: speckled brown (no orange breast in juvenile)
-        fillBox(g, 0, 0, 5, 5, 5, speckledBrown, goldenBuff, speckledBrown, speckledBrown, speckledBrown, speckledBrown);
-        addSpeckles(img, 0, 0, 20, 10, darkSpeckle, goldenBuff);
+        paintBird(img, g, dims, layout, p);
 
-        // Breast: speckled
-        fillBox(g, 0, 10, 4, 3, 2, speckledBrown, goldenBuff, speckledBrown, speckledBrown, speckledBrown, speckledBrown);
-        addSpeckles(img, 0, 10, 12, 5, darkSpeckle, goldenBuff);
+        // Speckles on body cuboids
+        Color darkSpeckle = new Color(0x6B, 0x5B, 0x3A);
+        addSpecklesOnCuboid(img, layout, dims, CHEST, darkSpeckle, goldenBuff);
+        addSpecklesOnCuboid(img, layout, dims, TORSO, darkSpeckle, goldenBuff);
+        addSpecklesOnCuboid(img, layout, dims, HEAD, darkSpeckle, goldenBuff);
 
-        // Head: speckled
-        fillBox(g, 0, 15, 4, 4, 4, speckledBrown, speckledBrown, speckledBrown, speckledBrown, speckledBrown, speckledBrown);
-        addSpeckles(img, 0, 15, 16, 8, darkSpeckle, goldenBuff);
-        img.setRGB(1, 20, eye.getRGB());
-        img.setRGB(2, 20, eye.getRGB());
-        img.setRGB(9, 20, eye.getRGB());
-        img.setRGB(10, 20, eye.getRGB());
-
-        // Beak
-        fillBox(g, 16, 15, 1, 1, 2, black, black, black, black, black, black);
-
-        // Crown
-        fillBox(g, 22, 15, 3, 1, 3, speckledBrown, speckledBrown, speckledBrown, speckledBrown, speckledBrown, speckledBrown);
-
-        // Wings (1x4x5 + 1x3x3)
-        fillBox(g, 20, 0, 1, 4, 5, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle);
-        fillBox(g, 32, 0, 1, 3, 3, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle);
-
-        // Tail
-        fillBox(g, 0, 23, 3, 1, 3, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle);
-        fillBox(g, 12, 23, 2, 1, 2, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle, darkSpeckle);
-
-        // Legs/feet
-        fillBox(g, 0, 27, 1, 4, 1, pinkBrown, pinkBrown, pinkBrown, pinkBrown, pinkBrown, pinkBrown);
-        fillBox(g, 4, 27, 2, 1, 2, pinkBrown, pinkBrown, pinkBrown, pinkBrown, pinkBrown, pinkBrown);
+        paintBeaks(g, layout, dims, p.beak);
+        blendHeadNeck(g, img, layout, dims, speckledBrown, speckledBrown);
+        addEyes(img, layout, dims, p.eye);
 
         g.dispose();
+        fillTransparentPixels(img);
         save(img, path);
         System.out.println("Generated: " + path);
     }
 
+    // =========================================================================
     // === BLUE TIT ===
-    // Body:       texOffs(0,0),   4x4x4
-    // Belly:      texOffs(0,8),   3x2x3
-    // Head:       texOffs(0,13),  4x4x4
-    // Crown:      texOffs(16,13), 3x1x3
-    // Beak:       texOffs(16,17), 1x1x1
-    // Cheeks:     texOffs(20,17), 1x2x2
-    // L Wing:     texOffs(16,0),  1x4x4
-    // L WingTip:  texOffs(26,0),  1x3x2
-    // Tail:       texOffs(0,21),  3x1x3
-    // Legs:       texOffs(0,25),  1x2x1
-    // Feet:       texOffs(4,25),  1x1x1
+    // =========================================================================
 
     static void generateBlueTit(String path) throws Exception {
+        Map<String, int[]> dims = defaultPasserineDimensions();
+        Map<String, int[]> layout = computeLayout(dims);
         BufferedImage img = createImage();
         Graphics2D g = img.createGraphics();
         clearImage(g);
 
-        Color blueCap = new Color(0x2A, 0x7A, 0xC4);          // bright cobalt blue cap
-        Color blueCapLight = new Color(0x3A, 0x8A, 0xD4);
-        Color yellowGreen = new Color(0x8B, 0xB0, 0x30);       // back - olive-green
-        Color brightYellow = new Color(0xFF, 0xE0, 0x20);       // breast - bright yellow
-        Color yellowDeep = new Color(0xF0, 0xD0, 0x10);
-        Color white = new Color(0xF5, 0xF5, 0xF0);             // cheeks
-        Color darkStripe = new Color(0x1A, 0x2A, 0x44);         // dark eye stripe / chin
-        Color blueWing = new Color(0x4A, 0x8A, 0xC0);           // wing blue
-        Color wingBar = new Color(0xE0, 0xE5, 0xF0);            // white wing bar
-        Color greyBlue = new Color(0x7A, 0x8A, 0x9A);           // tail
-        Color darkLeg = new Color(0x5A, 0x6A, 0x7A);            // blue-grey legs
-        Color black = new Color(0x22, 0x22, 0x33);
-        Color eye = new Color(0x11, 0x11, 0x11);
+        BodyPalette p = new BodyPalette();
+        p.back      = new Color(0x8B, 0xB0, 0x30);  // olive-green back
+        p.belly     = new Color(0xFF, 0xE0, 0x20);  // bright yellow
+        p.flanks    = new Color(0x8B, 0xB0, 0x30);
+        p.headTop   = new Color(0x2A, 0x7A, 0xC4);  // blue cap
+        p.headSide  = new Color(0xF5, 0xF5, 0xF0);  // white cheeks
+        p.headFront = new Color(0xF5, 0xF5, 0xF0);  // white face
+        p.throat    = new Color(0x1A, 0x2A, 0x44);  // dark chin
+        p.neckBack  = new Color(0x8B, 0xB0, 0x30);
+        p.neckFront = new Color(0xFF, 0xE0, 0x20);
+        p.wingUpper = new Color(0x4A, 0x8A, 0xC0);  // blue wing
+        p.wingLower = new Color(0x5A, 0x9A, 0xD0);
+        p.wingTip   = new Color(0x4A, 0x8A, 0xC0);
+        p.tail      = new Color(0x7A, 0x8A, 0x9A);  // grey-blue
+        p.tailUnder = new Color(0x8A, 0x9A, 0xAA);
+        p.rump      = new Color(0x8B, 0xB0, 0x30);
+        p.leg       = new Color(0x5A, 0x6A, 0x7A);  // blue-grey
+        p.foot      = new Color(0x5A, 0x6A, 0x7A);
+        p.beak      = new Color(0x22, 0x22, 0x33);
+        p.eye       = new Color(0x11, 0x11, 0x11);
+        p.accent1   = new Color(0x1A, 0x2A, 0x44);  // dark eye stripe
+        p.accent2   = new Color(0xE0, 0xE5, 0xF0);  // white wing bar
 
-        // Body: texOffs(0,0), w=4, h=4, d=4
-        fillBox(g, 0, 0, 4, 4, 4, yellowGreen, brightYellow, brightYellow, yellowGreen, yellowGreen, yellowGreen);
-        // Dark central belly stripe
-        for (int y = 4; y < 8; y++) {
-            img.setRGB(5, y, darkStripe.getRGB());
-            img.setRGB(6, y, darkStripe.getRGB());
-        }
-        // Gradient on back top
-        addGradientHorizontal(img, 4, 0, 4, 4, yellowGreen, new Color(0x7B, 0xA0, 0x28));
+        paintBird(img, g, dims, layout, p);
 
-        // Belly: texOffs(0,8), w=3, h=2, d=3
-        fillBox(g, 0, 8, 3, 2, 3, brightYellow, yellowDeep, brightYellow, brightYellow, brightYellow, brightYellow);
-        // Dark centre stripe continues
-        img.setRGB(4, 11, darkStripe.getRGB());
-        img.setRGB(5, 11, darkStripe.getRGB());
+        // Dark belly stripe on chest front
+        addGradientOnFront(img, layout, dims, CHEST, p.belly, new Color(0xF0, 0xD0, 0x10));
 
-        // Head: texOffs(0,13), w=4, h=4, d=4
-        fillBox(g, 0, 13, 4, 4, 4, blueCap, white, white, yellowGreen, blueCap, blueCap);
-        // White cheeks on front face
-        fillFace(g, 4, 17, 4, 4, white);
-        // Dark eye stripe through center of front
-        for (int x = 4; x < 8; x++) {
-            img.setRGB(x, 18, darkStripe.getRGB());
-        }
-        // Dark chin strap
-        img.setRGB(5, 20, darkStripe.getRGB());
-        img.setRGB(6, 20, darkStripe.getRGB());
-        // Eyes on side faces
-        img.setRGB(1, 18, eye.getRGB());
-        img.setRGB(2, 18, eye.getRGB());
-        img.setRGB(9, 18, eye.getRGB());
-        img.setRGB(10, 18, eye.getRGB());
-        // Blue on sides of head above eye stripe
-        for (int x = 0; x < 4; x++) {
-            img.setRGB(x, 17, blueCap.getRGB());
-        }
-        for (int x = 8; x < 12; x++) {
-            img.setRGB(x, 17, blueCap.getRGB());
-        }
-        // White below eye stripe on sides
-        for (int y = 19; y < 21; y++) {
-            img.setRGB(0, y, white.getRGB());
-            img.setRGB(1, y, white.getRGB());
-            img.setRGB(10, y, white.getRGB());
-            img.setRGB(11, y, white.getRGB());
-        }
+        // Wing bar detail
+        addWingBarring(img, layout, dims, L_UPPER_WING, p.accent2, 3);
+        addWingBarring(img, layout, dims, R_UPPER_WING, p.accent2, 3);
 
-        // Crown: texOffs(16,13), 3x1x3 — bright blue cap
-        fillBox(g, 16, 13, 3, 1, 3, blueCapLight, blueCap, blueCap, blueCap, blueCap, blueCap);
+        // Back gradient
+        addGradientOnTop(img, layout, dims, CHEST, p.back, new Color(0x7B, 0xA0, 0x28));
 
-        // Beak: texOffs(16,17), 1x1x1 — tiny dark
-        fillBox(g, 16, 17, 1, 1, 1, black, black, black, black, black, black);
+        // Explicitly paint beaks
+        paintBeaks(g, layout, dims, p.beak);
 
-        // Cheeks: texOffs(20,17), 1x2x2 — white bulge
-        fillBox(g, 20, 17, 1, 2, 2, white, white, white, white, white, white);
+        // Head-neck colour continuity
+        blendHeadNeck(g, img, layout, dims, p.headTop, p.neckBack);
 
-        // Wings: texOffs(16,0), w=1, h=4, d=4 — blue with white wing bar
-        fillBox(g, 16, 0, 1, 4, 4, blueWing, blueWing, blueWing, blueWing, blueWing, blueWing);
-        // White wing bar
-        for (int x = 20; x < 21; x++) {
-            img.setRGB(x, 4, wingBar.getRGB());
-            img.setRGB(x, 5, wingBar.getRGB());
-        }
+        // Blue tit eye stripe through the eye
+        addBlueTitEyeStripe(img, layout, dims, p.accent1);
 
-        // Wing tip: texOffs(26,0), 1x3x2
-        fillBox(g, 26, 0, 1, 3, 2, blueWing, blueWing, blueWing, blueWing, blueWing, blueWing);
-
-        // Tail: texOffs(0,21), w=3, h=1, d=3 — grey-blue
-        fillBox(g, 0, 21, 3, 1, 3, greyBlue, greyBlue, greyBlue, greyBlue, greyBlue, greyBlue);
-        // Lighter edges
-        img.setRGB(3, 21, new Color(0x9A, 0xAA, 0xBA).getRGB());
-        img.setRGB(5, 21, new Color(0x9A, 0xAA, 0xBA).getRGB());
-
-        // Legs: texOffs(0,25), w=1, h=2, d=1
-        fillBox(g, 0, 25, 1, 2, 1, darkLeg, darkLeg, darkLeg, darkLeg, darkLeg, darkLeg);
-
-        // Feet: texOffs(4,25), w=1, h=1, d=1
-        fillBox(g, 4, 25, 1, 1, 1, darkLeg, darkLeg, darkLeg, darkLeg, darkLeg, darkLeg);
+        // Eyes (painted after stripe so they sit on top)
+        addEyes(img, layout, dims, p.eye);
 
         g.dispose();
+        fillTransparentPixels(img);
         save(img, path);
         System.out.println("Generated: " + path);
     }
 
+    // =========================================================================
     // === BARN OWL ===
-    // Body:       texOffs(0,0),   5x5x5
-    // LowerBody:  texOffs(0,10),  4x3x4
-    // Head:       texOffs(0,17),  5x5x5
-    // FacialDisc: texOffs(20,17), 6x5x1
-    // Beak:       texOffs(20,23), 1x1x1
-    // L Wing:     texOffs(0,27),  1x10x10
-    // L WingOut:  texOffs(22,27), 1x8x6
-    // Tail:       texOffs(20,0),  4x1x3
-    // Legs:       texOffs(32,0),  1x5x1
-    // Talons:     texOffs(36,0),  2x1x2
+    // =========================================================================
+
+    static BodyPalette barnOwlMalePalette() {
+        BodyPalette p = new BodyPalette();
+        p.back      = new Color(0xC4, 0xA0, 0x55);  // golden buff
+        p.belly     = new Color(0xF5, 0xF0, 0xE0);  // white
+        p.flanks    = new Color(0xC4, 0xA0, 0x55);
+        p.headTop   = new Color(0xC4, 0xA0, 0x55);
+        p.headSide  = new Color(0xC4, 0xA0, 0x55);
+        p.headFront = new Color(0xF0, 0xE8, 0xD0);  // cream face disc
+        p.throat    = new Color(0xF0, 0xE8, 0xD0);
+        p.neckBack  = new Color(0xC4, 0xA0, 0x55);
+        p.neckFront = new Color(0xF0, 0xE8, 0xD0);
+        p.wingUpper = new Color(0xC4, 0xA0, 0x55);
+        p.wingLower = new Color(0xD4, 0xB0, 0x65);
+        p.wingTip   = new Color(0xC4, 0xA0, 0x55);
+        p.tail      = new Color(0xC4, 0xA0, 0x55);
+        p.tailUnder = new Color(0xD4, 0xB0, 0x65);
+        p.rump      = new Color(0xC4, 0xA0, 0x55);
+        p.leg       = new Color(0xB0, 0xA0, 0x90);  // grey-pink
+        p.foot      = new Color(0xB0, 0xA0, 0x90);
+        p.beak      = new Color(0xD4, 0xC0, 0xA0);  // pale horn
+        p.eye       = new Color(0x11, 0x11, 0x11);
+        p.accent1   = new Color(0xA0, 0x85, 0x60);  // buff facial disc rim
+        p.accent2   = new Color(0xB8, 0x8A, 0x48);  // tawny orange
+        p.accent3   = new Color(0x4A, 0x3B, 0x2A);  // dark spots
+        return p;
+    }
 
     static void generateBarnOwlMale(String path) throws Exception {
+        Map<String, int[]> dims = barnOwlDimensions();
+        Map<String, int[]> layout = computeLayout(dims);
         BufferedImage img = createImage();
         Graphics2D g = img.createGraphics();
         clearImage(g);
 
-        Color goldenBuff = new Color(0xC4, 0xA0, 0x55);
-        Color goldenLight = new Color(0xD4, 0xB0, 0x65);
-        Color white = new Color(0xF5, 0xF0, 0xE0);
-        Color cream = new Color(0xF0, 0xE8, 0xD0);
-        Color darkEye = new Color(0x11, 0x11, 0x11);
-        Color paleHorn = new Color(0xD4, 0xC0, 0xA0);
-        Color greyPink = new Color(0xB0, 0xA0, 0x90);
-        Color buffRim = new Color(0xA0, 0x85, 0x60);
-        Color tawnyOrange = new Color(0xB8, 0x8A, 0x48);
-        Color darkSpot = new Color(0x4A, 0x3B, 0x2A);
+        BodyPalette p = barnOwlMalePalette();
+        paintBird(img, g, dims, layout, p);
 
-        // Body: texOffs(0,0), w=5, h=5, d=5
-        fillBox(g, 0, 0, 5, 5, 5, goldenBuff, white, white, goldenBuff, goldenBuff, goldenBuff);
-        // Gradient on top: golden center to tawny edges
-        addGradientHorizontal(img, 5, 0, 5, 5, goldenLight, tawnyOrange);
-        // Add dorsal spots on top
-        addSpeckles(img, 5, 0, 5, 5, darkSpot, goldenLight);
-        // Sides: golden upper, white lower
-        for (int y = 5; y < 10; y++) {
-            Color c = y < 8 ? goldenBuff : white;
-            for (int x = 0; x < 5; x++) img.setRGB(x, y, c.getRGB());
-            for (int x = 10; x < 15; x++) img.setRGB(x, y, c.getRGB());
-        }
+        // Dorsal spots on back
+        addSpecklesOnCuboid(img, layout, dims, CHEST, p.accent3, p.accent2);
+        addSpecklesOnCuboid(img, layout, dims, TORSO, p.accent3, p.accent2);
 
-        // Lower body: texOffs(0,10), w=4, h=3, d=4
-        fillBox(g, 0, 10, 4, 3, 4, goldenBuff, white, white, goldenBuff, goldenBuff, goldenBuff);
+        // Wing barring
+        addWingBarring(img, layout, dims, L_UPPER_WING, p.accent2, 2);
+        addWingBarring(img, layout, dims, L_FOREARM, p.accent2, 2);
+        addWingBarring(img, layout, dims, R_UPPER_WING, p.accent2, 2);
+        addWingBarring(img, layout, dims, R_FOREARM, p.accent2, 2);
 
-        // Head: texOffs(0,17), w=5, h=5, d=5
-        fillBox(g, 0, 17, 5, 5, 5, goldenBuff, cream, cream, goldenBuff, goldenBuff, goldenBuff);
+        // Gradient on back
+        addGradientOnTop(img, layout, dims, CHEST, new Color(0xD4, 0xB0, 0x65), p.accent2);
 
-        // Facial disc: texOffs(20,17), w=6, h=5, d=1
-        // UV layout: top face (21,17,6,1), front face (21,18,6,5)
-        // left face (20,18,1,5), right face (27,18,1,5)
-        fillBox(g, 20, 17, 6, 5, 1, cream, cream, cream, cream, cream, cream);
-        // Heart-shaped buff rim on front face (21,18)-(26,22)
-        // Top rim — curved heart top
-        img.setRGB(21, 18, buffRim.getRGB());
-        img.setRGB(22, 18, buffRim.getRGB());
-        img.setRGB(23, 18, cream.getRGB());
-        img.setRGB(24, 18, cream.getRGB());
-        img.setRGB(25, 18, buffRim.getRGB());
-        img.setRGB(26, 18, buffRim.getRGB());
-        // Side rims
-        img.setRGB(21, 19, buffRim.getRGB());
-        img.setRGB(26, 19, buffRim.getRGB());
-        img.setRGB(21, 20, buffRim.getRGB());
-        img.setRGB(26, 20, buffRim.getRGB());
-        img.setRGB(21, 21, buffRim.getRGB());
-        img.setRGB(26, 21, buffRim.getRGB());
-        // V-shape at bottom of heart (chin)
-        img.setRGB(21, 22, buffRim.getRGB());
-        img.setRGB(22, 22, buffRim.getRGB());
-        img.setRGB(23, 22, buffRim.getRGB());
-        img.setRGB(24, 22, buffRim.getRGB());
-        img.setRGB(25, 22, buffRim.getRGB());
-        img.setRGB(26, 22, buffRim.getRGB());
-        // Two separate dark eye spots on front face (row 2, y=20)
-        img.setRGB(22, 20, darkEye.getRGB()); // left eye
-        img.setRGB(25, 20, darkEye.getRGB()); // right eye
-        // Subtle dark around eyes
-        img.setRGB(22, 19, new Color(0x8A, 0x7A, 0x6A).getRGB());
-        img.setRGB(25, 19, new Color(0x8A, 0x7A, 0x6A).getRGB());
-        // Left/right side faces
-        img.setRGB(20, 18, buffRim.getRGB());
-        img.setRGB(27, 18, buffRim.getRGB());
+        // Explicitly paint beaks
+        paintBeaks(g, layout, dims, p.beak);
 
-        // Beak: texOffs(20,23), 1x1x1
-        fillBox(g, 20, 23, 1, 1, 1, paleHorn, paleHorn, paleHorn, paleHorn, paleHorn, paleHorn);
+        // Head-neck colour continuity
+        blendHeadNeck(g, img, layout, dims, p.headTop, p.neckBack);
 
-        // Wings: texOffs(0,27), w=1, h=10, d=10 — enormous broad rounded owl wings
-        fillBox(g, 0, 27, 1, 10, 10, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
-        // Add barring on wings
-        for (int y = 37; y < 47; y += 2) {
-            for (int x = 1; x < 11; x++) {
-                if (x < SIZE && y < SIZE) img.setRGB(x, y, tawnyOrange.getRGB());
-            }
-        }
-        // Lighter feather edges
-        for (int y = 37; y < 47; y++) {
-            if (y % 3 == 0) {
-                for (int x = 1; x < 11; x++) {
-                    if (x < SIZE && y < SIZE) img.setRGB(x, y, goldenLight.getRGB());
-                }
-            }
-        }
+        // Face: heart-shaped facial disc
+        addBarnOwlFacialDisc(g, img, layout, dims, p.headFront, p.accent1);
 
-        // Wing outer: texOffs(22,27), w=1, h=8, d=6
-        fillBox(g, 22, 27, 1, 8, 6, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
-
-        // Tail: texOffs(20,0), w=4, h=1, d=3
-        fillBox(g, 20, 0, 4, 1, 3, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
-        // Dark bars
-        for (int x = 23; x < 27; x++) {
-            img.setRGB(x, 3, tawnyOrange.getRGB());
-        }
-
-        // Legs: texOffs(32,0), w=1, h=5, d=1
-        fillBox(g, 32, 0, 1, 5, 1, greyPink, greyPink, greyPink, greyPink, white, greyPink);
-
-        // Talons: texOffs(36,0), w=2, h=1, d=2
-        fillBox(g, 36, 0, 2, 1, 2, greyPink, greyPink, greyPink, greyPink, greyPink, greyPink);
+        // Eyes (after facial disc so they sit on top)
+        addEyes(img, layout, dims, p.eye);
 
         g.dispose();
+        fillTransparentPixels(img);
         save(img, path);
         System.out.println("Generated: " + path);
     }
 
     static void generateBarnOwlFemale(String path) throws Exception {
+        Map<String, int[]> dims = barnOwlDimensions();
+        Map<String, int[]> layout = computeLayout(dims);
         BufferedImage img = createImage();
         Graphics2D g = img.createGraphics();
         clearImage(g);
 
-        Color goldenBuff = new Color(0xC4, 0xA0, 0x55);
-        Color goldenLight = new Color(0xD4, 0xB0, 0x65);
-        Color buffWhite = new Color(0xE8, 0xDD, 0xC8);
-        Color cream = new Color(0xF0, 0xE8, 0xD0);
-        Color darkEye = new Color(0x11, 0x11, 0x11);
-        Color paleHorn = new Color(0xD4, 0xC0, 0xA0);
-        Color greyPink = new Color(0xB0, 0xA0, 0x90);
-        Color buffRim = new Color(0xA0, 0x85, 0x60);
-        Color tawnyOrange = new Color(0xB8, 0x8A, 0x48);
-        Color darkSpot = new Color(0x4A, 0x3B, 0x2A);
+        BodyPalette p = barnOwlMalePalette();
+        // Female has buffier breast with spots
+        p.belly = new Color(0xE8, 0xDD, 0xC8);
 
-        // Body: same as male but buffier breast with spots
-        fillBox(g, 0, 0, 5, 5, 5, goldenBuff, buffWhite, buffWhite, goldenBuff, goldenBuff, goldenBuff);
-        addGradientHorizontal(img, 5, 0, 5, 5, goldenLight, tawnyOrange);
-        addSpeckles(img, 5, 0, 5, 5, darkSpot, goldenLight);
-        // Spots on breast (female characteristic)
-        addSpeckles(img, 5, 5, 5, 5, darkSpot, buffWhite);
-        for (int y = 5; y < 10; y++) {
-            Color c = y < 8 ? goldenBuff : buffWhite;
-            for (int x = 0; x < 5; x++) img.setRGB(x, y, c.getRGB());
-            for (int x = 10; x < 15; x++) img.setRGB(x, y, c.getRGB());
-        }
+        paintBird(img, g, dims, layout, p);
 
-        // Lower body
-        fillBox(g, 0, 10, 4, 3, 4, goldenBuff, buffWhite, buffWhite, goldenBuff, goldenBuff, goldenBuff);
-        addSpeckles(img, 4, 14, 4, 3, darkSpot, buffWhite);
+        // More spots on female
+        addSpecklesOnCuboid(img, layout, dims, CHEST, p.accent3, new Color(0xD4, 0xB0, 0x65));
+        addSpecklesOnCuboid(img, layout, dims, TORSO, p.accent3, new Color(0xD4, 0xB0, 0x65));
+        addSpecklesOnCuboid(img, layout, dims, HIP, p.accent3, p.belly);
 
-        // Head
-        fillBox(g, 0, 17, 5, 5, 5, goldenBuff, cream, cream, goldenBuff, goldenBuff, goldenBuff);
+        // Wing barring
+        addWingBarring(img, layout, dims, L_UPPER_WING, p.accent2, 2);
+        addWingBarring(img, layout, dims, L_FOREARM, p.accent2, 2);
+        addWingBarring(img, layout, dims, R_UPPER_WING, p.accent2, 2);
+        addWingBarring(img, layout, dims, R_FOREARM, p.accent2, 2);
 
-        // Facial disc — same heart-shape as male
-        fillBox(g, 20, 17, 6, 5, 1, cream, cream, cream, cream, cream, cream);
-        // Heart-shaped buff rim on front face (21,18)-(26,22)
-        img.setRGB(21, 18, buffRim.getRGB());
-        img.setRGB(22, 18, buffRim.getRGB());
-        img.setRGB(25, 18, buffRim.getRGB());
-        img.setRGB(26, 18, buffRim.getRGB());
-        img.setRGB(21, 19, buffRim.getRGB());
-        img.setRGB(26, 19, buffRim.getRGB());
-        img.setRGB(21, 20, buffRim.getRGB());
-        img.setRGB(26, 20, buffRim.getRGB());
-        img.setRGB(21, 21, buffRim.getRGB());
-        img.setRGB(26, 21, buffRim.getRGB());
-        for (int x = 21; x <= 26; x++) img.setRGB(x, 22, buffRim.getRGB());
-        // Two separate dark eye spots
-        img.setRGB(22, 20, darkEye.getRGB());
-        img.setRGB(25, 20, darkEye.getRGB());
-        img.setRGB(22, 19, new Color(0x8A, 0x7A, 0x6A).getRGB());
-        img.setRGB(25, 19, new Color(0x8A, 0x7A, 0x6A).getRGB());
-        img.setRGB(20, 18, buffRim.getRGB());
-        img.setRGB(27, 18, buffRim.getRGB());
+        addGradientOnTop(img, layout, dims, CHEST, new Color(0xD4, 0xB0, 0x65), p.accent2);
 
-        // Beak
-        fillBox(g, 20, 23, 1, 1, 1, paleHorn, paleHorn, paleHorn, paleHorn, paleHorn, paleHorn);
-
-        // Wings (1x10x10 + 1x8x6 — same enormous proportions as male)
-        fillBox(g, 0, 27, 1, 10, 10, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
-        for (int y = 37; y < 47; y += 2) {
-            for (int x = 1; x < 11; x++) {
-                if (x < SIZE && y < SIZE) img.setRGB(x, y, tawnyOrange.getRGB());
-            }
-        }
-        fillBox(g, 22, 27, 1, 8, 6, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
-
-        // Tail
-        fillBox(g, 20, 0, 4, 1, 3, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff, goldenBuff);
-
-        // Legs/talons
-        fillBox(g, 32, 0, 1, 5, 1, greyPink, greyPink, greyPink, greyPink, buffWhite, greyPink);
-        fillBox(g, 36, 0, 2, 1, 2, greyPink, greyPink, greyPink, greyPink, greyPink, greyPink);
+        paintBeaks(g, layout, dims, p.beak);
+        blendHeadNeck(g, img, layout, dims, p.headTop, p.neckBack);
+        addBarnOwlFacialDisc(g, img, layout, dims, p.headFront, p.accent1);
+        addEyes(img, layout, dims, p.eye);
 
         g.dispose();
+        fillTransparentPixels(img);
         save(img, path);
         System.out.println("Generated: " + path);
     }
 
+    // =========================================================================
     // === PEREGRINE FALCON ===
-    // Chest:       texOffs(0,0),   6x5x5
-    // RearBody:    texOffs(0,10),  4x4x5
-    // Head:        texOffs(0,19),  3x3x3
-    // Beak:        texOffs(12,19), 1x1x2
-    // BeakHook:    texOffs(18,19), 1x1x1
-    // Malar:       texOffs(22,19), 1x2x2
-    // L Wing:      texOffs(0,25),  1x8x5
-    // L WingOuter: texOffs(12,25), 1x7x3
-    // Tail:        texOffs(22,0),  3x1x4
-    // TailTip:     texOffs(22,5),  2x1x3
-    // Legs:        texOffs(36,0),  1x5x1
-    // Talons:      texOffs(40,0),  2x1x2
+    // =========================================================================
+
+    static BodyPalette peregrinePalette() {
+        BodyPalette p = new BodyPalette();
+        p.back      = new Color(0x4A, 0x55, 0x68);  // slate grey
+        p.belly     = new Color(0xE8, 0xE0, 0xD5);  // pale barred
+        p.flanks    = new Color(0x5A, 0x65, 0x78);
+        p.headTop   = new Color(0x1A, 0x1A, 0x22);  // black helmet
+        p.headSide  = new Color(0x1A, 0x1A, 0x22);
+        p.headFront = new Color(0x1A, 0x1A, 0x22);
+        p.throat    = new Color(0xF0, 0xEC, 0xE5);  // white throat
+        p.neckBack  = new Color(0x4A, 0x55, 0x68);
+        p.neckFront = new Color(0xF0, 0xEC, 0xE5);
+        p.wingUpper = new Color(0x4A, 0x55, 0x68);
+        p.wingLower = new Color(0x5A, 0x65, 0x78);
+        p.wingTip   = new Color(0x3A, 0x42, 0x52);  // darker tips
+        p.tail      = new Color(0x4A, 0x55, 0x68);
+        p.tailUnder = new Color(0x5A, 0x65, 0x78);
+        p.rump      = new Color(0x4A, 0x55, 0x68);
+        p.leg       = new Color(0xDA, 0xA5, 0x20);  // yellow
+        p.foot      = new Color(0xDA, 0xA5, 0x20);
+        p.beak      = new Color(0x2A, 0x2A, 0x33);
+        p.eye       = new Color(0x11, 0x11, 0x11);
+        p.accent1   = new Color(0x55, 0x4A, 0x3E);  // dark barring
+        p.accent2   = new Color(0xDA, 0xA5, 0x20);  // yellow cere
+        return p;
+    }
 
     static void generatePeregrineAdult(String path) throws Exception {
+        Map<String, int[]> dims = peregrineDimensions();
+        Map<String, int[]> layout = computeLayout(dims);
         BufferedImage img = createImage();
         Graphics2D g = img.createGraphics();
         clearImage(g);
 
-        Color slateGrey = new Color(0x4A, 0x55, 0x68);
-        Color darkSlate = new Color(0x3A, 0x42, 0x52);
-        Color slateLight = new Color(0x5A, 0x65, 0x78);
-        Color paleBarred = new Color(0xE8, 0xE0, 0xD5);
-        Color darkBarring = new Color(0x55, 0x4A, 0x3E);
-        Color blackHead = new Color(0x1A, 0x1A, 0x22);
-        Color whiteCheek = new Color(0xF0, 0xEC, 0xE5);
-        Color yellowCere = new Color(0xDA, 0xA5, 0x20);
-        Color yellowFeet = new Color(0xDA, 0xA5, 0x20);
-        Color darkBeak = new Color(0x2A, 0x2A, 0x33);
-        Color darkEye = new Color(0x11, 0x11, 0x11);
+        BodyPalette p = peregrinePalette();
+        paintBird(img, g, dims, layout, p);
 
-        // Chest: texOffs(0,0), w=6, h=5, d=5 — slate back, pale barred front
-        fillBox(g, 0, 0, 6, 5, 5, slateGrey, paleBarred, paleBarred, slateGrey, slateGrey, slateGrey);
-        // Back gradient: darker center slate
-        addGradientHorizontal(img, 5, 0, 6, 5, slateLight, darkSlate);
-        // Front barring pattern
-        for (int y = 5; y < 10; y++) {
-            Color c = (y % 2 == 0) ? paleBarred : darkBarring;
-            for (int x = 5; x < 11; x++) img.setRGB(x, y, c.getRGB());
-        }
-        // Sides: slate upper, barred lower
-        for (int y = 5; y < 10; y++) {
-            Color c = y < 7 ? slateGrey : ((y % 2 == 0) ? paleBarred : darkBarring);
-            for (int x = 0; x < 5; x++) img.setRGB(x, y, c.getRGB());
-            for (int x = 11; x < 16; x++) img.setRGB(x, y, c.getRGB());
-        }
+        // Barring on breast/belly
+        addWingBarring(img, layout, dims, CHEST, p.accent1, 2);
+        addWingBarring(img, layout, dims, TORSO, p.accent1, 2);
 
-        // Rear body: texOffs(0,10), w=4, h=4, d=5 — continues the slate/barred pattern
-        fillBox(g, 0, 10, 4, 4, 5, slateGrey, paleBarred, paleBarred, slateGrey, slateGrey, slateGrey);
-        // Barring on front of rear body
-        for (int y = 15; y < 19; y++) {
-            Color c = (y % 2 == 0) ? paleBarred : darkBarring;
-            for (int x = 5; x < 9; x++) img.setRGB(x, y, c.getRGB());
-        }
+        // Gradient on back
+        addGradientOnTop(img, layout, dims, CHEST, new Color(0x5A, 0x65, 0x78), new Color(0x3A, 0x42, 0x52));
 
-        // Head: texOffs(0,19), w=3, h=3, d=3 — dark helmet
-        fillBox(g, 0, 19, 3, 3, 3, blackHead, blackHead, blackHead, blackHead, blackHead, blackHead);
-        // Front face: dark cap, white cheek, dark moustache
-        fillFace(g, 3, 22, 3, 3, blackHead);
-        // White cheeks on front
-        img.setRGB(3, 23, whiteCheek.getRGB());
-        img.setRGB(5, 23, whiteCheek.getRGB());
-        img.setRGB(4, 24, whiteCheek.getRGB());
-        // White throat on bottom
-        fillFace(g, 6, 19, 3, 3, whiteCheek);
-        // Side faces: dark with white throat patch
-        img.setRGB(1, 23, darkEye.getRGB());  // left eye
-        img.setRGB(7, 23, darkEye.getRGB());  // right eye
-        img.setRGB(0, 24, whiteCheek.getRGB());
-        img.setRGB(8, 24, whiteCheek.getRGB());
-        img.setRGB(2, 24, whiteCheek.getRGB());
-        img.setRGB(6, 24, whiteCheek.getRGB());
+        // Wing tip darkening
+        addGradientOnTop(img, layout, dims, L_HAND, p.wingUpper, p.wingTip);
+        addGradientOnTop(img, layout, dims, R_HAND, p.wingUpper, p.wingTip);
 
-        // Beak: texOffs(12,19), 1x1x2 — dark hooked
-        fillBox(g, 12, 19, 1, 1, 2, darkBeak, darkBeak, darkBeak, darkBeak, darkBeak, darkBeak);
-        // Yellow cere at base
-        img.setRGB(14, 20, yellowCere.getRGB());
-        img.setRGB(14, 21, yellowCere.getRGB());
+        // Explicitly paint beaks
+        paintBeaks(g, layout, dims, p.beak);
 
-        // Beak hook: texOffs(18,19), 1x1x1
-        fillBox(g, 18, 19, 1, 1, 1, darkBeak, darkBeak, darkBeak, darkBeak, darkBeak, darkBeak);
+        // Head-neck colour continuity
+        blendHeadNeck(g, img, layout, dims, p.headTop, p.neckBack);
 
-        // Malar stripe: texOffs(22,19), 1x2x2
-        fillBox(g, 22, 19, 1, 2, 2, blackHead, blackHead, blackHead, blackHead, blackHead, blackHead);
+        // Moustachial stripe below eye
+        addPeregrineMoustache(img, layout, dims, new Color(0x11, 0x11, 0x11));
 
-        // Wings: texOffs(0,25), w=1, h=8, d=5 — long narrow sickle-shaped
-        fillBox(g, 0, 25, 1, 8, 5, slateGrey, slateGrey, slateGrey, slateGrey, slateGrey, slateGrey);
-        // Darker wingtips
-        for (int x = 5; x < 6; x++) {
-            for (int y = 30; y < 38; y++) {
-                if (x < SIZE && y < SIZE) img.setRGB(x, y, darkSlate.getRGB());
-            }
-        }
-        // Subtle barring on wing underside
-        for (int y = 30; y < 38; y += 2) {
-            img.setRGB(1, y, slateLight.getRGB());
-        }
-
-        // Wing outer: texOffs(12,25), w=1, h=7, d=3 — narrow pointed tip
-        fillBox(g, 12, 25, 1, 7, 3, slateGrey, slateGrey, slateGrey, slateGrey, slateGrey, slateGrey);
-        // Darker tips
-        for (int x = 15; x < 16; x++) {
-            for (int y = 28; y < 35; y++) {
-                if (x < SIZE && y < SIZE) img.setRGB(x, y, darkSlate.getRGB());
-            }
-        }
-
-        // Tail: texOffs(22,0), w=3, h=1, d=4 — slate with dark bars
-        fillBox(g, 22, 0, 3, 1, 4, slateGrey, slateGrey, slateGrey, slateGrey, slateGrey, slateGrey);
-        // Dark subterminal band
-        for (int x = 26; x < 29; x++) {
-            img.setRGB(x, 4, darkSlate.getRGB());
-        }
-        // White tip
-        for (int x = 26; x < 29; x++) {
-            img.setRGB(x, 3, slateLight.getRGB());
-        }
-
-        // Tail tip: texOffs(22,5), w=2, h=1, d=3
-        fillBox(g, 22, 5, 2, 1, 3, slateGrey, slateGrey, slateGrey, slateGrey, slateGrey, slateGrey);
-        // Dark band near tip
-        for (int x = 25; x < 27; x++) {
-            img.setRGB(x, 8, darkSlate.getRGB());
-        }
-
-        // Legs: texOffs(36,0), w=1, h=5, d=1 — yellow
-        fillBox(g, 36, 0, 1, 5, 1, yellowFeet, yellowFeet, yellowFeet, yellowFeet, yellowFeet, yellowFeet);
-
-        // Talons: texOffs(40,0), w=2, h=1, d=2 — yellow with dark claws
-        fillBox(g, 40, 0, 2, 1, 2, yellowFeet, yellowFeet, yellowFeet, yellowFeet, yellowFeet, yellowFeet);
-        // Dark talon tips
-        img.setRGB(42, 2, darkBeak.getRGB());
-        img.setRGB(43, 2, darkBeak.getRGB());
+        // Eyes (after moustache so they sit on top)
+        addEyes(img, layout, dims, p.eye);
 
         g.dispose();
+        fillTransparentPixels(img);
         save(img, path);
         System.out.println("Generated: " + path);
     }
 
     static void generatePeregrineJuvenile(String path) throws Exception {
+        Map<String, int[]> dims = peregrineDimensions();
+        Map<String, int[]> layout = computeLayout(dims);
         BufferedImage img = createImage();
         Graphics2D g = img.createGraphics();
         clearImage(g);
 
+        BodyPalette p = new BodyPalette();
         Color brown = new Color(0x6B, 0x55, 0x3A);
-        Color brownLight = new Color(0x7B, 0x65, 0x4A);
         Color buffCream = new Color(0xE0, 0xD0, 0xB5);
-        Color darkStreak = new Color(0x4A, 0x3B, 0x2A);
         Color darkHead = new Color(0x3A, 0x2E, 0x22);
-        Color buffCheek = new Color(0xD0, 0xC0, 0xA5);
-        Color blueGreyFeet = new Color(0x7A, 0x85, 0x90);
-        Color darkBeak = new Color(0x2A, 0x2A, 0x33);
-        Color darkEye = new Color(0x11, 0x11, 0x11);
+        p.back = brown; p.belly = buffCream; p.flanks = brown;
+        p.headTop = darkHead; p.headSide = darkHead; p.headFront = darkHead;
+        p.throat = new Color(0xD0, 0xC0, 0xA5);
+        p.neckBack = brown; p.neckFront = buffCream;
+        p.wingUpper = brown; p.wingLower = brown; p.wingTip = brown;
+        p.tail = brown; p.tailUnder = brown; p.rump = brown;
+        p.leg = new Color(0x7A, 0x85, 0x90);
+        p.foot = new Color(0x7A, 0x85, 0x90);
+        p.beak = new Color(0x2A, 0x2A, 0x33);
+        p.eye = new Color(0x11, 0x11, 0x11);
+        p.accent1 = new Color(0x4A, 0x3B, 0x2A);  // dark streaks
 
-        // Chest: brown back, streaked buff front
-        fillBox(g, 0, 0, 6, 5, 5, brown, buffCream, buffCream, brown, brown, brown);
-        // Vertical streaks on front (not horizontal bars like adult)
-        for (int x = 5; x < 11; x++) {
-            if (x % 2 == 0) {
-                for (int y = 5; y < 10; y++) img.setRGB(x, y, darkStreak.getRGB());
-            }
-        }
+        paintBird(img, g, dims, layout, p);
 
-        // Rear body
-        fillBox(g, 0, 10, 4, 4, 5, brown, buffCream, buffCream, brown, brown, brown);
-        for (int x = 5; x < 9; x++) {
-            if (x % 2 == 0) {
-                for (int y = 15; y < 19; y++) img.setRGB(x, y, darkStreak.getRGB());
-            }
-        }
+        // Vertical streaking (juvenile has streaks, not bars)
+        addWingBarring(img, layout, dims, CHEST, p.accent1, 2);
+        addWingBarring(img, layout, dims, TORSO, p.accent1, 2);
 
-        // Head: brown (not black like adult)
-        fillBox(g, 0, 19, 3, 3, 3, darkHead, darkHead, darkHead, darkHead, darkHead, darkHead);
-        img.setRGB(3, 23, buffCheek.getRGB());
-        img.setRGB(5, 23, buffCheek.getRGB());
-        img.setRGB(4, 24, buffCheek.getRGB());
-        img.setRGB(1, 23, darkEye.getRGB());
-        img.setRGB(7, 23, darkEye.getRGB());
-        img.setRGB(0, 24, buffCheek.getRGB());
-        img.setRGB(8, 24, buffCheek.getRGB());
-
-        // Beak, beak hook, malar
-        fillBox(g, 12, 19, 1, 1, 2, darkBeak, darkBeak, darkBeak, darkBeak, darkBeak, darkBeak);
-        fillBox(g, 18, 19, 1, 1, 1, darkBeak, darkBeak, darkBeak, darkBeak, darkBeak, darkBeak);
-        fillBox(g, 22, 19, 1, 2, 2, darkHead, darkHead, darkHead, darkHead, darkHead, darkHead);
-
-        // Wings (1x8x5 + 1x7x3)
-        fillBox(g, 0, 25, 1, 8, 5, brown, brown, brown, brown, brown, brown);
-        fillBox(g, 12, 25, 1, 7, 3, brown, brown, brown, brown, brown, brown);
-
-        // Tail
-        fillBox(g, 22, 0, 3, 1, 4, brown, brown, brown, brown, brown, brown);
-        fillBox(g, 22, 5, 2, 1, 3, brown, brown, brown, brown, brown, brown);
-
-        // Legs/talons (1x5x1 to match model)
-        fillBox(g, 36, 0, 1, 5, 1, blueGreyFeet, blueGreyFeet, blueGreyFeet, blueGreyFeet, blueGreyFeet, blueGreyFeet);
-        fillBox(g, 40, 0, 2, 1, 2, blueGreyFeet, blueGreyFeet, blueGreyFeet, blueGreyFeet, blueGreyFeet, blueGreyFeet);
+        paintBeaks(g, layout, dims, p.beak);
+        blendHeadNeck(g, img, layout, dims, darkHead, brown);
+        addPeregrineMoustache(img, layout, dims, new Color(0x22, 0x1A, 0x11));
+        addEyes(img, layout, dims, p.eye);
 
         g.dispose();
+        fillTransparentPixels(img);
         save(img, path);
         System.out.println("Generated: " + path);
     }
 
+    // =========================================================================
     // === MALLARD ===
-    // Body:       texOffs(0,0),   7x6x6
-    // RearBody:   texOffs(0,12),  5x5x5
-    // Neck:       texOffs(20,12), 3x3x2
-    // Head:       texOffs(0,22),  4x4x4
-    // Crown:      texOffs(16,22), 3x1x3
-    // Bill:       texOffs(16,26), 3x1x3
-    // BillTip:    texOffs(28,26), 3x1x1
-    // L Wing:     texOffs(0,30),  1x7x8
-    // L WingTip:  texOffs(18,30), 1x4x4
-    // Tail:       texOffs(26,0),  5x1x4
-    // TailCurl:   texOffs(26,5),  1x1x2
-    // Legs:       texOffs(26,8),  1x4x1
-    // Feet:       texOffs(30,8),  3x1x3
+    // =========================================================================
 
     static void generateMallardMale(String path) throws Exception {
+        Map<String, int[]> dims = mallardDimensions();
+        Map<String, int[]> layout = computeLayout(dims);
         BufferedImage img = createImage();
         Graphics2D g = img.createGraphics();
         clearImage(g);
 
-        Color iridGreen = new Color(0x2D, 0x6B, 0x33);
-        Color iridGreenLight = new Color(0x3D, 0x7B, 0x43);
-        Color chestnut = new Color(0x8B, 0x45, 0x13);
-        Color chestnutDeep = new Color(0x7B, 0x35, 0x08);
-        Color greyFlanks = new Color(0xB0, 0xAA, 0x9E);
-        Color greyLight = new Color(0xC0, 0xBA, 0xAE);
-        Color blackRump = new Color(0x1A, 0x1A, 0x1A);
-        Color whiteRing = new Color(0xF0, 0xF0, 0xF0);
-        Color yellowBill = new Color(0xDA, 0xA5, 0x20);
-        Color yellowBillTip = new Color(0xC0, 0x90, 0x15);
-        Color orangeLegs = new Color(0xFF, 0x8C, 0x00);
-        Color speculum = new Color(0x6A, 0x5A, 0xCD);
-        Color speculumWhite = new Color(0xF0, 0xF0, 0xF0);
-        Color greyBrown = new Color(0x8A, 0x7E, 0x72);
-        Color darkEye = new Color(0x11, 0x11, 0x11);
+        BodyPalette p = new BodyPalette();
+        p.back      = new Color(0x8A, 0x7E, 0x72);  // grey-brown
+        p.belly     = new Color(0xB0, 0xAA, 0x9E);  // grey flanks
+        p.flanks    = new Color(0xB0, 0xAA, 0x9E);
+        p.headTop   = new Color(0x2D, 0x6B, 0x33);  // iridescent green
+        p.headSide  = new Color(0x2D, 0x6B, 0x33);
+        p.headFront = new Color(0x2D, 0x6B, 0x33);
+        p.throat    = new Color(0x2D, 0x6B, 0x33);
+        p.neckBack  = new Color(0x2D, 0x6B, 0x33);
+        p.neckFront = new Color(0xF0, 0xF0, 0xF0);  // white ring
+        p.wingUpper = new Color(0x8A, 0x7E, 0x72);
+        p.wingLower = new Color(0x9A, 0x8E, 0x82);
+        p.wingTip   = new Color(0x8A, 0x7E, 0x72);
+        p.tail      = new Color(0xB0, 0xAA, 0x9E);
+        p.tailUnder = new Color(0xC0, 0xBA, 0xAE);
+        p.rump      = new Color(0x1A, 0x1A, 0x1A);  // black rump
+        p.leg       = new Color(0xFF, 0x8C, 0x00);  // orange
+        p.foot      = new Color(0xFF, 0x8C, 0x00);
+        p.beak      = new Color(0xDA, 0xA5, 0x20);  // yellow bill
+        p.eye       = new Color(0x11, 0x11, 0x11);
+        p.accent1   = new Color(0x8B, 0x45, 0x13);  // chestnut breast
+        p.accent2   = new Color(0x6A, 0x5A, 0xCD);  // speculum purple-blue
 
-        // Body: texOffs(0,0), w=7, h=6, d=6
-        fillBox(g, 0, 0, 7, 6, 6, greyBrown, greyFlanks, chestnut, greyBrown, greyBrown, greyBrown);
-        // Gradient on top (back): grey-brown with subtle vermiculation
-        addGradientHorizontal(img, 6, 0, 7, 6, greyBrown, new Color(0x7A, 0x6E, 0x62));
-        // Chestnut breast on front with gradient
-        addGradientVertical(img, 6, 6, 7, 6, chestnut, chestnutDeep);
-        // Sides: chestnut upper transitioning to grey flanks
-        for (int y = 6; y < 12; y++) {
-            Color c = y < 9 ? chestnut : greyFlanks;
-            for (int x = 0; x < 6; x++) img.setRGB(x, y, c.getRGB());
-            for (int x = 13; x < 19; x++) img.setRGB(x, y, c.getRGB());
-        }
-        // Black rump on back at rear
-        for (int x = 6; x < 13; x++) {
-            img.setRGB(x, 0, blackRump.getRGB());
-            img.setRGB(x, 1, blackRump.getRGB());
-        }
+        paintBird(img, g, dims, layout, p);
 
-        // Rear body: texOffs(0,12), w=5, h=5, d=5
-        fillBox(g, 0, 12, 5, 5, 5, greyBrown, greyFlanks, greyFlanks, greyBrown, greyBrown, greyBrown);
-        // Black rump area
-        for (int x = 5; x < 10; x++) {
-            img.setRGB(x, 12, blackRump.getRGB());
-            img.setRGB(x, 13, blackRump.getRGB());
-        }
-        // Fine vermiculation on flanks
-        addSpeckles(img, 5, 17, 5, 5, new Color(0x9A, 0x8E, 0x82), greyLight);
-
-        // Neck: texOffs(20,12), w=3, h=3, d=2 — white ring at base of green
-        fillBox(g, 20, 12, 3, 3, 2, iridGreen, whiteRing, iridGreen, iridGreen, iridGreen, iridGreen);
-        // White ring at bottom
-        for (int x = 22; x < 25; x++) {
-            img.setRGB(x, 12, whiteRing.getRGB());
-            img.setRGB(x, 13, whiteRing.getRGB());
+        // Chestnut breast on chest front
+        {
+            int[] uv = layout.get(CHEST);
+            int[] d = dims.get(CHEST);
+            if (uv != null && d != null) {
+                int u = uv[0], v = uv[1];
+                int w = d[0], h = d[1], depth = d[2];
+                // Front face: chestnut
+                fillFace(g, u + depth, v + depth, w, h, p.accent1);
+                // Gradient: chestnut to grey
+                addGradientVertical(img, u + depth, v + depth, w, h,
+                        p.accent1, new Color(0x7B, 0x35, 0x08));
+            }
         }
 
-        // Head: texOffs(0,22), w=4, h=4, d=4 — iridescent green
-        fillBox(g, 0, 22, 4, 4, 4, iridGreen, iridGreen, iridGreen, iridGreen, iridGreen, iridGreen);
-        // Gradient: lighter on top for iridescent sheen
-        addGradientHorizontal(img, 4, 22, 4, 4, iridGreenLight, iridGreen);
-        // Eyes
-        img.setRGB(1, 28, darkEye.getRGB());
-        img.setRGB(2, 28, darkEye.getRGB());
-        img.setRGB(9, 28, darkEye.getRGB());
-        img.setRGB(10, 28, darkEye.getRGB());
-
-        // Crown dome: texOffs(16,22), 3x1x3
-        fillBox(g, 16, 22, 3, 1, 3, iridGreen, iridGreen, iridGreen, iridGreen, iridGreen, iridGreen);
-
-        // Bill: texOffs(16,26), w=3, h=1, d=3 — yellow
-        fillBox(g, 16, 26, 3, 1, 3, yellowBill, yellowBill, yellowBill, yellowBill, yellowBill, yellowBill);
-
-        // Bill tip: texOffs(28,26), 3x1x1
-        fillBox(g, 28, 26, 3, 1, 1, yellowBillTip, yellowBillTip, yellowBillTip, yellowBillTip, yellowBillTip, yellowBillTip);
-
-        // Wings: texOffs(0,30), w=1, h=7, d=8
-        fillBox(g, 0, 30, 1, 7, 8, greyBrown, greyBrown, greyBrown, greyBrown, greyBrown, greyBrown);
-
-        // Wing tip (speculum area): texOffs(18,30), w=1, h=4, d=4
-        fillBox(g, 18, 30, 1, 4, 4, speculum, speculum, speculum, speculum, speculum, speculum);
-        // White borders on speculum
-        for (int y = 34; y < 38; y++) {
-            img.setRGB(19, y, speculumWhite.getRGB());
-            img.setRGB(22, y, speculumWhite.getRGB());
+        // Speculum on secondaries
+        {
+            for (String sec : new String[]{L_SECONDARIES, R_SECONDARIES}) {
+                int[] uv = layout.get(sec);
+                int[] d = dims.get(sec);
+                if (uv != null && d != null) {
+                    int u = uv[0], v = uv[1];
+                    int w = d[0], h = d[1], depth = d[2];
+                    // Paint speculum on top face
+                    fillFace(g, u + depth, v, w, depth, p.accent2);
+                    // White borders
+                    for (int x = u + depth; x < u + depth + w; x++) {
+                        safeSetRGB(img, x, v, new Color(0xF0, 0xF0, 0xF0));
+                        safeSetRGB(img, x, v + depth - 1, new Color(0xF0, 0xF0, 0xF0));
+                    }
+                }
+            }
         }
 
-        // Tail: texOffs(26,0), w=5, h=1, d=4
-        fillBox(g, 26, 0, 5, 1, 4, greyFlanks, greyFlanks, greyFlanks, greyFlanks, blackRump, greyFlanks);
+        // Vermiculation on flanks
+        addSpecklesOnCuboid(img, layout, dims, TORSO,
+                new Color(0x9A, 0x8E, 0x82), new Color(0xC0, 0xBA, 0xAE));
 
-        // Tail curl: texOffs(26,5), 1x1x2 — black
-        fillBox(g, 26, 5, 1, 1, 2, blackRump, blackRump, blackRump, blackRump, blackRump, blackRump);
+        addGradientOnTop(img, layout, dims, CHEST, p.back, new Color(0x7A, 0x6E, 0x62));
 
-        // Legs: texOffs(26,8), w=1, h=4, d=1 — orange
-        fillBox(g, 26, 8, 1, 4, 1, orangeLegs, orangeLegs, orangeLegs, orangeLegs, orangeLegs, orangeLegs);
+        // Explicitly paint beaks (yellow bill)
+        paintBeaks(g, layout, dims, p.beak);
 
-        // Feet: texOffs(30,8), w=3, h=1, d=3 — orange webbed
-        fillBox(g, 30, 8, 3, 1, 3, orangeLegs, orangeLegs, orangeLegs, orangeLegs, orangeLegs, orangeLegs);
+        // Head-neck colour continuity (green head to white neck ring)
+        blendHeadNeck(g, img, layout, dims, p.headTop, p.neckBack);
+
+        addEyes(img, layout, dims, p.eye);
 
         g.dispose();
+        fillTransparentPixels(img);
         save(img, path);
         System.out.println("Generated: " + path);
     }
 
     static void generateMallardFemale(String path) throws Exception {
+        Map<String, int[]> dims = mallardDimensions();
+        Map<String, int[]> layout = computeLayout(dims);
         BufferedImage img = createImage();
         Graphics2D g = img.createGraphics();
         clearImage(g);
 
         Color mottledBrown = new Color(0x8B, 0x73, 0x55);
-        Color darkBrown = new Color(0x5A, 0x48, 0x30);
         Color buffEdge = new Color(0xC4, 0xAA, 0x82);
-        Color darkCrown = new Color(0x4A, 0x3B, 0x2A);
-        Color buffFace = new Color(0xD0, 0xBB, 0x95);
-        Color darkEyeStripe = new Color(0x3A, 0x2E, 0x22);
-        Color orangeBill = new Color(0xC0, 0x80, 0x40);
-        Color orangeLegs = new Color(0xE0, 0x80, 0x20);
+
+        BodyPalette p = new BodyPalette();
+        p.back = mottledBrown; p.belly = mottledBrown; p.flanks = mottledBrown;
+        p.headTop = new Color(0x4A, 0x3B, 0x2A);  // dark crown
+        p.headSide = new Color(0xD0, 0xBB, 0x95);  // buff face
+        p.headFront = new Color(0xD0, 0xBB, 0x95);
+        p.throat = new Color(0xD0, 0xBB, 0x95);
+        p.neckBack = mottledBrown; p.neckFront = mottledBrown;
+        p.wingUpper = mottledBrown; p.wingLower = mottledBrown;
+        p.wingTip = mottledBrown;
+        p.tail = mottledBrown; p.tailUnder = mottledBrown;
+        p.rump = mottledBrown;
+        p.leg = new Color(0xE0, 0x80, 0x20);  // orange
+        p.foot = new Color(0xE0, 0x80, 0x20);
+        p.beak = new Color(0xC0, 0x80, 0x40);  // mottled orange
+        p.eye = new Color(0x11, 0x11, 0x11);
+
+        paintBird(img, g, dims, layout, p);
+
+        // Overall mottled speckles
+        Color darkBrown = new Color(0x5A, 0x48, 0x30);
+        addSpecklesOnCuboid(img, layout, dims, CHEST, darkBrown, buffEdge);
+        addSpecklesOnCuboid(img, layout, dims, TORSO, darkBrown, buffEdge);
+        addSpecklesOnCuboid(img, layout, dims, HIP, darkBrown, buffEdge);
+
+        // Speculum on secondaries
         Color speculum = new Color(0x6A, 0x5A, 0xCD);
-        Color speculumWhite = new Color(0xF0, 0xF0, 0xF0);
-        Color darkEye = new Color(0x11, 0x11, 0x11);
-
-        // Body: mottled brown all over (cryptic)
-        fillBox(g, 0, 0, 7, 6, 6, mottledBrown, mottledBrown, mottledBrown, mottledBrown, mottledBrown, mottledBrown);
-        addSpeckles(img, 0, 0, 26, 12, darkBrown, buffEdge);
-
-        // Rear body
-        fillBox(g, 0, 12, 5, 5, 5, mottledBrown, mottledBrown, mottledBrown, mottledBrown, mottledBrown, mottledBrown);
-        addSpeckles(img, 0, 12, 20, 10, darkBrown, buffEdge);
-
-        // Neck: mottled
-        fillBox(g, 20, 12, 3, 3, 2, mottledBrown, mottledBrown, mottledBrown, mottledBrown, mottledBrown, mottledBrown);
-
-        // Head: dark crown, buff cheeks with eye stripe
-        fillBox(g, 0, 22, 4, 4, 4, darkCrown, buffFace, buffFace, darkCrown, darkCrown, darkCrown);
-        // Eye stripes on sides
-        img.setRGB(1, 28, darkEye.getRGB());
-        img.setRGB(2, 28, darkEyeStripe.getRGB());
-        img.setRGB(9, 28, darkEye.getRGB());
-        img.setRGB(10, 28, darkEyeStripe.getRGB());
-        // Buff below eye
-        img.setRGB(0, 29, buffFace.getRGB());
-        img.setRGB(1, 29, buffFace.getRGB());
-        img.setRGB(10, 29, buffFace.getRGB());
-        img.setRGB(11, 29, buffFace.getRGB());
-
-        // Crown
-        fillBox(g, 16, 22, 3, 1, 3, darkCrown, darkCrown, darkCrown, darkCrown, darkCrown, darkCrown);
-
-        // Bill: mottled orange-brown
-        fillBox(g, 16, 26, 3, 1, 3, orangeBill, orangeBill, orangeBill, orangeBill, orangeBill, orangeBill);
-        fillBox(g, 28, 26, 3, 1, 1, orangeBill, orangeBill, orangeBill, orangeBill, orangeBill, orangeBill);
-
-        // Wings: brown with speculum (1x7x8 + 1x4x4)
-        fillBox(g, 0, 30, 1, 7, 8, mottledBrown, mottledBrown, mottledBrown, mottledBrown, mottledBrown, mottledBrown);
-        fillBox(g, 18, 30, 1, 4, 4, speculum, speculum, speculum, speculum, speculum, speculum);
-        for (int y = 34; y < 38; y++) {
-            img.setRGB(19, y, speculumWhite.getRGB());
-            img.setRGB(22, y, speculumWhite.getRGB());
+        for (String sec : new String[]{L_SECONDARIES, R_SECONDARIES}) {
+            int[] uv = layout.get(sec);
+            int[] d = dims.get(sec);
+            if (uv != null && d != null) {
+                fillFace(g, uv[0] + d[2], uv[1], d[0], d[2], speculum);
+            }
         }
 
-        // Tail
-        fillBox(g, 26, 0, 5, 1, 4, mottledBrown, mottledBrown, mottledBrown, mottledBrown, mottledBrown, mottledBrown);
-        // No tail curl visible for female, but fill the UV space
-        fillBox(g, 26, 5, 1, 1, 2, mottledBrown, mottledBrown, mottledBrown, mottledBrown, mottledBrown, mottledBrown);
-
-        // Legs/feet (1x4x1 to match model)
-        fillBox(g, 26, 8, 1, 4, 1, orangeLegs, orangeLegs, orangeLegs, orangeLegs, orangeLegs, orangeLegs);
-        fillBox(g, 30, 8, 3, 1, 3, orangeLegs, orangeLegs, orangeLegs, orangeLegs, orangeLegs, orangeLegs);
+        paintBeaks(g, layout, dims, p.beak);
+        blendHeadNeck(g, img, layout, dims, p.headTop, mottledBrown);
+        addEyes(img, layout, dims, p.eye);
 
         g.dispose();
+        fillTransparentPixels(img);
         save(img, path);
         System.out.println("Generated: " + path);
     }
 
     static void generateMallardDuckling(String path) throws Exception {
+        Map<String, int[]> dims = mallardDimensions();
+        Map<String, int[]> layout = computeLayout(dims);
         BufferedImage img = createImage();
         Graphics2D g = img.createGraphics();
         clearImage(g);
 
         Color yellow = new Color(0xFF, 0xD7, 0x00);
-        Color yellowLight = new Color(0xFF, 0xE7, 0x30);
         Color darkBack = new Color(0x3A, 0x2E, 0x22);
-        Color darkStripe = new Color(0x4A, 0x3B, 0x2A);
-        Color greyBill = new Color(0x55, 0x55, 0x55);
-        Color greyLegs = new Color(0x55, 0x55, 0x55);
-        Color darkEye = new Color(0x11, 0x11, 0x11);
 
-        // Body: dark back, yellow belly/front
-        fillBox(g, 0, 0, 7, 6, 6, darkBack, yellow, yellow, darkBack, yellow, darkBack);
-        // Yellow spots on dark back
-        img.setRGB(8, 1, yellow.getRGB());
-        img.setRGB(11, 1, yellow.getRGB());
-        img.setRGB(8, 4, yellow.getRGB());
-        img.setRGB(11, 4, yellow.getRGB());
-        // Sides: yellow lower half
-        for (int y = 6; y < 12; y++) {
-            Color c = y < 9 ? darkBack : yellow;
-            for (int x = 0; x < 6; x++) img.setRGB(x, y, c.getRGB());
-            for (int x = 13; x < 19; x++) img.setRGB(x, y, c.getRGB());
-        }
+        BodyPalette p = new BodyPalette();
+        p.back = darkBack; p.belly = yellow; p.flanks = yellow;
+        p.headTop = darkBack; p.headSide = yellow; p.headFront = yellow;
+        p.throat = yellow;
+        p.neckBack = darkBack; p.neckFront = yellow;
+        p.wingUpper = darkBack; p.wingLower = darkBack; p.wingTip = darkBack;
+        p.tail = darkBack; p.tailUnder = darkBack;
+        p.rump = darkBack;
+        p.leg = new Color(0x55, 0x55, 0x55);
+        p.foot = new Color(0x55, 0x55, 0x55);
+        p.beak = new Color(0x55, 0x55, 0x55);
+        p.eye = new Color(0x11, 0x11, 0x11);
 
-        // Rear body
-        fillBox(g, 0, 12, 5, 5, 5, darkBack, yellow, yellow, darkBack, yellow, darkBack);
-
-        // Neck
-        fillBox(g, 20, 12, 3, 3, 2, darkBack, yellow, yellow, darkBack, yellow, darkBack);
-
-        // Head: yellow face, dark crown
-        fillBox(g, 0, 22, 4, 4, 4, darkBack, yellow, yellow, darkBack, yellow, darkBack);
-        img.setRGB(1, 28, darkEye.getRGB());
-        img.setRGB(2, 28, darkEye.getRGB());
-        img.setRGB(9, 28, darkEye.getRGB());
-        img.setRGB(10, 28, darkEye.getRGB());
-        img.setRGB(0, 28, darkStripe.getRGB());
-        img.setRGB(11, 28, darkStripe.getRGB());
-
-        // Crown
-        fillBox(g, 16, 22, 3, 1, 3, darkBack, darkBack, darkBack, darkBack, darkBack, darkBack);
-
-        // Bill: grey
-        fillBox(g, 16, 26, 3, 1, 3, greyBill, greyBill, greyBill, greyBill, greyBill, greyBill);
-        fillBox(g, 28, 26, 3, 1, 1, greyBill, greyBill, greyBill, greyBill, greyBill, greyBill);
-
-        // Wings: dark (1x7x8 + 1x4x4)
-        fillBox(g, 0, 30, 1, 7, 8, darkBack, darkBack, darkBack, darkBack, darkBack, darkBack);
-        fillBox(g, 18, 30, 1, 4, 4, darkBack, darkBack, darkBack, darkBack, darkBack, darkBack);
-
-        // Tail
-        fillBox(g, 26, 0, 5, 1, 4, darkBack, darkBack, darkBack, darkBack, darkBack, darkBack);
-        fillBox(g, 26, 5, 1, 1, 2, darkBack, darkBack, darkBack, darkBack, darkBack, darkBack);
-
-        // Legs/feet: dark grey (1x4x1 to match model)
-        fillBox(g, 26, 8, 1, 4, 1, greyLegs, greyLegs, greyLegs, greyLegs, greyLegs, greyLegs);
-        fillBox(g, 30, 8, 3, 1, 3, greyLegs, greyLegs, greyLegs, greyLegs, greyLegs, greyLegs);
+        paintBird(img, g, dims, layout, p);
+        paintBeaks(g, layout, dims, p.beak);
+        blendHeadNeck(g, img, layout, dims, darkBack, darkBack);
+        addEyes(img, layout, dims, p.eye);
 
         g.dispose();
+        fillTransparentPixels(img);
         save(img, path);
         System.out.println("Generated: " + path);
     }
 
-    // === SPAWN EGG TEXTURES (16x16) ===
+    // =========================================================================
+    // === SPAWN EGG TEXTURES (16x16) — unchanged ===
+    // =========================================================================
 
-    /**
-     * Generate a spawn egg texture with species-specific base and spot colours.
-     * Draws the classic Minecraft egg oval shape with spotted overlay.
-     */
     static void generateSpawnEgg(String path, Color base, Color spots) throws Exception {
         BufferedImage img = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = img.createGraphics();
 
-        // Clear to transparent
         g.setComposite(AlphaComposite.Clear);
         g.fillRect(0, 0, 16, 16);
         g.setComposite(AlphaComposite.SrcOver);
 
-        // Egg shape mask (hand-crafted oval, matches vanilla egg silhouette)
         int[][] eggRows = {
-            // {startX, endX} for each row (y=0..15). -1 = no pixels
-            {-1, -1},  // y=0
-            {6, 9},     // y=1  narrow top
-            {5, 10},    // y=2
-            {4, 11},    // y=3
-            {4, 11},    // y=4
-            {3, 12},    // y=5
-            {3, 12},    // y=6
-            {3, 12},    // y=7  widest
-            {3, 12},    // y=8
-            {3, 12},    // y=9
-            {4, 11},    // y=10
-            {4, 11},    // y=11
-            {5, 10},    // y=12
-            {5, 10},    // y=13
-            {6, 9},     // y=14 bottom
-            {-1, -1},   // y=15
+            {-1, -1}, {6, 9}, {5, 10}, {4, 11}, {4, 11},
+            {3, 12}, {3, 12}, {3, 12}, {3, 12}, {3, 12},
+            {4, 11}, {4, 11}, {5, 10}, {5, 10}, {6, 9}, {-1, -1},
         };
 
-        // Fill egg shape with base colour
         for (int y = 0; y < 16; y++) {
             if (eggRows[y][0] == -1) continue;
             for (int x = eggRows[y][0]; x < eggRows[y][1]; x++) {
@@ -1027,14 +1280,10 @@ public class TextureGenerator {
             }
         }
 
-        // Add spot pattern (secondary colour) — scattered dots in the middle band
         int[][] spotPositions = {
-            {6, 3}, {9, 3},
-            {5, 5}, {8, 5}, {10, 5},
-            {7, 6}, {4, 7}, {10, 7},
-            {6, 8}, {9, 9},
-            {5, 10}, {8, 10}, {11, 10},
-            {7, 11}, {4, 12}, {9, 12},
+            {6, 3}, {9, 3}, {5, 5}, {8, 5}, {10, 5},
+            {7, 6}, {4, 7}, {10, 7}, {6, 8}, {9, 9},
+            {5, 10}, {8, 10}, {11, 10}, {7, 11}, {4, 12}, {9, 12},
         };
         for (int[] pos : spotPositions) {
             int x = pos[0], y = pos[1];
@@ -1043,7 +1292,6 @@ public class TextureGenerator {
             }
         }
 
-        // Subtle highlight on top-left for 3D look
         Color highlight = new Color(
                 Math.min(255, base.getRed() + 40),
                 Math.min(255, base.getGreen() + 40),
@@ -1056,7 +1304,6 @@ public class TextureGenerator {
             }
         }
 
-        // Dark edge on bottom-right for shadow
         Color shadow = new Color(
                 Math.max(0, base.getRed() - 30),
                 Math.max(0, base.getGreen() - 30),
@@ -1070,11 +1317,14 @@ public class TextureGenerator {
         }
 
         g.dispose();
+        fillTransparentPixels(img);
         save(img, path);
         System.out.println("Generated: " + path);
     }
 
+    // =========================================================================
     // === HELPER METHODS ===
+    // =========================================================================
 
     static BufferedImage createImage() {
         return new BufferedImage(SIZE, SIZE, BufferedImage.TYPE_INT_ARGB);
@@ -1129,9 +1379,6 @@ public class TextureGenerator {
         }
     }
 
-    /**
-     * Add a horizontal gradient across a region (left to right transition).
-     */
     static void addGradientHorizontal(BufferedImage img, int startX, int startY, int w, int h,
                                        Color from, Color to) {
         for (int x = startX; x < startX + w && x < SIZE; x++) {
@@ -1146,9 +1393,6 @@ public class TextureGenerator {
         }
     }
 
-    /**
-     * Add a vertical gradient across a region (top to bottom transition).
-     */
     static void addGradientVertical(BufferedImage img, int startX, int startY, int w, int h,
                                      Color from, Color to) {
         for (int y = startY; y < startY + h && y < SIZE; y++) {
@@ -1163,8 +1407,58 @@ public class TextureGenerator {
         }
     }
 
+    static void safeSetRGB(BufferedImage img, int x, int y, Color c) {
+        if (x >= 0 && x < SIZE && y >= 0 && y < SIZE) {
+            img.setRGB(x, y, c.getRGB());
+        }
+    }
+
     static int clamp(int val) {
         return Math.max(0, Math.min(255, val));
+    }
+
+    /**
+     * Fill any remaining transparent pixels with the nearest opaque colour.
+     * This prevents invisible cuboid faces when UV regions map to unpainted areas.
+     * Uses a simple approach: find the most common body colour and fill all
+     * transparent pixels with it.
+     */
+    static void fillTransparentPixels(BufferedImage img) {
+        int imgW = img.getWidth();
+        int imgH = img.getHeight();
+        // First pass: find the most common opaque colour (the body base colour)
+        java.util.HashMap<Integer, Integer> colourCounts = new java.util.HashMap<>();
+        for (int y = 0; y < imgH; y++) {
+            for (int x = 0; x < imgW; x++) {
+                int argb = img.getRGB(x, y);
+                int alpha = (argb >> 24) & 0xFF;
+                if (alpha > 0) {
+                    int rgb = argb | 0xFF000000; // force full alpha for counting
+                    colourCounts.merge(rgb, 1, Integer::sum);
+                }
+            }
+        }
+
+        // Find the most common colour
+        int fallbackColour = 0xFF808080; // grey default
+        int maxCount = 0;
+        for (var entry : colourCounts.entrySet()) {
+            if (entry.getValue() > maxCount) {
+                maxCount = entry.getValue();
+                fallbackColour = entry.getKey();
+            }
+        }
+
+        // Second pass: fill transparent pixels
+        for (int y = 0; y < imgH; y++) {
+            for (int x = 0; x < imgW; x++) {
+                int argb = img.getRGB(x, y);
+                int alpha = (argb >> 24) & 0xFF;
+                if (alpha == 0) {
+                    img.setRGB(x, y, fallbackColour);
+                }
+            }
+        }
     }
 
     static void save(BufferedImage img, String path) throws Exception {

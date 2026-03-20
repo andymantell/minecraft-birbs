@@ -1,0 +1,308 @@
+{
+  "archetype": "raptor",
+  "static_poses": {
+    "perched": {
+      "joints": {
+        "chest": [0.1, 0.0, 0.0],
+        "neck_lower": [0.42, 0.0, 0.0],
+        "neck_mid": [-0.1, 0.0, 0.0],
+        "neck_upper": [-0.1, 0.0, 0.0],
+        "head": [-0.05, 0.0, 0.0],
+        "L_upper_wing": [1.16, -0.02, 1.35],
+        "L_scapulars": [0.0, -0.2, 0.0],
+        "L_forearm": [0.0, 0.08, 0.2],
+        "L_secondaries": [0.0, -0.15, 0.08],
+        "L_hand": [0.0, 0.05, 0.36],
+        "L_primaries": [0.05, -0.1, -0.17],
+        "tail_base": [-0.2, 0.0, 0.0],
+        "L_thigh": [0.1, 0.0, 0.0],
+        "L_shin": [0.3, 0.0, 0.0],
+        "L_tarsus": [-0.4, 0.0, 0.0]
+      },
+      "spring_overrides": {}
+    },
+    "alert": {
+      "joints": {
+        "chest": [0.0, 0.0, 0.0],
+        "neck_lower": [-0.2, 0.0, 0.0],
+        "neck_mid": [-0.15, 0.0, 0.0],
+        "neck_upper": [-0.15, 0.0, 0.0],
+        "head": [-0.1, 0.0, 0.0],
+        "L_upper_wing": [0.0, -1.5, 0.3],
+        "L_forearm": [0.0, 2.2, 0.0],
+        "L_hand": [0.0, -1.8, 0.0],
+        "tail_base": [-0.1, 0.0, 0.0]
+      },
+      "spring_overrides": {}
+    },
+    "flying_cruise": {
+      "joints": {
+        "chest": [1.0, 0.0, 0.0],
+        "torso": [0.15, 0.0, 0.0],
+        "hip": [0.1, 0.0, 0.0],
+        "neck_lower": [0.05, 0.0, -0.05],
+        "neck_mid": [0.0, 0.0, 0.0],
+        "neck_upper": [0.0, 0.0, 0.0],
+        "head": [-0.5, 0.0, 0.0],
+        "L_upper_wing": [0.0, 0.0, -0.1],
+        "L_forearm": [0.0, 0.0, 0.0],
+        "L_hand": [0.0, 0.0, 0.0],
+        "tail_base": [-0.65, 0.0, 0.0],
+        "tail_fan": [-0.15, 0.0, 0.0]
+      },
+      "spring_overrides": {}
+    },
+    "flying_takeoff": {
+      "joints": {
+        "chest": [1.2, 0.0, 0.0],
+        "torso": [0.2, 0.0, 0.0],
+        "hip": [0.15, 0.0, 0.0],
+        "neck_lower": [0.05, 0.0, -0.05],
+        "neck_mid": [0.0, 0.0, 0.0],
+        "neck_upper": [0.0, 0.0, 0.0],
+        "head": [-0.6, 0.0, 0.0],
+        "L_upper_wing": [0.0, 0.0, -0.5],
+        "L_forearm": [0.0, 0.0, 0.0],
+        "L_hand": [0.0, 0.0, 0.0],
+        "tail_base": [-0.8, 0.0, 0.0],
+        "tail_fan": [-0.2, 0.0, 0.0]
+      },
+      "spring_overrides": {}
+    },
+    "flying_land": {
+      "joints": {
+        "chest": [-0.3, 0.0, 0.0],
+        "neck_lower": [-0.1, 0.0, 0.0],
+        "neck_mid": [-0.05, 0.0, 0.0],
+        "neck_upper": [-0.05, 0.0, 0.0],
+        "head": [-0.1, 0.0, 0.0],
+        "L_upper_wing": [0.0, 0.0, -0.8],
+        "L_forearm": [0.0, 0.0, -0.1],
+        "L_hand": [0.0, 0.0, -0.05],
+        "tail_base": [-0.8, 0.0, 0.0],
+        "L_thigh": [-0.3, 0.0, 0.0],
+        "L_shin": [-0.5, 0.0, 0.0]
+      },
+      "spring_overrides": {}
+    },
+    "tucked": {
+      "joints": {
+        "chest": [0.15, 0.0, 0.0],
+        "neck_lower": [-0.1, 0.0, 0.0],
+        "neck_mid": [-0.05, 0.0, 0.0],
+        "neck_upper": [-0.05, 0.0, 0.0],
+        "head": [0.3, 0.0, 0.4],
+        "L_upper_wing": [0.0, -1.5, 0.3],
+        "L_forearm": [0.0, 2.2, 0.0],
+        "L_hand": [0.0, -1.8, 0.0],
+        "tail_base": [0.1, 0.0, 0.0]
+      },
+      "spring_overrides": {}
+    },
+    "soar": {
+      "joints": {
+        "chest": [1.1, 0.0, 0.0],
+        "torso": [0.15, 0.0, 0.0],
+        "hip": [0.1, 0.0, 0.0],
+        "neck_lower": [0.05, 0.0, -0.05],
+        "neck_mid": [0.0, 0.0, 0.0],
+        "neck_upper": [0.0, 0.0, 0.0],
+        "head": [-0.5, 0.0, 0.0],
+        "L_upper_wing": [0.0, 0.0, -0.4],
+        "L_forearm": [0.0, 0.0, -0.05],
+        "L_hand": [0.0, 0.0, -0.03],
+        "tail_base": [-0.7, 0.0, 0.0],
+        "tail_fan": [-0.15, 0.0, 0.0],
+        "L_thigh": [-1.5, 0.0, 0.0],
+        "L_shin": [-2.5, 0.0, 0.0],
+        "L_tarsus": [2.0, 0.0, 0.0],
+        "L_foot": [-0.8, 0.0, 0.0]
+      },
+      "spring_overrides": {}
+    },
+    "stoop": {
+      "joints": {
+        "chest": [1.0, 0.0, 0.0],
+        "neck_lower": [-0.3, 0.0, 0.0],
+        "neck_mid": [-0.15, 0.0, 0.0],
+        "neck_upper": [-0.15, 0.0, 0.0],
+        "head": [-0.4, 0.0, 0.0],
+        "L_upper_wing": [0.0, -1.5, 0.1],
+        "L_forearm": [0.0, 2.5, 0.0],
+        "L_hand": [0.0, -2.3, 0.0],
+        "tail_base": [-0.1, 0.0, 0.0],
+        "tail_fan": [0.1, 0.0, 0.0],
+        "L_thigh": [-1.5, 0.0, 0.0],
+        "L_shin": [-2.5, 0.0, 0.0],
+        "L_tarsus": [2.0, 0.0, 0.0],
+        "L_foot": [-0.8, 0.0, 0.0]
+      },
+      "spring_overrides": {
+        "L_upper_wing": [200.0, 25.0],
+        "L_forearm": [200.0, 25.0],
+        "L_hand": [200.0, 25.0],
+        "L_scapulars": [200.0, 25.0],
+        "L_secondaries": [200.0, 25.0],
+        "L_primaries": [200.0, 25.0]
+      }
+    },
+    "raptor_perch": {
+      "joints": {
+        "chest": [0.35, 0.0, 0.0],
+        "neck_lower": [-0.15, 0.0, 0.0],
+        "neck_mid": [-0.1, 0.0, 0.0],
+        "neck_upper": [-0.1, 0.0, 0.0],
+        "head": [-0.15, 0.0, 0.0],
+        "L_upper_wing": [0.0, -1.5, 0.3],
+        "L_forearm": [0.0, 2.2, 0.0],
+        "L_hand": [0.0, -1.8, 0.0],
+        "tail_base": [0.25, 0.0, 0.0],
+        "L_thigh": [0.15, 0.0, 0.0],
+        "L_shin": [0.4, 0.0, 0.0],
+        "L_tarsus": [-0.5, 0.0, 0.0]
+      },
+      "spring_overrides": {}
+    },
+    "hover": {
+      "joints": {
+        "chest": [0.6, 0.0, 0.0],
+        "torso": [0.1, 0.0, 0.0],
+        "neck_lower": [0.05, 0.0, -0.05],
+        "neck_mid": [0.0, 0.0, 0.0],
+        "neck_upper": [0.0, 0.0, 0.0],
+        "head": [-0.3, 0.0, 0.0],
+        "L_upper_wing": [0.0, 0.0, -0.5],
+        "L_forearm": [0.0, 0.0, -0.05],
+        "L_hand": [0.0, 0.0, -0.03],
+        "tail_base": [-0.5, 0.0, 0.0],
+        "tail_fan": [-0.15, 0.0, 0.0],
+        "L_thigh": [0.3, 0.0, 0.0],
+        "L_shin": [0.1, 0.0, 0.0],
+        "L_tarsus": [-0.1, 0.0, 0.0]
+      },
+      "spring_overrides": {
+        "L_scapulars": [10.0, 1.5],
+        "L_secondaries": [10.0, 1.5],
+        "L_primaries": [8.0, 1.0]
+      }
+    },
+    "strike": {
+      "joints": {
+        "chest": [0.4, 0.0, 0.0],
+        "neck_lower": [-0.1, 0.0, 0.0],
+        "neck_mid": [-0.05, 0.0, 0.0],
+        "neck_upper": [-0.05, 0.0, 0.0],
+        "head": [-0.2, 0.0, 0.0],
+        "L_upper_wing": [0.0, 0.0, -0.6],
+        "L_forearm": [0.0, 0.0, -0.1],
+        "L_hand": [0.0, 0.0, -0.05],
+        "tail_base": [-0.6, 0.0, 0.0],
+        "L_thigh": [-0.6, 0.0, 0.0],
+        "L_shin": [-0.3, 0.0, 0.0],
+        "L_tarsus": [0.2, 0.0, 0.0],
+        "L_foot": [-0.4, 0.0, 0.0]
+      },
+      "spring_overrides": {}
+    }
+  },
+  "cyclic_animations": {
+    "wingbeat": {
+      "offset_a": {
+        "joints": {
+          "L_upper_wing": [0.0, 0.0, -0.4],
+          "L_forearm": [0.0, 0.0, -0.15],
+          "L_hand": [0.0, 0.0, -0.1],
+          "L_scapulars": [0.0, 0.0, -0.1],
+          "L_secondaries": [0.0, 0.0, -0.08],
+          "L_primaries": [0.0, 0.0, -0.06]
+        }
+      },
+      "offset_b": {
+        "joints": {
+          "L_upper_wing": [0.0, 0.0, 0.4],
+          "L_forearm": [0.0, 0.0, 0.1],
+          "L_hand": [0.0, 0.0, 0.08],
+          "L_scapulars": [0.0, 0.0, 0.08],
+          "L_secondaries": [0.0, 0.0, 0.06],
+          "L_primaries": [0.0, 0.0, 0.05]
+        }
+      }
+    },
+    "walk_cycle": {
+      "offset_a": {
+        "joints": {
+          "L_thigh": [-0.3, 0.0, 0.0],
+          "L_shin": [0.4, 0.0, 0.0],
+          "L_tarsus": [-0.2, 0.0, 0.0],
+          "R_thigh": [0.3, 0.0, 0.0],
+          "R_shin": [-0.1, 0.0, 0.0],
+          "R_tarsus": [0.1, 0.0, 0.0]
+        }
+      },
+      "offset_b": {
+        "joints": {
+          "L_thigh": [0.3, 0.0, 0.0],
+          "L_shin": [-0.1, 0.0, 0.0],
+          "L_tarsus": [0.1, 0.0, 0.0],
+          "R_thigh": [-0.3, 0.0, 0.0],
+          "R_shin": [0.4, 0.0, 0.0],
+          "R_tarsus": [-0.2, 0.0, 0.0]
+        }
+      }
+    },
+    "raptor_wingbeat": {
+      "offset_a": {
+        "joints": {
+          "L_upper_wing": [0.0, 0.0, -0.5],
+          "L_forearm": [0.0, 0.0, -0.2],
+          "L_hand": [0.0, 0.0, -0.15],
+          "L_scapulars": [0.0, 0.0, -0.12],
+          "L_secondaries": [0.0, 0.0, -0.1],
+          "L_primaries": [0.0, 0.0, -0.08]
+        }
+      },
+      "offset_b": {
+        "joints": {
+          "L_upper_wing": [0.0, 0.0, 0.5],
+          "L_forearm": [0.0, 0.0, 0.15],
+          "L_hand": [0.0, 0.0, 0.1],
+          "L_scapulars": [0.0, 0.0, 0.1],
+          "L_secondaries": [0.0, 0.0, 0.08],
+          "L_primaries": [0.0, 0.0, 0.06]
+        }
+      }
+    }
+  },
+  "overlay_poses": {
+    "beak_open": {
+      "joints": {
+        "lower_beak": [0.4, 0.0, 0.0]
+      }
+    },
+    "legs_tucked": {
+      "joints": {
+        "L_thigh": [-1.5, 0.0, 0.0],
+        "L_shin": [-2.5, 0.0, 0.0],
+        "L_tarsus": [2.0, 0.0, 0.0],
+        "L_foot": [-0.8, 0.0, 0.0]
+      }
+    },
+    "head_scan": {
+      "joints": {
+        "head": [0.0, 0.4, 0.0]
+      }
+    },
+    "owl_head_left": {
+      "joints": {
+        "head": [0.0, -0.5, 0.0],
+        "neck_upper": [0.0, -0.15, 0.0]
+      }
+    },
+    "owl_head_right": {
+      "joints": {
+        "head": [0.0, 0.5, 0.0],
+        "neck_upper": [0.0, 0.15, 0.0]
+      }
+    }
+  }
+}

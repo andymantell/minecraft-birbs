@@ -1,5 +1,6 @@
 package com.birbs.britishbirds.client;
 
+import com.birbs.britishbirds.client.animation.pose.PoseLoader;
 import com.birbs.britishbirds.client.model.BarnOwlModel;
 import com.birbs.britishbirds.client.model.BirdModelLayers;
 import com.birbs.britishbirds.client.model.BlueTitModel;
@@ -19,6 +20,9 @@ import net.fabricmc.fabric.api.client.rendering.v1.ModelLayerRegistry;
 public class BritishBirdsClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
+        // Load JSON pose data before registering models/renderers
+        PoseLoader.loadAll();
+
         EntityRendererRegistry.register(ModEntities.ROBIN, RobinRenderer::new);
         ModelLayerRegistry.registerModelLayer(BirdModelLayers.ROBIN, RobinModel::createBodyLayer);
 
