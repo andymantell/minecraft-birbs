@@ -390,10 +390,10 @@ class PreviewPanel extends JPanel {
         double wz = draggedJoint.worldPos[2];
 
         switch (q) {
-            case 0 -> { wx = wA; wy = wB; }
-            case 1 -> { wz = wA; wy = wB; }
-            case 2 -> { wx = wA; wz = wB; }
-            default -> { wx = wA; wy = wB; }
+            case 0 -> { wx = wA + centerX; wy = wB + centerY; }
+            case 1 -> { wz = wA + centerZ; wy = wB + centerY; }
+            case 2 -> { wx = wA + centerX; wz = wB + centerZ; }
+            default -> { wx = wA + centerX; wy = wB + centerY; }
         }
         return new double[]{wx, wy, wz};
     }
@@ -610,7 +610,7 @@ class PreviewPanel extends JPanel {
         int jx, jy;
         if (q < 3) {
             SkeletonGeometry.View view = q == 0 ? SkeletonGeometry.View.FRONT : q == 1 ? SkeletonGeometry.View.SIDE : SkeletonGeometry.View.TOP;
-            double[] p2d = SkeletonGeometry.project(j.worldPos, view);
+            double[] p2d = projectCentered(j.worldPos, view);
             jx = toScreenX(p2d[0], cellW, col, row, es, px);
             jy = toScreenY(p2d[1], cellH, col, row, es, py);
         } else {
@@ -645,7 +645,7 @@ class PreviewPanel extends JPanel {
                 int sx, sy;
                 if (q < 3) {
                     SkeletonGeometry.View view = q == 0 ? SkeletonGeometry.View.FRONT : q == 1 ? SkeletonGeometry.View.SIDE : SkeletonGeometry.View.TOP;
-                    double[] p2d = SkeletonGeometry.project(corners[i], view);
+                    double[] p2d = projectCentered(corners[i], view);
                     sx = toScreenX(p2d[0], cellW, col, row, es, px);
                     sy = toScreenY(p2d[1], cellH, col, row, es, py);
                 } else {
@@ -670,17 +670,44 @@ class PreviewPanel extends JPanel {
         return bestJoint;
     }
 
-    // For 2x2 grid: col 0-1, row 0-1 — with effective scale and pan offset
-    int toScreenX(double worldCoord, int cellW, int col, int row, float scale, float panX) {
-        return col * cellW + cellW / 2 + (int)(worldCoord * scale) + (int)panX;
+    /** Compute the bounding box center of all joints in world space. */
+    double[] skeletonCenter() {
+        double minX = Double.MAX_VALUE, maxX = -Double.MAX_VALUE;
+        double minY = Double.MAX_VALUE, maxY = -Double.MAX_VALUE;
+        double minZ = Double.MAX_VALUE, maxZ = -Double.MAX_VALUE;
+        for (SkeletonGeometry.Joint j : editor.skeleton.allJoints) {
+            minX = Math.min(minX, j.worldPos[0]); maxX = Math.max(maxX, j.worldPos[0]);
+            minY = Math.min(minY, j.worldPos[1]); maxY = Math.max(maxY, j.worldPos[1]);
+            minZ = Math.min(minZ, j.worldPos[2]); maxZ = Math.max(maxZ, j.worldPos[2]);
+        }
+        return new double[]{(minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2};
     }
 
-    int toScreenY(double worldCoord, int cellH, int col, int row, float scale, float panY) {
-        return row * cellH + cellH / 2 + (int)((worldCoord - 19f) * scale) + (int)panY;
+    // Cached center — computed once per paint
+    double centerX, centerY, centerZ;
+
+    /** Project and center based on view. Returns screen-space [x, y] for the given view. */
+    double[] projectCentered(double[] worldPos, SkeletonGeometry.View view) {
+        double[] p = SkeletonGeometry.project(worldPos, view);
+        // Subtract the appropriate center component based on what each view axis maps to
+        switch (view) {
+            case FRONT: return new double[]{p[0] - centerX, p[1] - centerY};  // screen X=worldX, Y=worldY
+            case SIDE:  return new double[]{p[0] - centerZ, p[1] - centerY};  // screen X=worldZ, Y=worldY
+            case TOP:   return new double[]{p[0] - centerX, p[1] - centerZ};  // screen X=worldX, Y=worldZ
+            default:    return new double[]{p[0], p[1]};
+        }
+    }
+
+    int toScreenX(double projectedCoord, int cellW, int col, int row, float scale, float panX) {
+        return col * cellW + cellW / 2 + (int)(projectedCoord * scale) + (int)panX;
+    }
+
+    int toScreenY(double projectedCoord, int cellH, int col, int row, float scale, float panY) {
+        return row * cellH + cellH / 2 + (int)(projectedCoord * scale) + (int)panY;
     }
 
     double[] project3D(double[] p, int cellW, int cellH, int col, int row, float scale, float panX, float panY) {
-        double px = p[0], py = p[1] - 19.0, pz = p[2];
+        double px = p[0] - centerX, py = p[1] - centerY, pz = p[2] - centerZ;
 
         double cosY = Math.cos(camYaw), sinY = Math.sin(camYaw);
         double rx = px * cosY + pz * sinY;
@@ -711,7 +738,7 @@ class PreviewPanel extends JPanel {
         double[][] corners = SkeletonGeometry.getCuboidCorners(j);
         int[] sx = new int[8], sy = new int[8];
         for (int i = 0; i < 8; i++) {
-            double[] p2d = SkeletonGeometry.project(corners[i], view);
+            double[] p2d = projectCentered(corners[i], view);
             sx[i] = toScreenX(p2d[0], cellW, col, row, scale, panX);
             sy[i] = toScreenY(p2d[1], cellH, col, row, scale, panY);
         }
@@ -742,7 +769,7 @@ class PreviewPanel extends JPanel {
     }
 
     void drawJointDot(Graphics2D g, SkeletonGeometry.Joint j, SkeletonGeometry.View view, int cellW, int cellH, int col, int row, float scale, float panX, float panY) {
-        double[] p2d = SkeletonGeometry.project(j.worldPos, view);
+        double[] p2d = projectCentered(j.worldPos, view);
         int x = toScreenX(p2d[0], cellW, col, row, scale, panX);
         int y = toScreenY(p2d[1], cellH, col, row, scale, panY);
         g.setColor(j.colour);
@@ -809,7 +836,7 @@ class PreviewPanel extends JPanel {
     }
 
     void drawGroundPlane(Graphics2D g, int cellW, int cellH, int col, int row, float scale, float panY) {
-        int groundY = toScreenY(24.0, cellH, col, row, scale, panY);
+        int groundY = toScreenY(24.0 - centerY, cellH, col, row, scale, panY);
         g.setColor(new Color(140, 100, 60, 100));
         g.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER,
                 10f, new float[]{6f, 4f}, 0f));
@@ -841,7 +868,7 @@ class PreviewPanel extends JPanel {
         if (selectedJoint != null) {
             SkeletonGeometry.Joint sel = editor.skeleton.jointMap.get(selectedJoint);
             if (sel != null) {
-                double[] p2d = SkeletonGeometry.project(sel.worldPos, view);
+                double[] p2d = projectCentered(sel.worldPos, view);
                 int jx = toScreenX(p2d[0], cellW, col, row, es, panX);
                 int jy = toScreenY(p2d[1], cellH, col, row, es, panY);
                 drawHandles(g, sel, jx, jy);
@@ -962,6 +989,10 @@ class PreviewPanel extends JPanel {
             }
         }
         SkeletonGeometry.computeFK(editor.skeleton);
+
+        // Compute bounding box center for view centering
+        double[] ctr = skeletonCenter();
+        centerX = ctr[0]; centerY = ctr[1]; centerZ = ctr[2];
 
         drawPanel(g, SkeletonGeometry.View.FRONT, cellW, cellH, 0, 0, "FRONT (from +Z)", zoomFront, panFrontX, panFrontY);
         drawPanel(g, SkeletonGeometry.View.SIDE,  cellW, cellH, 1, 0, "SIDE (from +X)",  zoomSide,  panSideX,  panSideY);
