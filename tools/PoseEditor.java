@@ -781,6 +781,9 @@ public class PoseEditor extends JFrame {
         // Current drag position for tooltip
         int dragCurX, dragCurY;
 
+        // Hovered axis for cursor feedback: 0=none, 1=xRot, 2=yRot, 3=zRot
+        int hoveredAxis = 0;
+
         // Whether we are dragging the 3D camera
         boolean dragging3DCamera = false;
 
@@ -899,13 +902,41 @@ public class PoseEditor extends JFrame {
 
                 @Override
                 public void mouseReleased(MouseEvent e) {
+                    if (draggingAxis > 0) {
+                        captureState();
+                    }
                     draggingAxis = 0;
                     draggingJoint = null;
                     dragging3DCamera = false;
+                    hoveredAxis = 0;
                     repaint();
                 }
             });
             addMouseMotionListener(new MouseMotionAdapter() {
+                @Override
+                public void mouseMoved(MouseEvent e) {
+                    if (selectedJoint != null) {
+                        int w = getWidth(), h = getHeight();
+                        int cellW = w / 2, cellH = h / 2;
+                        int hit = hitTestHandles(e.getX(), e.getY(), cellW, cellH);
+                        if (hit != hoveredAxis) {
+                            hoveredAxis = hit;
+                            repaint();
+                        }
+                        if (hit > 0) {
+                            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                        } else {
+                            setCursor(Cursor.getDefaultCursor());
+                        }
+                    } else {
+                        if (hoveredAxis != 0) {
+                            hoveredAxis = 0;
+                            repaint();
+                        }
+                        setCursor(Cursor.getDefaultCursor());
+                    }
+                }
+
                 @Override
                 public void mouseDragged(MouseEvent e) {
                     // Handle rotation handle drag
@@ -1001,11 +1032,11 @@ public class PoseEditor extends JFrame {
             }
 
             // Red handle at (+20, 0)
-            if (Math.hypot(mx - (jx + 20), my - jy) < 8) return 1;
+            if (Math.hypot(mx - (jx + 20), my - jy) < 11) return 1;
             // Green handle at (0, -20)
-            if (Math.hypot(mx - jx, my - (jy - 20)) < 8) return 2;
+            if (Math.hypot(mx - jx, my - (jy - 20)) < 11) return 2;
             // Blue handle at (+14, -14)
-            if (Math.hypot(mx - (jx + 14), my - (jy - 14)) < 8) return 3;
+            if (Math.hypot(mx - (jx + 14), my - (jy - 14)) < 11) return 3;
             return 0;
         }
 
@@ -1136,19 +1167,67 @@ public class PoseEditor extends JFrame {
 
         void drawHandles(Graphics2D g, Joint j, int jx, int jy) {
             // Red handle = xRot at (+20, 0)
-            drawHandle(g, jx + 20, jy, new Color(220, 40, 40));
+            drawRotationHandle(g, jx, jy, new Color(220, 40, 40), "X", 20, 0, hoveredAxis == 1);
             // Green handle = yRot at (0, -20)
-            drawHandle(g, jx, jy - 20, new Color(40, 180, 40));
+            drawRotationHandle(g, jx, jy, new Color(40, 180, 40), "Y", 0, -20, hoveredAxis == 2);
             // Blue handle = zRot at (+14, -14)
-            drawHandle(g, jx + 14, jy - 14, new Color(40, 80, 220));
+            drawRotationHandle(g, jx, jy, new Color(40, 80, 220), "Z", 14, -14, hoveredAxis == 3);
         }
 
-        void drawHandle(Graphics2D g, int cx, int cy, Color color) {
+        void drawRotationHandle(Graphics2D g, int cx, int cy, Color color, String axis, int offsetX, int offsetY, boolean hovered) {
+            int hx = cx + offsetX;
+            int hy = cy + offsetY;
+
+            // Background circle for hit area
+            if (hovered) {
+                g.setColor(new Color(255, 255, 180, 220));
+            } else {
+                g.setColor(new Color(255, 255, 255, 180));
+            }
+            g.fillOval(hx - 10, hy - 10, 20, 20);
+
+            // Colored arc arrow
             g.setColor(color);
-            g.fillOval(cx - 4, cy - 4, 8, 8);
-            g.setColor(Color.WHITE);
-            g.setStroke(new BasicStroke(1.5f));
-            g.drawOval(cx - 4, cy - 4, 8, 8);
+            g.setStroke(new BasicStroke(2.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+            int startAngle, arcAngle;
+            switch (axis) {
+                case "X" -> { startAngle = 45;   arcAngle = 180; }  // vertical arc (pitch)
+                case "Y" -> { startAngle = -45;  arcAngle = 180; }  // horizontal arc (yaw)
+                default  -> { startAngle = 135;  arcAngle = 180; }  // diagonal arc (roll)
+            }
+            g.drawArc(hx - 8, hy - 8, 16, 16, startAngle, arcAngle);
+
+            // Arrowhead at end of arc
+            double endAngleRad = Math.toRadians(startAngle + arcAngle);
+            int ax = hx + (int)(8 * Math.cos(endAngleRad));
+            int ay = hy - (int)(8 * Math.sin(endAngleRad));
+            // Tangent direction at end (perpendicular to radius, in direction of arc)
+            double tanX = Math.sin(endAngleRad);  // tangent = rotate radius 90 deg in arc direction
+            double tanY = Math.cos(endAngleRad);
+            int arrowSize = 4;
+            int[] arrowXs = {
+                ax,
+                ax + (int)((-tanX - tanY * 0.5) * arrowSize),
+                ax + (int)((-tanX + tanY * 0.5) * arrowSize)
+            };
+            int[] arrowYs = {
+                ay,
+                ay + (int)((-tanY + tanX * 0.5) * arrowSize),
+                ay + (int)((-tanY - tanX * 0.5) * arrowSize)
+            };
+            g.fillPolygon(arrowXs, arrowYs, 3);
+
+            // Axis label
+            g.setFont(new Font("SansSerif", Font.BOLD, 9));
+            g.drawString(axis, hx + 7, hy - 7);
+
+            // Border circle
+            Stroke prev = g.getStroke();
+            g.setStroke(new BasicStroke(1f));
+            g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), hovered ? 200 : 100));
+            g.drawOval(hx - 10, hy - 10, 20, 20);
+            g.setStroke(prev);
         }
 
         void drawGroundPlane(Graphics2D g, int cellW, int cellH, int col, int row, float scale, float panY) {
@@ -1431,6 +1510,9 @@ public class PoseEditor extends JFrame {
                     field.setText(String.format("%.2f", val));
                     previewPanel.repaint();
                     updateExportText();
+                    if (!slider.getValueIsAdjusting()) {
+                        captureState();
+                    }
                 }
             });
             field.addActionListener(e -> {
@@ -1443,6 +1525,7 @@ public class PoseEditor extends JFrame {
                     field.setText(String.format("%.2f", val));
                     previewPanel.repaint();
                     updateExportText();
+                    captureState();
                 } catch (NumberFormatException ex) {
                     // ignore bad input
                 }
@@ -1605,6 +1688,72 @@ public class PoseEditor extends JFrame {
             c.gridx = 2; c.weightx = 0;
             p.add(field, c);
         }
+    }
+
+    // =========================================================================
+    // Undo/Redo
+    // =========================================================================
+
+    List<Map<String, float[]>> undoStack = new ArrayList<>();
+    int undoIndex = -1;
+    static final int MAX_UNDO = 100;
+
+    /** Snapshot current joint angles and push onto the undo stack. */
+    void captureState() {
+        Map<String, float[]> snapshot = new LinkedHashMap<>();
+        for (var entry : sliderGroups.entrySet()) {
+            JointSliderGroup g = entry.getValue();
+            snapshot.put(entry.getKey(), new float[]{g.getX(), g.getY(), g.getZ()});
+        }
+        // Discard any redo entries beyond current index
+        while (undoStack.size() > undoIndex + 1) {
+            undoStack.remove(undoStack.size() - 1);
+        }
+        undoStack.add(snapshot);
+        if (undoStack.size() > MAX_UNDO) {
+            undoStack.remove(0);
+        } else {
+            undoIndex++;
+        }
+        updateUndoButtons();
+    }
+
+    void applySnapshot(Map<String, float[]> snapshot) {
+        batchUpdating = true;
+        for (var entry : snapshot.entrySet()) {
+            JointSliderGroup g = sliderGroups.get(entry.getKey());
+            if (g != null) {
+                float[] v = entry.getValue();
+                g.setValues(v[0], v[1], v[2]);
+            }
+        }
+        batchUpdating = false;
+        previewPanel.repaint();
+        updateExportText();
+    }
+
+    void undo() {
+        if (undoIndex > 0) {
+            undoIndex--;
+            applySnapshot(undoStack.get(undoIndex));
+            updateUndoButtons();
+        }
+    }
+
+    void redo() {
+        if (undoIndex < undoStack.size() - 1) {
+            undoIndex++;
+            applySnapshot(undoStack.get(undoIndex));
+            updateUndoButtons();
+        }
+    }
+
+    JButton undoBtn;
+    JButton redoBtn;
+
+    void updateUndoButtons() {
+        if (undoBtn != null) undoBtn.setEnabled(undoIndex > 0);
+        if (redoBtn != null) redoBtn.setEnabled(undoIndex < undoStack.size() - 1);
     }
 
     // =========================================================================
@@ -1775,6 +1924,20 @@ public class PoseEditor extends JFrame {
         leftPanel.add(resetBtn);
         leftPanel.add(Box.createVerticalStrut(16));
 
+        JPanel undoRedoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        undoRedoPanel.setAlignmentX(0f);
+        undoRedoPanel.setMaximumSize(new Dimension(200, 32));
+        undoBtn = new JButton("Undo");
+        redoBtn = new JButton("Redo");
+        undoBtn.setEnabled(false);
+        redoBtn.setEnabled(false);
+        undoBtn.addActionListener(e -> undo());
+        redoBtn.addActionListener(e -> redo());
+        undoRedoPanel.add(undoBtn);
+        undoRedoPanel.add(redoBtn);
+        leftPanel.add(undoRedoPanel);
+        leftPanel.add(Box.createVerticalStrut(16));
+
         geometryToggle = new JCheckBox("Show Geometry Controls");
         geometryToggle.setAlignmentX(0f);
         geometryToggle.setSelected(false);
@@ -1825,6 +1988,23 @@ public class PoseEditor extends JFrame {
         setSize(1400, 800);
         setLocationRelativeTo(null);
 
+        // --- Keyboard shortcuts ---
+        getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK), "undo");
+        getRootPane().getActionMap().put("undo", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) { undo(); }
+        });
+        getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_Y, InputEvent.CTRL_DOWN_MASK), "redo");
+        getRootPane().getActionMap().put("redo", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) { redo(); }
+        });
+        getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "redo2");
+        getRootPane().getActionMap().put("redo2", new AbstractAction() {
+            public void actionPerformed(ActionEvent e) { redo(); }
+        });
+
         // --- Event handlers ---
         archetypeCombo.addActionListener(e -> {
             currentArchetype = (String) archetypeCombo.getSelectedItem();
@@ -1860,6 +2040,7 @@ public class PoseEditor extends JFrame {
             currentPoseName = "custom";
             previewPanel.repaint();
             updateExportText();
+            captureState();
         });
 
         geometryToggle.addActionListener(e -> {
@@ -1943,6 +2124,7 @@ public class PoseEditor extends JFrame {
         batchUpdating = false;
         previewPanel.repaint();
         updateExportText();
+        captureState();
     }
 
     void buildSliderPanel() {
