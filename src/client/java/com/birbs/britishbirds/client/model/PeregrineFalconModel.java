@@ -1,252 +1,612 @@
 package com.birbs.britishbirds.client.model;
 
+import com.birbs.britishbirds.client.animation.BirdSkeleton;
+import com.birbs.britishbirds.client.animation.SkeletonModelMapper;
+import com.birbs.britishbirds.client.animation.pose.BaseBirdPoses;
+import com.birbs.britishbirds.client.animation.pose.CyclicAnimation;
+import com.birbs.britishbirds.client.animation.pose.PoseResolver;
+import com.birbs.britishbirds.client.animation.pose.RaptorPoses;
+import com.birbs.britishbirds.client.animation.procedural.Breathing;
+import com.birbs.britishbirds.client.animation.procedural.HeadTracking;
+import com.birbs.britishbirds.client.animation.procedural.LandingImpact;
+import com.birbs.britishbirds.client.animation.procedural.MovementDrag;
+import com.birbs.britishbirds.client.animation.procedural.StartleResponse;
+import com.birbs.britishbirds.client.animation.procedural.WeightShift;
 import com.birbs.britishbirds.client.renderer.PeregrineFalconRenderState;
-import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.*;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 /**
- * Peregrine Falcon model: COMPLETE REMODEL.
- * Compact, powerful, broad-chested muscular build.
- * Torpedo-shaped / streamlined — body TAPERS from broad shoulders to narrow tail.
- * V-shaped contour — broad at shoulders, narrowing to tail tip.
- * Long, pointed, narrow wings — sickle-shaped in active flight.
- * Head appears relatively small compared to broad chest.
- * Perched: bolt-upright and alert posture.
- * 64x64 texture.
+ * Peregrine Falcon model rebuilt on the skeletal animation system.
+ * Uses the universal 32-joint bird skeleton with spring-driven animation,
+ * pose blending, and procedural behaviours.
+ *
+ * <p>Compact, powerful, torpedo-shaped raptor with long pointed wings
+ * and a signature high-speed stoop dive. 512x512 texture.
+ * ModelPart hierarchy mirrors the BirdSkeleton joint tree.
  */
-public class PeregrineFalconModel extends EntityModel<PeregrineFalconRenderState> {
+public class PeregrineFalconModel extends AbstractBirdModel<PeregrineFalconRenderState> {
+
+    // All 32 skeleton-driven parts
     private final ModelPart chest;
-    private final ModelPart rearBody;
+    private final ModelPart shoulderMount;
+    private final ModelPart torso;
+    private final ModelPart hip;
+    private final ModelPart neckLower;
+    private final ModelPart neckMid;
+    private final ModelPart neckUpper;
     private final ModelPart head;
-    private final ModelPart leftWing;
-    private final ModelPart rightWing;
-    private final ModelPart leftWingOuter;
-    private final ModelPart rightWingOuter;
-    private final ModelPart tail;
-    private final ModelPart tailTip;
-    private final ModelPart leftLeg;
-    private final ModelPart rightLeg;
+    private final ModelPart upperBeak;
+    private final ModelPart lowerBeak;
+    private final ModelPart lUpperWing;
+    private final ModelPart lScapulars;
+    private final ModelPart lForearm;
+    private final ModelPart lSecondaries;
+    private final ModelPart lHand;
+    private final ModelPart lPrimaries;
+    private final ModelPart rUpperWing;
+    private final ModelPart rScapulars;
+    private final ModelPart rForearm;
+    private final ModelPart rSecondaries;
+    private final ModelPart rHand;
+    private final ModelPart rPrimaries;
+    private final ModelPart tailBase;
+    private final ModelPart tailFan;
+    private final ModelPart lThigh;
+    private final ModelPart lShin;
+    private final ModelPart lTarsus;
+    private final ModelPart lFoot;
+    private final ModelPart rThigh;
+    private final ModelPart rShin;
+    private final ModelPart rTarsus;
+    private final ModelPart rFoot;
+
+    // Decorative (not skeleton-driven)
+    private final ModelPart beakHook;
+    private final ModelPart leftMalar;
+    private final ModelPart rightMalar;
 
     public PeregrineFalconModel(ModelPart root) {
         super(root);
+
+        // Navigate the ModelPart hierarchy to store references
         this.chest = root.getChild("chest");
-        this.rearBody = root.getChild("rear_body");
-        this.head = root.getChild("head");
-        this.leftWing = root.getChild("left_wing");
-        this.rightWing = root.getChild("right_wing");
-        this.leftWingOuter = this.leftWing.getChild("left_wing_outer");
-        this.rightWingOuter = this.rightWing.getChild("right_wing_outer");
-        this.tail = root.getChild("tail");
-        this.tailTip = this.tail.getChild("tail_tip");
-        this.leftLeg = root.getChild("left_leg");
-        this.rightLeg = root.getChild("right_leg");
+
+        // Spine chain off chest
+        this.shoulderMount = this.chest.getChild("shoulder_mount");
+        this.torso = this.chest.getChild("torso");
+        this.hip = this.chest.getChild("hip");
+
+        // Neck chain off chest
+        this.neckLower = this.chest.getChild("neck_lower");
+        this.neckMid = this.neckLower.getChild("neck_mid");
+        this.neckUpper = this.neckMid.getChild("neck_upper");
+        this.head = this.neckUpper.getChild("head");
+        this.upperBeak = this.head.getChild("upper_beak");
+        this.lowerBeak = this.head.getChild("lower_beak");
+
+        // Left wing chain off shoulder_mount
+        this.lUpperWing = this.shoulderMount.getChild("L_upper_wing");
+        this.lScapulars = this.lUpperWing.getChild("L_scapulars");
+        this.lForearm = this.lUpperWing.getChild("L_forearm");
+        this.lSecondaries = this.lForearm.getChild("L_secondaries");
+        this.lHand = this.lForearm.getChild("L_hand");
+        this.lPrimaries = this.lHand.getChild("L_primaries");
+
+        // Right wing chain off shoulder_mount
+        this.rUpperWing = this.shoulderMount.getChild("R_upper_wing");
+        this.rScapulars = this.rUpperWing.getChild("R_scapulars");
+        this.rForearm = this.rUpperWing.getChild("R_forearm");
+        this.rSecondaries = this.rForearm.getChild("R_secondaries");
+        this.rHand = this.rForearm.getChild("R_hand");
+        this.rPrimaries = this.rHand.getChild("R_primaries");
+
+        // Tail chain off chest
+        this.tailBase = this.chest.getChild("tail_base");
+        this.tailFan = this.tailBase.getChild("tail_fan");
+
+        // Left leg chain off hip
+        this.lThigh = this.hip.getChild("L_thigh");
+        this.lShin = this.lThigh.getChild("L_shin");
+        this.lTarsus = this.lShin.getChild("L_tarsus");
+        this.lFoot = this.lTarsus.getChild("L_foot");
+
+        // Right leg chain off hip
+        this.rThigh = this.hip.getChild("R_thigh");
+        this.rShin = this.rThigh.getChild("R_shin");
+        this.rTarsus = this.rShin.getChild("R_tarsus");
+        this.rFoot = this.rTarsus.getChild("R_foot");
+
+        // Decorative parts
+        this.beakHook = this.head.getChild("beak_hook");
+        this.leftMalar = this.head.getChild("left_malar");
+        this.rightMalar = this.head.getChild("right_malar");
+
+        // LAST: initialise skeleton binding
+        initSkeleton(root);
     }
+
+    // =========================================================================
+    // Species-specific cuboid dimensions
+    // =========================================================================
+
+    /**
+     * Returns cuboid dimensions for a Peregrine Falcon: compact, streamlined body,
+     * broad powerful chest, long narrow pointed wings, relatively small head.
+     */
+    private static Map<String, int[]> getPeregrineDimensions() {
+        Map<String, int[]> dims = new LinkedHashMap<>();
+
+        // Broad, powerful chest — widest part of the torpedo shape
+        dims.put(BirdSkeleton.CHEST,          new int[]{6, 5, 5});
+        dims.put(BirdSkeleton.SHOULDER_MOUNT, new int[]{3, 3, 3});
+        // Torso tapers — narrower than chest
+        dims.put(BirdSkeleton.TORSO,          new int[]{4, 4, 5});
+        dims.put(BirdSkeleton.HIP,            new int[]{3, 3, 3});
+
+        // Short neck for a raptor
+        dims.put(BirdSkeleton.NECK_LOWER,     new int[]{2, 2, 2});
+        dims.put(BirdSkeleton.NECK_MID,       new int[]{2, 2, 2});
+        dims.put(BirdSkeleton.NECK_UPPER,     new int[]{2, 2, 2});
+        // Relatively small head
+        dims.put(BirdSkeleton.HEAD,           new int[]{3, 3, 3});
+        // Hooked beak: short, powerful
+        dims.put(BirdSkeleton.UPPER_BEAK,     new int[]{1, 1, 2});
+        dims.put(BirdSkeleton.LOWER_BEAK,     new int[]{1, 1, 2});
+
+        // Long, narrow, pointed wings — longer primary sections
+        dims.put(BirdSkeleton.L_UPPER_WING,   new int[]{1, 5, 5});
+        dims.put(BirdSkeleton.L_SCAPULARS,    new int[]{1, 4, 3});
+        dims.put(BirdSkeleton.L_FOREARM,      new int[]{1, 4, 4});
+        dims.put(BirdSkeleton.L_SECONDARIES,  new int[]{1, 4, 3});
+        dims.put(BirdSkeleton.L_HAND,         new int[]{1, 5, 3});
+        dims.put(BirdSkeleton.L_PRIMARIES,    new int[]{1, 5, 2});
+
+        dims.put(BirdSkeleton.R_UPPER_WING,   new int[]{1, 5, 5});
+        dims.put(BirdSkeleton.R_SCAPULARS,    new int[]{1, 4, 3});
+        dims.put(BirdSkeleton.R_FOREARM,      new int[]{1, 4, 4});
+        dims.put(BirdSkeleton.R_SECONDARIES,  new int[]{1, 4, 3});
+        dims.put(BirdSkeleton.R_HAND,         new int[]{1, 5, 3});
+        dims.put(BirdSkeleton.R_PRIMARIES,    new int[]{1, 5, 2});
+
+        // Medium tail — narrow, continues taper
+        dims.put(BirdSkeleton.TAIL_BASE,      new int[]{3, 1, 3});
+        dims.put(BirdSkeleton.TAIL_FAN,       new int[]{2, 1, 3});
+
+        // Strong legs with powerful talons
+        dims.put(BirdSkeleton.L_THIGH,        new int[]{1, 3, 1});
+        dims.put(BirdSkeleton.L_SHIN,         new int[]{1, 4, 1});
+        dims.put(BirdSkeleton.L_TARSUS,       new int[]{1, 2, 1});
+        dims.put(BirdSkeleton.L_FOOT,         new int[]{2, 1, 2});
+
+        dims.put(BirdSkeleton.R_THIGH,        new int[]{1, 3, 1});
+        dims.put(BirdSkeleton.R_SHIN,         new int[]{1, 4, 1});
+        dims.put(BirdSkeleton.R_TARSUS,       new int[]{1, 2, 1});
+        dims.put(BirdSkeleton.R_FOOT,         new int[]{2, 1, 2});
+
+        return dims;
+    }
+
+    // =========================================================================
+    // Static mesh definition
+    // =========================================================================
 
     public static LayerDefinition createBodyLayer() {
         MeshDefinition meshDefinition = new MeshDefinition();
         PartDefinition partDefinition = meshDefinition.getRoot();
 
-        // CHEST: broad, powerful, muscular — the widest part of the V-contour
-        // 6x5x5 — wide side-to-side, narrow front-to-back
-        partDefinition.addOrReplaceChild("chest",
+        BirdUVLayout layout = BirdUVLayout.computeLayout(getPeregrineDimensions());
+
+        // --- CHEST (root) --- 6,5,5 — broad powerful chest
+        int[] uv = layout.getOffset(BirdSkeleton.CHEST);
+        PartDefinition chestPart = partDefinition.addOrReplaceChild("chest",
                 CubeListBuilder.create()
-                        .texOffs(0, 0)
+                        .texOffs(uv[0], uv[1])
                         .addBox(-3.0f, -2.5f, -2.5f, 6.0f, 5.0f, 5.0f),
-                PartPose.offsetAndRotation(0.0f, 16.0f, -1.0f,
-                        (float) Math.toRadians(10.0), 0.0f, 0.0f));
+                PartPose.offset(0.0f, 16.0f, 0.0f));
 
-        // REAR BODY: narrows significantly — creates the V-taper / torpedo shape
-        // 4x4x5 — narrower than chest, extends behind
-        partDefinition.addOrReplaceChild("rear_body",
+        // --- SHOULDER_MOUNT (child of chest) --- 3,3,3
+        uv = layout.getOffset(BirdSkeleton.SHOULDER_MOUNT);
+        PartDefinition shoulderPart = chestPart.addOrReplaceChild("shoulder_mount",
                 CubeListBuilder.create()
-                        .texOffs(0, 10)
-                        .addBox(-2.0f, -2.0f, -1.0f, 4.0f, 4.0f, 5.0f),
-                PartPose.offsetAndRotation(0.0f, 16.5f, 2.0f,
-                        (float) Math.toRadians(5.0), 0.0f, 0.0f));
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-1.5f, -1.5f, -1.5f, 3.0f, 3.0f, 3.0f),
+                PartPose.offset(0.0f, -2.0f, 0.0f));
 
-        // HEAD: relatively SMALL compared to broad chest — 3x3x3
-        // This is key to getting rid of the "duck" look
-        PartDefinition headPart = partDefinition.addOrReplaceChild("head",
+        // --- TORSO (child of chest) --- 4,4,5 — tapers from chest
+        uv = layout.getOffset(BirdSkeleton.TORSO);
+        chestPart.addOrReplaceChild("torso",
                 CubeListBuilder.create()
-                        .texOffs(0, 19)
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-2.0f, -2.0f, -2.5f, 4.0f, 4.0f, 5.0f),
+                PartPose.offset(0.0f, 0.0f, 2.5f));
+
+        // --- HIP (child of chest) --- 3,3,3
+        uv = layout.getOffset(BirdSkeleton.HIP);
+        PartDefinition hipPart = chestPart.addOrReplaceChild("hip",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-1.5f, -1.5f, -1.5f, 3.0f, 3.0f, 3.0f),
+                PartPose.offset(0.0f, 1.0f, 1.5f));
+
+        // --- NECK_LOWER (child of chest) --- 2,2,2
+        uv = layout.getOffset(BirdSkeleton.NECK_LOWER);
+        PartDefinition neckLowerPart = chestPart.addOrReplaceChild("neck_lower",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-1.0f, -2.0f, -1.0f, 2.0f, 2.0f, 2.0f),
+                PartPose.offset(0.0f, -2.5f, -1.0f));
+
+        // --- NECK_MID (child of neck_lower) --- 2,2,2
+        uv = layout.getOffset(BirdSkeleton.NECK_MID);
+        PartDefinition neckMidPart = neckLowerPart.addOrReplaceChild("neck_mid",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-1.0f, -2.0f, -1.0f, 2.0f, 2.0f, 2.0f),
+                PartPose.offset(0.0f, -2.0f, 0.0f));
+
+        // --- NECK_UPPER (child of neck_mid) --- 2,2,2
+        uv = layout.getOffset(BirdSkeleton.NECK_UPPER);
+        PartDefinition neckUpperPart = neckMidPart.addOrReplaceChild("neck_upper",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-1.0f, -2.0f, -1.0f, 2.0f, 2.0f, 2.0f),
+                PartPose.offset(0.0f, -2.0f, 0.0f));
+
+        // --- HEAD (child of neck_upper) --- 3,3,3 — relatively small
+        uv = layout.getOffset(BirdSkeleton.HEAD);
+        PartDefinition headPart = neckUpperPart.addOrReplaceChild("head",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
                         .addBox(-1.5f, -3.0f, -1.5f, 3.0f, 3.0f, 3.0f),
-                PartPose.offset(0.0f, 13.5f, -2.5f));
+                PartPose.offset(0.0f, -2.0f, 0.0f));
 
-        // Hooked beak: short powerful with tomial tooth 1x1x2
-        headPart.addOrReplaceChild("beak",
+        // --- UPPER_BEAK (child of head) --- 1,1,2 — hooked raptor beak
+        uv = layout.getOffset(BirdSkeleton.UPPER_BEAK);
+        headPart.addOrReplaceChild("upper_beak",
                 CubeListBuilder.create()
-                        .texOffs(12, 19)
-                        .addBox(-0.5f, -1.5f, -3.5f, 1.0f, 1.0f, 2.0f),
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-0.5f, -2.0f, -3.5f, 1.0f, 1.0f, 2.0f),
                 PartPose.ZERO);
 
-        // Beak hook: the tomial tooth curve 1x1x1 angled down
+        // --- LOWER_BEAK (child of head) --- 1,1,2
+        uv = layout.getOffset(BirdSkeleton.LOWER_BEAK);
+        headPart.addOrReplaceChild("lower_beak",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-0.5f, -1.0f, -3.5f, 1.0f, 1.0f, 2.0f),
+                PartPose.ZERO);
+
+        // --- Decorative: beak hook (tomial tooth) --- 1,1,1
         headPart.addOrReplaceChild("beak_hook",
                 CubeListBuilder.create()
-                        .texOffs(18, 19)
+                        .texOffs(0, 200)
                         .addBox(-0.5f, -0.5f, -3.5f, 1.0f, 1.0f, 1.0f),
                 PartPose.offsetAndRotation(0.0f, -1.0f, 0.0f,
                         (float) Math.toRadians(15.0), 0.0f, 0.0f));
 
-        // Dark helmet/malar stripe: slight widening on sides of head 1x2x2 each side
+        // --- Decorative: left malar stripe --- 1,2,2
         headPart.addOrReplaceChild("left_malar",
                 CubeListBuilder.create()
-                        .texOffs(22, 19)
+                        .texOffs(0, 205)
                         .addBox(1.0f, -2.5f, -1.5f, 1.0f, 2.0f, 2.0f),
                 PartPose.ZERO);
 
+        // --- Decorative: right malar stripe --- 1,2,2
         headPart.addOrReplaceChild("right_malar",
                 CubeListBuilder.create()
-                        .texOffs(22, 19)
+                        .texOffs(0, 205)
                         .mirror()
                         .addBox(-2.0f, -2.5f, -1.5f, 1.0f, 2.0f, 2.0f),
                 PartPose.ZERO);
 
-        // LEFT WING: LONG, NARROW, POINTED — pivots from shoulder (y=0 = top)
-        PartDefinition leftWingPart = partDefinition.addOrReplaceChild("left_wing",
-                CubeListBuilder.create()
-                        .texOffs(0, 25)
-                        .addBox(0.0f, 0.0f, -2.5f, 1.0f, 8.0f, 5.0f),
-                PartPose.offset(3.0f, 11.5f, 0.0f));
+        // --- LEFT WING CHAIN --- long, narrow, pointed
 
-        // Left wing outer: long narrow pointed tip 1x7x3
-        leftWingPart.addOrReplaceChild("left_wing_outer",
+        // L_UPPER_WING (child of shoulder_mount) --- 1,5,5
+        uv = layout.getOffset(BirdSkeleton.L_UPPER_WING);
+        PartDefinition lUpperWingPart = shoulderPart.addOrReplaceChild("L_upper_wing",
                 CubeListBuilder.create()
-                        .texOffs(12, 25)
-                        .addBox(1.0f, 1.0f, -1.5f, 1.0f, 7.0f, 3.0f),
+                        .texOffs(uv[0], uv[1])
+                        .addBox(0.0f, 0.0f, -2.5f, 1.0f, 5.0f, 5.0f),
+                PartPose.offset(1.5f, -1.5f, 0.0f));
+
+        // L_SCAPULARS (child of L_upper_wing) --- 1,4,3
+        uv = layout.getOffset(BirdSkeleton.L_SCAPULARS);
+        lUpperWingPart.addOrReplaceChild("L_scapulars",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(0.0f, 0.5f, -1.0f, 1.0f, 4.0f, 3.0f),
                 PartPose.ZERO);
 
-        // RIGHT WING: LONG, NARROW, POINTED (mirrored) — pivots from shoulder
-        PartDefinition rightWingPart = partDefinition.addOrReplaceChild("right_wing",
+        // L_FOREARM (child of L_upper_wing) --- 1,4,4
+        uv = layout.getOffset(BirdSkeleton.L_FOREARM);
+        PartDefinition lForearmPart = lUpperWingPart.addOrReplaceChild("L_forearm",
                 CubeListBuilder.create()
-                        .texOffs(0, 25)
+                        .texOffs(uv[0], uv[1])
+                        .addBox(0.0f, 0.0f, -2.0f, 1.0f, 4.0f, 4.0f),
+                PartPose.offset(0.0f, 5.0f, 0.0f));
+
+        // L_SECONDARIES (child of L_forearm) --- 1,4,3
+        uv = layout.getOffset(BirdSkeleton.L_SECONDARIES);
+        lForearmPart.addOrReplaceChild("L_secondaries",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(0.0f, 0.5f, -1.0f, 1.0f, 4.0f, 3.0f),
+                PartPose.ZERO);
+
+        // L_HAND (child of L_forearm) --- 1,5,3 — long pointed primaries
+        uv = layout.getOffset(BirdSkeleton.L_HAND);
+        PartDefinition lHandPart = lForearmPart.addOrReplaceChild("L_hand",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(0.0f, 0.0f, -1.5f, 1.0f, 5.0f, 3.0f),
+                PartPose.offset(0.0f, 4.0f, 0.0f));
+
+        // L_PRIMARIES (child of L_hand) --- 1,5,2 — long pointed tips
+        uv = layout.getOffset(BirdSkeleton.L_PRIMARIES);
+        lHandPart.addOrReplaceChild("L_primaries",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(0.0f, 0.5f, -0.5f, 1.0f, 5.0f, 2.0f),
+                PartPose.ZERO);
+
+        // --- RIGHT WING CHAIN (mirrored) ---
+
+        // R_UPPER_WING (child of shoulder_mount) --- 1,5,5
+        uv = layout.getOffset(BirdSkeleton.R_UPPER_WING);
+        PartDefinition rUpperWingPart = shoulderPart.addOrReplaceChild("R_upper_wing",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
                         .mirror()
-                        .addBox(-1.0f, 0.0f, -2.5f, 1.0f, 8.0f, 5.0f),
-                PartPose.offset(-3.0f, 11.5f, 0.0f));
+                        .addBox(-1.0f, 0.0f, -2.5f, 1.0f, 5.0f, 5.0f),
+                PartPose.offset(-1.5f, -1.5f, 0.0f));
 
-        // Right wing outer
-        rightWingPart.addOrReplaceChild("right_wing_outer",
+        // R_SCAPULARS (child of R_upper_wing) --- 1,4,3
+        uv = layout.getOffset(BirdSkeleton.R_SCAPULARS);
+        rUpperWingPart.addOrReplaceChild("R_scapulars",
                 CubeListBuilder.create()
-                        .texOffs(12, 25)
+                        .texOffs(uv[0], uv[1])
                         .mirror()
-                        .addBox(-2.0f, 1.0f, -1.5f, 1.0f, 7.0f, 3.0f),
+                        .addBox(-1.0f, 0.5f, -1.0f, 1.0f, 4.0f, 3.0f),
                 PartPose.ZERO);
 
-        // TAIL: medium-long, narrow — continues the taper 3x1x4
-        PartDefinition tailPart = partDefinition.addOrReplaceChild("tail",
+        // R_FOREARM (child of R_upper_wing) --- 1,4,4
+        uv = layout.getOffset(BirdSkeleton.R_FOREARM);
+        PartDefinition rForearmPart = rUpperWingPart.addOrReplaceChild("R_forearm",
                 CubeListBuilder.create()
-                        .texOffs(22, 0)
-                        .addBox(-1.5f, -0.5f, 0.0f, 3.0f, 1.0f, 4.0f),
-                PartPose.offsetAndRotation(0.0f, 16.5f, 5.5f,
-                        (float) Math.toRadians(-5.0), 0.0f, 0.0f));
+                        .texOffs(uv[0], uv[1])
+                        .mirror()
+                        .addBox(-1.0f, 0.0f, -2.0f, 1.0f, 4.0f, 4.0f),
+                PartPose.offset(0.0f, 5.0f, 0.0f));
 
-        // Tail tip: even narrower end 2x1x3
-        tailPart.addOrReplaceChild("tail_tip",
+        // R_SECONDARIES (child of R_forearm) --- 1,4,3
+        uv = layout.getOffset(BirdSkeleton.R_SECONDARIES);
+        rForearmPart.addOrReplaceChild("R_secondaries",
                 CubeListBuilder.create()
-                        .texOffs(22, 5)
-                        .addBox(-1.0f, -0.5f, 3.5f, 2.0f, 1.0f, 3.0f),
+                        .texOffs(uv[0], uv[1])
+                        .mirror()
+                        .addBox(-1.0f, 0.5f, -1.0f, 1.0f, 4.0f, 3.0f),
                 PartPose.ZERO);
 
-        // LEFT LEG: 1x5x1, pivot inside body so leg visually connects
-        PartDefinition leftLegPart = partDefinition.addOrReplaceChild("left_leg",
+        // R_HAND (child of R_forearm) --- 1,5,3
+        uv = layout.getOffset(BirdSkeleton.R_HAND);
+        PartDefinition rHandPart = rForearmPart.addOrReplaceChild("R_hand",
                 CubeListBuilder.create()
-                        .texOffs(36, 0)
-                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 5.0f, 1.0f),
-                PartPose.offset(1.5f, 19.0f, 0.0f));
+                        .texOffs(uv[0], uv[1])
+                        .mirror()
+                        .addBox(-1.0f, 0.0f, -1.5f, 1.0f, 5.0f, 3.0f),
+                PartPose.offset(0.0f, 4.0f, 0.0f));
 
-        // Left talon: large powerful feet 2x1x2 (yellow in texture)
-        leftLegPart.addOrReplaceChild("left_talon",
+        // R_PRIMARIES (child of R_hand) --- 1,5,2
+        uv = layout.getOffset(BirdSkeleton.R_PRIMARIES);
+        rHandPart.addOrReplaceChild("R_primaries",
                 CubeListBuilder.create()
-                        .texOffs(40, 0)
-                        .addBox(-1.0f, 4.5f, -1.5f, 2.0f, 1.0f, 2.0f),
+                        .texOffs(uv[0], uv[1])
+                        .mirror()
+                        .addBox(-1.0f, 0.5f, -0.5f, 1.0f, 5.0f, 2.0f),
                 PartPose.ZERO);
 
-        // RIGHT LEG: 1x5x1, pivot inside body so leg visually connects
-        PartDefinition rightLegPart = partDefinition.addOrReplaceChild("right_leg",
-                CubeListBuilder.create()
-                        .texOffs(36, 0)
-                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 5.0f, 1.0f),
-                PartPose.offset(-1.5f, 19.0f, 0.0f));
+        // --- TAIL CHAIN ---
 
-        // Right talon
-        rightLegPart.addOrReplaceChild("right_talon",
+        // TAIL_BASE (child of chest) --- 3,1,3
+        uv = layout.getOffset(BirdSkeleton.TAIL_BASE);
+        PartDefinition tailBasePart = chestPart.addOrReplaceChild("tail_base",
                 CubeListBuilder.create()
-                        .texOffs(40, 0)
-                        .addBox(-1.0f, 4.5f, -1.5f, 2.0f, 1.0f, 2.0f),
-                PartPose.ZERO);
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-1.5f, -0.5f, 0.0f, 3.0f, 1.0f, 3.0f),
+                PartPose.offset(0.0f, 0.0f, 2.5f));
 
-        return LayerDefinition.create(meshDefinition, 64, 64);
+        // TAIL_FAN (child of tail_base) --- 2,1,3
+        uv = layout.getOffset(BirdSkeleton.TAIL_FAN);
+        tailBasePart.addOrReplaceChild("tail_fan",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-1.0f, -0.5f, 0.0f, 2.0f, 1.0f, 3.0f),
+                PartPose.offset(0.0f, 0.0f, 3.0f));
+
+        // --- LEFT LEG CHAIN --- strong legs with powerful talons
+
+        // L_THIGH (child of hip) --- 1,3,1
+        uv = layout.getOffset(BirdSkeleton.L_THIGH);
+        PartDefinition lThighPart = hipPart.addOrReplaceChild("L_thigh",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 3.0f, 1.0f),
+                PartPose.offset(1.0f, 1.5f, 0.0f));
+
+        // L_SHIN (child of L_thigh) --- 1,4,1
+        uv = layout.getOffset(BirdSkeleton.L_SHIN);
+        PartDefinition lShinPart = lThighPart.addOrReplaceChild("L_shin",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 4.0f, 1.0f),
+                PartPose.offset(0.0f, 3.0f, 0.0f));
+
+        // L_TARSUS (child of L_shin) --- 1,2,1
+        uv = layout.getOffset(BirdSkeleton.L_TARSUS);
+        PartDefinition lTarsusPart = lShinPart.addOrReplaceChild("L_tarsus",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 2.0f, 1.0f),
+                PartPose.offset(0.0f, 4.0f, 0.0f));
+
+        // L_FOOT (child of L_tarsus) --- 2,1,2 — large powerful talons
+        uv = layout.getOffset(BirdSkeleton.L_FOOT);
+        lTarsusPart.addOrReplaceChild("L_foot",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-1.0f, 0.0f, -1.5f, 2.0f, 1.0f, 2.0f),
+                PartPose.offset(0.0f, 2.0f, 0.0f));
+
+        // --- RIGHT LEG CHAIN ---
+
+        // R_THIGH (child of hip) --- 1,3,1
+        uv = layout.getOffset(BirdSkeleton.R_THIGH);
+        PartDefinition rThighPart = hipPart.addOrReplaceChild("R_thigh",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 3.0f, 1.0f),
+                PartPose.offset(-1.0f, 1.5f, 0.0f));
+
+        // R_SHIN (child of R_thigh) --- 1,4,1
+        uv = layout.getOffset(BirdSkeleton.R_SHIN);
+        PartDefinition rShinPart = rThighPart.addOrReplaceChild("R_shin",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 4.0f, 1.0f),
+                PartPose.offset(0.0f, 3.0f, 0.0f));
+
+        // R_TARSUS (child of R_shin) --- 1,2,1
+        uv = layout.getOffset(BirdSkeleton.R_TARSUS);
+        PartDefinition rTarsusPart = rShinPart.addOrReplaceChild("R_tarsus",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 2.0f, 1.0f),
+                PartPose.offset(0.0f, 4.0f, 0.0f));
+
+        // R_FOOT (child of R_tarsus) --- 2,1,2
+        uv = layout.getOffset(BirdSkeleton.R_FOOT);
+        rTarsusPart.addOrReplaceChild("R_foot",
+                CubeListBuilder.create()
+                        .texOffs(uv[0], uv[1])
+                        .addBox(-1.0f, 0.0f, -1.5f, 2.0f, 1.0f, 2.0f),
+                PartPose.offset(0.0f, 2.0f, 0.0f));
+
+        return LayerDefinition.create(meshDefinition, 512, 512);
     }
 
+    // =========================================================================
+    // Skeleton binding
+    // =========================================================================
+
     @Override
-    public void setupAnim(PeregrineFalconRenderState renderState) {
-        super.setupAnim(renderState);
+    protected void buildMapper(ModelPart root) {
+        this.mapper = SkeletonModelMapper.builder()
+                .bind(BirdSkeleton.CHEST,          chest)
+                .bind(BirdSkeleton.SHOULDER_MOUNT, shoulderMount)
+                .bind(BirdSkeleton.TORSO,          torso)
+                .bind(BirdSkeleton.HIP,            hip)
+                .bind(BirdSkeleton.NECK_LOWER,     neckLower)
+                .bind(BirdSkeleton.NECK_MID,       neckMid)
+                .bind(BirdSkeleton.NECK_UPPER,     neckUpper)
+                .bind(BirdSkeleton.HEAD,           head)
+                .bind(BirdSkeleton.UPPER_BEAK,     upperBeak)
+                .bind(BirdSkeleton.LOWER_BEAK,     lowerBeak)
+                .bind(BirdSkeleton.L_UPPER_WING,   lUpperWing)
+                .bind(BirdSkeleton.L_SCAPULARS,    lScapulars)
+                .bind(BirdSkeleton.L_FOREARM,      lForearm)
+                .bind(BirdSkeleton.L_SECONDARIES,  lSecondaries)
+                .bind(BirdSkeleton.L_HAND,         lHand)
+                .bind(BirdSkeleton.L_PRIMARIES,    lPrimaries)
+                .bind(BirdSkeleton.R_UPPER_WING,   rUpperWing)
+                .bind(BirdSkeleton.R_SCAPULARS,    rScapulars)
+                .bind(BirdSkeleton.R_FOREARM,      rForearm)
+                .bind(BirdSkeleton.R_SECONDARIES,  rSecondaries)
+                .bind(BirdSkeleton.R_HAND,         rHand)
+                .bind(BirdSkeleton.R_PRIMARIES,    rPrimaries)
+                .bind(BirdSkeleton.TAIL_BASE,      tailBase)
+                .bind(BirdSkeleton.TAIL_FAN,       tailFan)
+                .bind(BirdSkeleton.L_THIGH,        lThigh)
+                .bind(BirdSkeleton.L_SHIN,         lShin)
+                .bind(BirdSkeleton.L_TARSUS,       lTarsus)
+                .bind(BirdSkeleton.L_FOOT,         lFoot)
+                .bind(BirdSkeleton.R_THIGH,        rThigh)
+                .bind(BirdSkeleton.R_SHIN,         rShin)
+                .bind(BirdSkeleton.R_TARSUS,       rTarsus)
+                .bind(BirdSkeleton.R_FOOT,         rFoot)
+                .build();
+    }
 
-        if (renderState.isStooping) {
-            // Stooping: wings completely folded against body, body angled downward, teardrop shape
-            this.leftWing.zRot = -0.05f;
-            this.rightWing.zRot = 0.05f;
-            this.leftWing.xRot = (float) Math.toRadians(80.0);
-            this.rightWing.xRot = (float) Math.toRadians(80.0);
-            this.leftWing.yRot = 0.0f;
-            this.rightWing.yRot = 0.0f;
-            // Body angled steeply downward
-            this.chest.xRot = (float) Math.toRadians(60.0);
-            this.rearBody.xRot = (float) Math.toRadians(55.0);
-            this.head.xRot = (float) Math.toRadians(-30.0);
-            // Tail folded tight
-            this.tail.xRot = (float) Math.toRadians(50.0);
-            // Legs tucked
-            this.leftLeg.xRot = (float) Math.toRadians(60.0);
-            this.rightLeg.xRot = (float) Math.toRadians(60.0);
-        } else if (renderState.isFlying) {
-            // Active flight: body streamlined horizontal, stiff shallow wingbeats
-            this.chest.xRot = -0.6f;
-            this.rearBody.xRot = -0.6f;
-            this.head.xRot = 0.35f;
-            BirdAnimations.animateWingFlap(this.leftWing, this.rightWing, renderState.flapAngle, 0.5f);
-            this.leftWing.xRot = 0.0f;
-            this.rightWing.xRot = 0.0f;
-            this.leftWing.yRot = 0.0f;
-            this.rightWing.yRot = 0.0f;
-            this.tail.xRot = -0.3f;
-            BirdAnimations.tuckLegs(this.leftLeg, this.rightLeg, 0.8f);
+    // =========================================================================
+    // Procedural behaviours
+    // =========================================================================
 
-            // Soaring detection: if flapAngle is very small, wings spread wide and flat
-            if (Math.abs(renderState.flapAngle) < 0.1f) {
-                // Soaring: wings spread very wide, tail fanned
-                this.leftWing.zRot = -1.4f;
-                this.rightWing.zRot = 1.4f;
-                this.tail.xRot = (float) Math.toRadians(-15.0);
-            }
-        } else {
-            // Perched: BOLT-UPRIGHT and alert — very different from duck posture
-            BirdAnimations.foldWings(this.leftWing, this.rightWing);
-            this.leftWing.xRot = 0.0f;
-            this.rightWing.xRot = 0.0f;
-            this.leftWing.yRot = 0.0f;
-            this.rightWing.yRot = 0.0f;
-            // Upright posture — body tilted more vertical
-            this.chest.xRot = (float) Math.toRadians(20.0);
-            this.rearBody.xRot = (float) Math.toRadians(15.0);
-            this.head.xRot = (float) Math.toRadians(-10.0); // compensate, look forward
-            this.head.yRot = 0.0f;
-            this.tail.xRot = (float) Math.toRadians(15.0);
-            this.leftLeg.xRot = 0.0f;
-            this.rightLeg.xRot = 0.0f;
+    @Override
+    protected void configureBehaviours() {
+        behaviours.add(new Breathing(0.08f));        // large raptor, slower breathing
+        behaviours.add(new HeadTracking(2.0f, 1.0f)); // sharp head tracking
+        behaviours.add(new WeightShift(0.001f));
+        behaviours.add(new LandingImpact());
+        behaviours.add(new MovementDrag());
+        behaviours.add(new StartleResponse());
+    }
 
-            // Alert head turns — sharp, quick movements
-            if (((int) renderState.ageInTicks % 120) < 30) {
-                this.head.yRot = 0.4f;
-            } else if (((int) renderState.ageInTicks % 120) < 60) {
-                this.head.yRot = -0.4f;
+    // =========================================================================
+    // Animation
+    // =========================================================================
+
+    @Override
+    public void setupAnim(PeregrineFalconRenderState state) {
+        selectPoses(state);
+        super.setupAnim(state); // runs full skeleton pipeline
+    }
+
+    private void selectPoses(PeregrineFalconRenderState state) {
+        PoseResolver resolver = getResolver(state);
+
+        if (state.isStooping) {
+            // Stoop: wings locked tight, body diving — the peregrine's signature
+            resolver.setBasePose(RaptorPoses.STOOP, 6.0f);
+            resolver.clearCyclic();
+            resolver.addOverlay(BaseBirdPoses.LEGS_TUCKED, 1.0f);
+        } else if (state.isFlying) {
+            // Soaring detection: if flapAngle is very small, wings spread wide
+            if (Math.abs(state.flapAngle) < 0.1f) {
+                resolver.setBasePose(RaptorPoses.SOAR, 3.0f);
+                resolver.clearCyclic();
             } else {
-                this.head.yRot = 0.0f;
+                resolver.setBasePose(BaseBirdPoses.FLYING_CRUISE, 3.0f);
+                float flapPhase = state.flapAngle * 0.5f + 0.5f;
+                resolver.setActiveCyclic(RaptorPoses.RAPTOR_WINGBEAT, flapPhase);
             }
+            resolver.addOverlay(BaseBirdPoses.LEGS_TUCKED, 1.0f);
+        } else {
+            // Perched: bolt-upright raptor stance
+            resolver.setBasePose(RaptorPoses.RAPTOR_PERCH, 2.0f);
+            resolver.removeOverlay("legs_tucked");
 
-            BirdAnimations.animateWalkingLegs(this.leftLeg, this.rightLeg,
-                    renderState.walkAnimationSpeed, renderState.walkAnimationPos);
+            if (state.walkAnimationSpeed > 0.01f) {
+                float walkPhase = (float) (Math.sin(state.walkAnimationPos * 0.6662f) * 0.5f + 0.5f);
+                resolver.setActiveCyclic(BaseBirdPoses.WALK_CYCLE, walkPhase);
+            } else {
+                resolver.clearCyclic();
+
+                // Alert head scans — sharp, quick raptor movements
+                int tick = (int) state.ageInTicks % 120;
+                if (tick < 30) {
+                    resolver.addOverlay(RaptorPoses.HEAD_SCAN, 1.0f);
+                } else if (tick < 60) {
+                    // Reverse head scan (look the other way) — use negative weight trick
+                    // Actually, just remove and let natural spring return handle it
+                    resolver.removeOverlay("head_scan");
+                } else {
+                    resolver.removeOverlay("head_scan");
+                }
+            }
         }
     }
 }
