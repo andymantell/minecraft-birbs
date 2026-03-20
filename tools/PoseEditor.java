@@ -795,6 +795,7 @@ public class PoseEditor extends JFrame {
         int ikViewQuadrant = -1;           // 0=FRONT, 1=SIDE, 2=TOP, 3=3D
         List<String> ikChain = new ArrayList<>();  // chain from effector up to root (inclusive)
         int ikTargetScreenX, ikTargetScreenY;      // current mouse target in screen coords
+        boolean ikMirrorTarget = false;             // true when R_ wing/leg clicked — mirror target X
 
         PreviewPanel() {
             setPreferredSize(new Dimension(900, 600));
@@ -887,10 +888,10 @@ public class PoseEditor extends JFrame {
                     if (hit != null) {
                         captureState();  // snapshot BEFORE IK starts
                         ikDragging = true;
-                        // Map R_ joints to L_ equivalents so IK solves on the slider side
-                        // and mirroring handles the other wing/leg automatically
+                        // Always solve on L_ side — mirror the target X when R_ is clicked
                         String ikTarget = hit.startsWith("R_") ? "L_" + hit.substring(2) : hit;
                         ikJointName = ikTarget;
+                        ikMirrorTarget = hit.startsWith("R_");  // flag to negate target X
                         ikViewQuadrant = getQuadrant(mx, my, cellW, cellH);
                         ikChain = buildIkChain(ikTarget);
                         ikTargetScreenX = mx;
@@ -971,6 +972,10 @@ public class PoseEditor extends JFrame {
                             double[] targetWorld = screenToWorld(
                                     ikTargetScreenX, ikTargetScreenY,
                                     ikViewQuadrant, cellW, cellH, draggedJoint);
+                            // Mirror target X when user clicked R_ side — solve on L_ side
+                            if (ikMirrorTarget) {
+                                targetWorld[0] = -targetWorld[0];
+                            }
                             solveIK(targetWorld, 8);
                             syncIkSliderFields();
                             // Force R_ joints to mirror L_ values before repaint
@@ -1076,12 +1081,12 @@ public class PoseEditor extends JFrame {
                     jointName.equals("upper_beak")) {
                 return "neck_lower";
             }
-            // Tail joints → tail_base only (don't drag the whole body!)
+            // Tail joints → short chains (don't include chest!)
             if (jointName.equals("tail_fan")) {
                 return "tail_base";
             }
             if (jointName.equals("tail_base")) {
-                return null;  // tail_base itself — no chain, use handles instead
+                return "tail_base";  // 1-joint chain — just rotates itself
             }
             // Spine joints → chest
             if (jointName.equals("hip") || jointName.equals("torso") ||
@@ -1182,35 +1187,58 @@ public class PoseEditor extends JFrame {
             JointSliderGroup grp = sliderGroups.get(sliderName);
             if (grp == null) return;
 
+            // Use cross product to determine rotation direction — robust regardless of geometry orientation
             switch (q) {
                 case 0 -> {  // FRONT view — XY plane: adjust zRot
-                    angleToEnd    = Math.atan2(ey, ex);
-                    angleToTarget = Math.atan2(ty, tx);
-                    delta = clampDelta(normaliseAngle(angleToTarget - angleToEnd) * damping, maxStep);
-                    joint.angleZ = clampAngle(joint.angleZ + (float) delta);
+                    // Cross product Z component: ex*ty - ey*tx (positive = rotate CCW in XY = positive zRot)
+                    double cross = ex * ty - ey * tx;
+                    double mag = Math.sqrt((ex*ex+ey*ey) * (tx*tx+ty*ty));
+                    if (mag > 0.001) {
+                        delta = clampDelta(Math.asin(Math.max(-1, Math.min(1, cross / mag))) * damping, maxStep);
+                        joint.angleZ = clampAngle(joint.angleZ + (float) delta);
+                    }
                 }
                 case 1 -> {  // SIDE view — ZY plane: adjust xRot
-                    angleToEnd    = Math.atan2(ey, ez);
-                    angleToTarget = Math.atan2(ty, tz);
-                    delta = clampDelta(normaliseAngle(angleToTarget - angleToEnd) * damping, maxStep);
-                    joint.angleX = clampAngle(joint.angleX + (float) delta);
+                    // Cross product X component (negated for correct rotation sense)
+                    double cross = -(ez * ty - ey * tz);
+                    double mag = Math.sqrt((ez*ez+ey*ey) * (tz*tz+ty*ty));
+                    if (mag > 0.001) {
+                        delta = clampDelta(Math.asin(Math.max(-1, Math.min(1, cross / mag))) * damping, maxStep);
+                        joint.angleX = clampAngle(joint.angleX + (float) delta);
+                    }
                 }
                 case 2 -> {  // TOP view — XZ plane: adjust yRot
-                    angleToEnd    = Math.atan2(ez, ex);
-                    angleToTarget = Math.atan2(tz, tx);
-                    delta = clampDelta(normaliseAngle(angleToTarget - angleToEnd) * damping, maxStep);
-                    joint.angleY = clampAngle(joint.angleY + (float) delta);
+                    // Cross product Y component: ex*tz - ez*tx (negative because Y is down)
+                    double cross = -(ex * tz - ez * tx);
+                    double mag = Math.sqrt((ex*ex+ez*ez) * (tx*tx+tz*tz));
+                    if (mag > 0.001) {
+                        delta = clampDelta(Math.asin(Math.max(-1, Math.min(1, cross / mag))) * damping, maxStep);
+                        joint.angleY = clampAngle(joint.angleY + (float) delta);
+                    }
                 }
-                default -> {  // 3D view: adjust both xRot and zRot
-                    angleToEnd    = Math.atan2(ey, ex);
-                    angleToTarget = Math.atan2(ty, tx);
-                    delta = clampDelta(normaliseAngle(angleToTarget - angleToEnd) * damping, maxStep);
-                    joint.angleZ = clampAngle(joint.angleZ + (float) delta);
-                    double ae2 = Math.atan2(ey, Math.sqrt(ex*ex + ez*ez));
-                    double at2 = Math.atan2(ty, Math.sqrt(tx*tx + tz*tz));
-                    double d2 = clampDelta(normaliseAngle(at2 - ae2) * damping, maxStep);
-                    joint.angleX = clampAngle(joint.angleX + (float) d2);
+                default -> {  // 3D view: combine front + side
+                    double cross0 = ex * ty - ey * tx;
+                    double mag0 = Math.sqrt((ex*ex+ey*ey) * (tx*tx+ty*ty));
+                    if (mag0 > 0.001) {
+                        delta = clampDelta(Math.asin(Math.max(-1, Math.min(1, cross0 / mag0))) * damping, maxStep);
+                        joint.angleZ = clampAngle(joint.angleZ + (float) delta);
+                    }
+                    double cross1 = ez * ty - ey * tz;
+                    double mag1 = Math.sqrt((ez*ez+ey*ey) * (tz*tz+ty*ty));
+                    if (mag1 > 0.001) {
+                        double d2 = clampDelta(Math.asin(Math.max(-1, Math.min(1, cross1 / mag1))) * damping, maxStep);
+                        joint.angleX = clampAngle(joint.angleX + (float) d2);
+                    }
                 }
+            }
+
+            // Enforce joint constraints — prevent unrealistic rotations
+            // Only constrain the upper_wing to prevent body-wrapping; other joints are free
+            if (joint.name.contains("upper_wing")) {
+                float limit = 1.2f;  // ~69 degrees
+                joint.angleX = Math.max(-limit, Math.min(limit, joint.angleX));
+                joint.angleY = Math.max(-limit, Math.min(limit, joint.angleY));
+                joint.angleZ = Math.max(-limit, Math.min(limit, joint.angleZ));
             }
         }
 
@@ -1235,16 +1263,62 @@ public class PoseEditor extends JFrame {
          */
         void solveIK(double[] targetWorldPos, int iterations) {
             Joint endEffector = skeleton.jointMap.get(ikJointName);
-            if (endEffector == null || ikChain.size() < 2) return;
+            if (endEffector == null || ikChain.isEmpty()) return;
 
             // First, apply current slider state to skeleton
             Map<String, float[]> poseData = getCurrentPose();
             applyPose(skeleton, poseData);
             computeFK(skeleton);
 
+            // Special case: 1 or 2-joint chain — rotate the end effector directly toward target
+            // (CCD can't work when the adjusted joint IS the end effector)
+            if (ikChain.size() <= 2) {
+                double[] jp = endEffector.worldPos;
+                double tx = targetWorldPos[0] - jp[0];
+                double ty = targetWorldPos[1] - jp[1];
+                double tz = targetWorldPos[2] - jp[2];
+                float damp = 0.08f;
+                float ms = 0.05f;
+                switch (ikViewQuadrant) {
+                    case 0 -> { // FRONT: XY → zRot (-)
+                        double a = Math.atan2(ty, tx);
+                        endEffector.angleZ = clampAngle(endEffector.angleZ - (float)(clampDelta(a * damp, ms)));
+                    }
+                    case 1 -> { // SIDE: ZY → xRot (+)
+                        double a = Math.atan2(ty, tz);
+                        endEffector.angleX = clampAngle(endEffector.angleX + (float)(clampDelta(a * damp, ms)));
+                    }
+                    case 2 -> { // TOP: XZ → yRot (+)
+                        double a = Math.atan2(tz, tx);
+                        endEffector.angleY = clampAngle(endEffector.angleY + (float)(clampDelta(a * damp, ms)));
+                    }
+                    default -> {
+                        double a = Math.atan2(ty, tx);
+                        endEffector.angleZ = clampAngle(endEffector.angleZ - (float)(clampDelta(a * damp, ms)));
+                    }
+                }
+                computeFK(skeleton);
+                batchUpdating = true;
+                String sn = ikJointName.startsWith("R_") ? "L_" + ikJointName.substring(2) : ikJointName;
+                JointSliderGroup grp = sliderGroups.get(sn);
+                if (grp != null) {
+                    grp.xSlider.setValue(Math.round(endEffector.angleX * 100));
+                    grp.ySlider.setValue(Math.round(endEffector.angleY * 100));
+                    grp.zSlider.setValue(Math.round(endEffector.angleZ * 100));
+                }
+                batchUpdating = false;
+                return;
+            }
+
             for (int iter = 0; iter < iterations; iter++) {
-                // Start from size-2 (parent of dragged) down to 1 (skip index 0 = root, which stays fixed)
-                for (int i = ikChain.size() - 2; i >= 1; i--) {
+                // Always skip index 0 (the root) — shoulder_mount, hip, chest should never move.
+                // For 2-joint chains, this means only the dragged joint itself adjusts (handled by
+                // including the end effector at size-1 in such cases).
+                int startIndex = Math.min(ikChain.size() - 1, ikChain.size() - 2);
+                int endIndex = 1;  // always skip root
+                // For 2-joint chains, adjust the end effector (index 1) directly
+                if (ikChain.size() == 2) startIndex = 1;
+                for (int i = startIndex; i >= endIndex; i--) {
                     String jName = ikChain.get(i);
                     Joint joint = skeleton.jointMap.get(jName);
                     if (joint == null) continue;
@@ -1257,12 +1331,12 @@ public class PoseEditor extends JFrame {
                 }
             }
 
-            // After solving, write ALL chain joint angles back to sliders
+            // After solving, write chain joint angles back to sliders
+            // IK always solves on L_ joints, so direct write (no R_ negation needed)
             batchUpdating = true;
             for (String jName : ikChain) {
                 Joint joint = skeleton.jointMap.get(jName);
-                String sliderName = jName.startsWith("R_") ? "L_" + jName.substring(2) : jName;
-                JointSliderGroup grp = sliderGroups.get(sliderName);
+                JointSliderGroup grp = sliderGroups.get(jName);
                 if (grp != null && joint != null) {
                     grp.xSlider.setValue(Math.round(joint.angleX * 100));
                     grp.ySlider.setValue(Math.round(joint.angleY * 100));
