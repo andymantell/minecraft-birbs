@@ -3004,21 +3004,13 @@ public class PoseEditor extends JFrame {
         bottomPanel.setBorder(BorderFactory.createEmptyBorder(4, 8, 8, 8));
 
         JPanel exportButtons = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton exportBtn = new JButton("Export Java Code");
-        JButton exportAllBtn = new JButton("Export All Presets");
-        JButton saveJsonBtn = new JButton("Save to JSON");
-        JButton loadJsonBtn = new JButton("Load from JSON");
-        exportButtons.add(exportBtn);
-        exportButtons.add(exportAllBtn);
+        JButton saveJsonBtn = new JButton("💾 Save");
+        JButton loadJsonBtn = new JButton("📂 Load");
+        saveJsonBtn.setFont(new Font("SansSerif", Font.BOLD, 12));
+        loadJsonBtn.setFont(new Font("SansSerif", Font.BOLD, 12));
         exportButtons.add(saveJsonBtn);
         exportButtons.add(loadJsonBtn);
-        bottomPanel.add(exportButtons, BorderLayout.NORTH);
-
-        exportTextArea = new JTextArea(6, 60);
-        exportTextArea.setFont(new Font("Monospaced", Font.PLAIN, 11));
-        exportTextArea.setEditable(false);
-        JScrollPane exportScroll = new JScrollPane(exportTextArea);
-        bottomPanel.add(exportScroll, BorderLayout.CENTER);
+        bottomPanel.add(exportButtons, BorderLayout.CENTER);
 
         // --- Layout ---
         JSplitPane centerSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, previewPanel, sliderScrollPane);
@@ -3128,23 +3120,6 @@ public class PoseEditor extends JFrame {
             sliderPanel.revalidate();
             sliderPanel.repaint();
         });
-
-        exportBtn.addActionListener(e -> {
-            String code = generateExportCode();
-            File outFile = resolveOutputFile("exported_pose.java");
-            try (FileWriter fw = new FileWriter(outFile)) {
-                fw.write(code);
-                JOptionPane.showMessageDialog(this,
-                        "Exported to: " + outFile.getAbsolutePath(),
-                        "Export Complete", JOptionPane.INFORMATION_MESSAGE);
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(this,
-                        "Error writing: " + ex.getMessage(),
-                        "Export Error", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-
-        exportAllBtn.addActionListener(e -> exportAllPresets());
 
         saveJsonBtn.addActionListener(e -> saveToJson());
         loadJsonBtn.addActionListener(e -> loadFromJson());
@@ -3948,7 +3923,8 @@ public class PoseEditor extends JFrame {
      * Attempts to load poses from the JSON file for the current archetype.
      * If successful, updates the preset list with the loaded values.
      */
-    void loadFromJsonFile(File jsonFile) {
+    void loadFromJsonFile(File jsonFile) { loadFromJsonFile(jsonFile, false); }
+    void loadFromJsonFile(File jsonFile, boolean silent) {
         if (!jsonFile.exists()) return;
 
         try {
@@ -3978,13 +3954,17 @@ public class PoseEditor extends JFrame {
             buildPoseButtons();
             loadSelectedPreset();
 
-            JOptionPane.showMessageDialog(this,
-                    "Loaded poses from: " + jsonFile.getAbsolutePath(),
-                    "Load Complete", JOptionPane.INFORMATION_MESSAGE);
+            if (!silent) {
+                JOptionPane.showMessageDialog(this,
+                        "Loaded poses from: " + jsonFile.getAbsolutePath(),
+                        "Load Complete", JOptionPane.INFORMATION_MESSAGE);
+            }
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this,
-                    "Error reading JSON: " + ex.getMessage(),
-                    "Load Error", JOptionPane.ERROR_MESSAGE);
+            if (!silent) {
+                JOptionPane.showMessageDialog(this,
+                        "Error reading JSON: " + ex.getMessage(),
+                        "Load Error", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 
@@ -4094,7 +4074,7 @@ public class PoseEditor extends JFrame {
     void tryAutoLoadJson() {
         File jsonFile = resolveJsonFile(currentArchetype);
         if (jsonFile.exists()) {
-            loadFromJsonFile(jsonFile);
+            loadFromJsonFile(jsonFile, true);  // silent — no popup on startup
         }
     }
 
