@@ -41,16 +41,17 @@ public final class PasserinePoses {
     // Static Poses
     // =========================================================================
 
-    /** Ground foraging: body tilted forward, head angled down. */
+    /** Ground foraging: body tilted forward, head angled down, wings folded via yRot Z-fold. */
     public static final PoseData FORAGE = PoseData.builder("forage")
             .joint(BirdSkeleton.CHEST,       0.3f,  0f, 0f)
             .joint(BirdSkeleton.NECK_LOWER, -0.1f,  0f, 0f)
             .joint(BirdSkeleton.NECK_MID,   -0.05f, 0f, 0f)
             .joint(BirdSkeleton.NECK_UPPER,  0.1f,  0f, 0f)
             .joint(BirdSkeleton.HEAD,        0.4f,  0f, 0f)
-            .joint(BirdSkeleton.L_UPPER_WING, 0f, 0f,  0.05f)
-            .joint(BirdSkeleton.L_FOREARM,    0f, 0f, -2.0f)
-            .joint(BirdSkeleton.L_HAND,       0f, 0f,  1.8f)
+            // Wings folded via yRot Z-fold
+            .joint(BirdSkeleton.L_UPPER_WING, 0f, -1.5f, 0.3f)
+            .joint(BirdSkeleton.L_FOREARM,    0f,  2.2f, 0f)
+            .joint(BirdSkeleton.L_HAND,       0f, -1.8f, 0f)
             .joint(BirdSkeleton.TAIL_BASE,  -0.15f, 0f, 0f)
             .joint(BirdSkeleton.L_THIGH,     0.2f, 0f, 0f)
             .joint(BirdSkeleton.L_SHIN,      0.3f, 0f, 0f)

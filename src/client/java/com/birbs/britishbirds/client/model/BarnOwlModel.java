@@ -139,11 +139,11 @@ public class BarnOwlModel extends AbstractBirdModel<BarnOwlRenderState> {
     public static Map<String, int[]> getBarnOwlDimensions() {
         Map<String, int[]> dims = new LinkedHashMap<>();
 
-        // Large body — slender and elongated
-        dims.put(BirdSkeleton.CHEST,          new int[]{5, 5, 5});    // big chest
+        // Large body — slender and elongated, deeper
+        dims.put(BirdSkeleton.CHEST,          new int[]{5, 5, 6});    // deeper chest
         dims.put(BirdSkeleton.SHOULDER_MOUNT, new int[]{3, 3, 3});
-        dims.put(BirdSkeleton.TORSO,          new int[]{4, 4, 4});    // elongated body
-        dims.put(BirdSkeleton.HIP,            new int[]{4, 3, 4});    // maps from old lowerBody
+        dims.put(BirdSkeleton.TORSO,          new int[]{4, 4, 5});    // deeper torso
+        dims.put(BirdSkeleton.HIP,            new int[]{4, 3, 5});    // deeper hip
         dims.put(BirdSkeleton.NECK_LOWER,     new int[]{2, 2, 1});
         dims.put(BirdSkeleton.NECK_MID,       new int[]{2, 2, 1});
         dims.put(BirdSkeleton.NECK_UPPER,     new int[]{2, 2, 1});
@@ -151,34 +151,34 @@ public class BarnOwlModel extends AbstractBirdModel<BarnOwlRenderState> {
         dims.put(BirdSkeleton.UPPER_BEAK,     new int[]{1, 1, 1});    // small hooked beak
         dims.put(BirdSkeleton.LOWER_BEAK,     new int[]{1, 1, 1});
 
-        // Very broad wings — the barn owl's defining flight profile
-        dims.put(BirdSkeleton.L_UPPER_WING,   new int[]{2, 6, 6});    // wide and tall
-        dims.put(BirdSkeleton.L_SCAPULARS,    new int[]{2, 5, 4});
-        dims.put(BirdSkeleton.L_FOREARM,      new int[]{2, 5, 5});
-        dims.put(BirdSkeleton.L_SECONDARIES,  new int[]{2, 5, 4});
-        dims.put(BirdSkeleton.L_HAND,         new int[]{1, 5, 3});
-        dims.put(BirdSkeleton.L_PRIMARIES,    new int[]{1, 5, 3});
+        // Very broad wings — lateral orientation (width x 1 x depth)
+        dims.put(BirdSkeleton.L_UPPER_WING,   new int[]{6, 2, 6});    // wide lateral
+        dims.put(BirdSkeleton.L_SCAPULARS,    new int[]{5, 2, 4});
+        dims.put(BirdSkeleton.L_FOREARM,      new int[]{5, 2, 5});
+        dims.put(BirdSkeleton.L_SECONDARIES,  new int[]{5, 2, 4});
+        dims.put(BirdSkeleton.L_HAND,         new int[]{5, 1, 3});
+        dims.put(BirdSkeleton.L_PRIMARIES,    new int[]{5, 1, 3});
 
-        dims.put(BirdSkeleton.R_UPPER_WING,   new int[]{2, 6, 6});
-        dims.put(BirdSkeleton.R_SCAPULARS,    new int[]{2, 5, 4});
-        dims.put(BirdSkeleton.R_FOREARM,      new int[]{2, 5, 5});
-        dims.put(BirdSkeleton.R_SECONDARIES,  new int[]{2, 5, 4});
-        dims.put(BirdSkeleton.R_HAND,         new int[]{1, 5, 3});
-        dims.put(BirdSkeleton.R_PRIMARIES,    new int[]{1, 5, 3});
+        dims.put(BirdSkeleton.R_UPPER_WING,   new int[]{6, 2, 6});
+        dims.put(BirdSkeleton.R_SCAPULARS,    new int[]{5, 2, 4});
+        dims.put(BirdSkeleton.R_FOREARM,      new int[]{5, 2, 5});
+        dims.put(BirdSkeleton.R_SECONDARIES,  new int[]{5, 2, 4});
+        dims.put(BirdSkeleton.R_HAND,         new int[]{5, 1, 3});
+        dims.put(BirdSkeleton.R_PRIMARIES,    new int[]{5, 1, 3});
 
-        // Short square tail
-        dims.put(BirdSkeleton.TAIL_BASE,      new int[]{3, 1, 2});
-        dims.put(BirdSkeleton.TAIL_FAN,       new int[]{4, 1, 3});
+        // Short square tail — deeper fan
+        dims.put(BirdSkeleton.TAIL_BASE,      new int[]{3, 1, 3});
+        dims.put(BirdSkeleton.TAIL_FAN,       new int[]{4, 1, 4});
 
-        // Long legs — adaptation for striking into grass
-        dims.put(BirdSkeleton.L_THIGH,        new int[]{1, 2, 1});
-        dims.put(BirdSkeleton.L_SHIN,         new int[]{1, 4, 1});    // notably long
-        dims.put(BirdSkeleton.L_TARSUS,       new int[]{1, 3, 1});    // long tarsus
+        // Shorter legs (proportionally reduced)
+        dims.put(BirdSkeleton.L_THIGH,        new int[]{1, 1, 1});
+        dims.put(BirdSkeleton.L_SHIN,         new int[]{1, 3, 1});    // shorter
+        dims.put(BirdSkeleton.L_TARSUS,       new int[]{1, 2, 1});    // shorter
         dims.put(BirdSkeleton.L_FOOT,         new int[]{2, 1, 2});    // talons
 
-        dims.put(BirdSkeleton.R_THIGH,        new int[]{1, 2, 1});
-        dims.put(BirdSkeleton.R_SHIN,         new int[]{1, 4, 1});
-        dims.put(BirdSkeleton.R_TARSUS,       new int[]{1, 3, 1});
+        dims.put(BirdSkeleton.R_THIGH,        new int[]{1, 1, 1});
+        dims.put(BirdSkeleton.R_SHIN,         new int[]{1, 3, 1});
+        dims.put(BirdSkeleton.R_TARSUS,       new int[]{1, 2, 1});
         dims.put(BirdSkeleton.R_FOOT,         new int[]{2, 1, 2});
 
         return dims;
@@ -191,12 +191,12 @@ public class BarnOwlModel extends AbstractBirdModel<BarnOwlRenderState> {
         // Compute UV offsets from the barn owl dimensions
         BirdUVLayout layout = BirdUVLayout.computeLayout(getBarnOwlDimensions());
 
-        // --- CHEST (root) --- 5,5,5 — large slender body, slight forward lean
+        // --- CHEST (root) --- 5,5,6 — large body, deeper, slight forward lean
         int[] uv = layout.getOffset(BirdSkeleton.CHEST);
         PartDefinition chestPart = partDefinition.addOrReplaceChild("chest",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-2.5f, -2.5f, -2.5f, 5.0f, 5.0f, 5.0f),
+                        .addBox(-2.5f, -2.5f, -3.0f, 5.0f, 5.0f, 6.0f),
                 PartPose.offsetAndRotation(0.0f, 15.5f, 0.0f,
                         (float) Math.toRadians(5.0), 0.0f, 0.0f));
 
@@ -208,21 +208,21 @@ public class BarnOwlModel extends AbstractBirdModel<BarnOwlRenderState> {
                         .addBox(-1.5f, -1.5f, -1.5f, 3.0f, 3.0f, 3.0f),
                 PartPose.offset(0.0f, -2.0f, 0.0f));
 
-        // --- TORSO (child of chest) --- 4,4,4 — elongated body extension
+        // --- TORSO (child of chest) --- 4,4,5 — deeper
         uv = layout.getOffset(BirdSkeleton.TORSO);
         chestPart.addOrReplaceChild("torso",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-2.0f, -2.0f, -2.0f, 4.0f, 4.0f, 4.0f),
-                PartPose.offset(0.0f, 0.0f, 2.5f));
+                        .addBox(-2.0f, -2.0f, -2.5f, 4.0f, 4.0f, 5.0f),
+                PartPose.offset(0.0f, 0.0f, 3.0f));
 
-        // --- HIP (child of chest) --- 4,3,4 — maps from old lowerBody
+        // --- HIP (child of chest) --- 4,3,5 — deeper
         uv = layout.getOffset(BirdSkeleton.HIP);
         PartDefinition hipPart = chestPart.addOrReplaceChild("hip",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-2.0f, -1.5f, -2.0f, 4.0f, 3.0f, 4.0f),
-                PartPose.offset(0.0f, 2.0f, 1.0f));
+                        .addBox(-2.0f, -1.5f, -2.5f, 4.0f, 3.0f, 5.0f),
+                PartPose.offset(0.0f, 2.0f, 1.5f));
 
         // --- NECK_LOWER (child of chest) --- 2,2,1
         uv = layout.getOffset(BirdSkeleton.NECK_LOWER);
@@ -280,155 +280,149 @@ public class BarnOwlModel extends AbstractBirdModel<BarnOwlRenderState> {
                         .addBox(-3.0f, -4.5f, -3.5f, 6.0f, 5.0f, 1.0f),
                 PartPose.ZERO);
 
-        // --- LEFT WING CHAIN (very broad) ---
+        // --- LEFT WING CHAIN (very broad, lateral orientation) ---
 
-        // L_UPPER_WING (child of shoulder_mount) --- 2,6,6
+        // L_UPPER_WING (child of shoulder_mount) --- 6,2,6
         uv = layout.getOffset(BirdSkeleton.L_UPPER_WING);
         PartDefinition lUpperWingPart = shoulderPart.addOrReplaceChild("L_upper_wing",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(0.0f, 0.0f, -3.0f, 2.0f, 6.0f, 6.0f),
-                PartPose.offset(1.5f, -1.5f, 0.0f));
+                        .addBox(0.0f, -1.0f, -3.0f, 6.0f, 2.0f, 6.0f),
+                PartPose.offset(1.5f, -0.5f, 0.0f));
 
-        // L_SCAPULARS (child of L_upper_wing) --- 2,5,4
+        // L_SCAPULARS (child of L_upper_wing) --- 5,2,4
         uv = layout.getOffset(BirdSkeleton.L_SCAPULARS);
         lUpperWingPart.addOrReplaceChild("L_scapulars",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(0.0f, 0.5f, -1.5f, 2.0f, 5.0f, 4.0f),
+                        .addBox(0.5f, -1.0f, -1.5f, 5.0f, 2.0f, 4.0f),
                 PartPose.ZERO);
 
-        // L_FOREARM (child of L_upper_wing) --- 2,5,5
+        // L_FOREARM (child of L_upper_wing) --- 5,2,5 offset at (+6, 0, 0)
         uv = layout.getOffset(BirdSkeleton.L_FOREARM);
         PartDefinition lForearmPart = lUpperWingPart.addOrReplaceChild("L_forearm",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(0.0f, 0.0f, -2.5f, 2.0f, 5.0f, 5.0f),
-                PartPose.offset(0.0f, 6.0f, 0.0f));
+                        .addBox(0.0f, -1.0f, -2.5f, 5.0f, 2.0f, 5.0f),
+                PartPose.offset(6.0f, 0.0f, 0.0f));
 
-        // L_SECONDARIES (child of L_forearm) --- 2,5,4
+        // L_SECONDARIES (child of L_forearm) --- 5,2,4
         uv = layout.getOffset(BirdSkeleton.L_SECONDARIES);
         lForearmPart.addOrReplaceChild("L_secondaries",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(0.0f, 0.5f, -1.5f, 2.0f, 5.0f, 4.0f),
+                        .addBox(0.5f, -1.0f, -1.5f, 5.0f, 2.0f, 4.0f),
                 PartPose.ZERO);
 
-        // L_HAND (child of L_forearm) --- 1,5,3
+        // L_HAND (child of L_forearm) --- 5,1,3 offset at (+5, 0, 0)
         uv = layout.getOffset(BirdSkeleton.L_HAND);
         PartDefinition lHandPart = lForearmPart.addOrReplaceChild("L_hand",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(0.0f, 0.0f, -1.5f, 1.0f, 5.0f, 3.0f),
-                PartPose.offset(0.5f, 5.0f, 0.0f));
+                        .addBox(0.0f, -0.5f, -1.5f, 5.0f, 1.0f, 3.0f),
+                PartPose.offset(5.0f, 0.0f, 0.0f));
 
-        // L_PRIMARIES (child of L_hand) --- 1,5,3
+        // L_PRIMARIES (child of L_hand) --- 5,1,3
         uv = layout.getOffset(BirdSkeleton.L_PRIMARIES);
         lHandPart.addOrReplaceChild("L_primaries",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(0.0f, 0.5f, -1.0f, 1.0f, 5.0f, 3.0f),
+                        .addBox(0.5f, -0.5f, -1.0f, 5.0f, 1.0f, 3.0f),
                 PartPose.ZERO);
 
-        // --- RIGHT WING CHAIN (mirrored, very broad) ---
+        // --- RIGHT WING CHAIN (mirrored, very broad, lateral) ---
 
-        // R_UPPER_WING (child of shoulder_mount) --- 2,6,6
+        // R_UPPER_WING (child of shoulder_mount) --- 6,2,6
         uv = layout.getOffset(BirdSkeleton.R_UPPER_WING);
         PartDefinition rUpperWingPart = shoulderPart.addOrReplaceChild("R_upper_wing",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
+                        .addBox(-6.0f, -1.0f, -3.0f, 6.0f, 2.0f, 6.0f),
+                PartPose.offset(-1.5f, -0.5f, 0.0f));
 
-                        .addBox(-2.0f, 0.0f, -3.0f, 2.0f, 6.0f, 6.0f),
-                PartPose.offset(-1.5f, -1.5f, 0.0f));
-
-        // R_SCAPULARS (child of R_upper_wing) --- 2,5,4
+        // R_SCAPULARS (child of R_upper_wing) --- 5,2,4
         uv = layout.getOffset(BirdSkeleton.R_SCAPULARS);
         rUpperWingPart.addOrReplaceChild("R_scapulars",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-
-                        .addBox(-2.0f, 0.5f, -1.5f, 2.0f, 5.0f, 4.0f),
+                        .addBox(-5.5f, -1.0f, -1.5f, 5.0f, 2.0f, 4.0f),
                 PartPose.ZERO);
 
-        // R_FOREARM (child of R_upper_wing) --- 2,5,5
+        // R_FOREARM (child of R_upper_wing) --- 5,2,5 offset at (-6, 0, 0)
         uv = layout.getOffset(BirdSkeleton.R_FOREARM);
         PartDefinition rForearmPart = rUpperWingPart.addOrReplaceChild("R_forearm",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
+                        .addBox(-5.0f, -1.0f, -2.5f, 5.0f, 2.0f, 5.0f),
+                PartPose.offset(-6.0f, 0.0f, 0.0f));
 
-                        .addBox(-2.0f, 0.0f, -2.5f, 2.0f, 5.0f, 5.0f),
-                PartPose.offset(0.0f, 6.0f, 0.0f));
-
-        // R_SECONDARIES (child of R_forearm) --- 2,5,4
+        // R_SECONDARIES (child of R_forearm) --- 5,2,4
         uv = layout.getOffset(BirdSkeleton.R_SECONDARIES);
         rForearmPart.addOrReplaceChild("R_secondaries",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-
-                        .addBox(-2.0f, 0.5f, -1.5f, 2.0f, 5.0f, 4.0f),
+                        .addBox(-5.5f, -1.0f, -1.5f, 5.0f, 2.0f, 4.0f),
                 PartPose.ZERO);
 
-        // R_HAND (child of R_forearm) --- 1,5,3
+        // R_HAND (child of R_forearm) --- 5,1,3 offset at (-5, 0, 0)
         uv = layout.getOffset(BirdSkeleton.R_HAND);
         PartDefinition rHandPart = rForearmPart.addOrReplaceChild("R_hand",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
+                        .addBox(-5.0f, -0.5f, -1.5f, 5.0f, 1.0f, 3.0f),
+                PartPose.offset(-5.0f, 0.0f, 0.0f));
 
-                        .addBox(-1.0f, 0.0f, -1.5f, 1.0f, 5.0f, 3.0f),
-                PartPose.offset(-0.5f, 5.0f, 0.0f));
-
-        // R_PRIMARIES (child of R_hand) --- 1,5,3
+        // R_PRIMARIES (child of R_hand) --- 5,1,3
         uv = layout.getOffset(BirdSkeleton.R_PRIMARIES);
         rHandPart.addOrReplaceChild("R_primaries",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-
-                        .addBox(-1.0f, 0.5f, -1.0f, 1.0f, 5.0f, 3.0f),
+                        .addBox(-5.5f, -0.5f, -1.0f, 5.0f, 1.0f, 3.0f),
                 PartPose.ZERO);
 
         // --- TAIL CHAIN ---
 
-        // TAIL_BASE (child of chest) --- 3,1,2
+        // TAIL_BASE (child of chest) --- 3,1,3 — deeper, offset further back
         uv = layout.getOffset(BirdSkeleton.TAIL_BASE);
         PartDefinition tailBasePart = chestPart.addOrReplaceChild("tail_base",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-1.5f, -0.5f, 0.0f, 3.0f, 1.0f, 2.0f),
-                PartPose.offset(0.0f, 0.0f, 2.5f));
+                        .addBox(-1.5f, -0.5f, 0.0f, 3.0f, 1.0f, 3.0f),
+                PartPose.offset(0.0f, 0.0f, 3.0f));
 
-        // TAIL_FAN (child of tail_base) --- 4,1,3 — short square-ended tail
+        // TAIL_FAN (child of tail_base) --- 4,1,4 — deeper
         uv = layout.getOffset(BirdSkeleton.TAIL_FAN);
         tailBasePart.addOrReplaceChild("tail_fan",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-2.0f, -0.5f, 0.0f, 4.0f, 1.0f, 3.0f),
-                PartPose.offset(0.0f, 0.0f, 2.0f));
+                        .addBox(-2.0f, -0.5f, 0.0f, 4.0f, 1.0f, 4.0f),
+                PartPose.offset(0.0f, 0.0f, 3.0f));
 
-        // --- LEFT LEG CHAIN (notably long) ---
+        // --- LEFT LEG CHAIN (shorter) ---
 
-        // L_THIGH (child of hip) --- 1,2,1
+        // L_THIGH (child of hip) --- 1,1,1
         uv = layout.getOffset(BirdSkeleton.L_THIGH);
         PartDefinition lThighPart = hipPart.addOrReplaceChild("L_thigh",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 2.0f, 1.0f),
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 1.0f, 1.0f),
                 PartPose.offset(1.5f, 1.5f, 0.0f));
 
-        // L_SHIN (child of L_thigh) --- 1,4,1 (notably long)
+        // L_SHIN (child of L_thigh) --- 1,3,1 (shorter)
         uv = layout.getOffset(BirdSkeleton.L_SHIN);
         PartDefinition lShinPart = lThighPart.addOrReplaceChild("L_shin",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 4.0f, 1.0f),
-                PartPose.offset(0.0f, 2.0f, 0.0f));
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 3.0f, 1.0f),
+                PartPose.offset(0.0f, 1.0f, 0.0f));
 
-        // L_TARSUS (child of L_shin) --- 1,3,1 (long tarsus)
+        // L_TARSUS (child of L_shin) --- 1,2,1 (shorter)
         uv = layout.getOffset(BirdSkeleton.L_TARSUS);
         PartDefinition lTarsusPart = lShinPart.addOrReplaceChild("L_tarsus",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 3.0f, 1.0f),
-                PartPose.offset(0.0f, 4.0f, 0.0f));
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 2.0f, 1.0f),
+                PartPose.offset(0.0f, 3.0f, 0.0f));
 
         // L_FOOT (child of L_tarsus) --- 2,1,2 (talons)
         uv = layout.getOffset(BirdSkeleton.L_FOOT);
@@ -436,33 +430,33 @@ public class BarnOwlModel extends AbstractBirdModel<BarnOwlRenderState> {
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
                         .addBox(-1.0f, 0.0f, -1.5f, 2.0f, 1.0f, 2.0f),
-                PartPose.offset(0.0f, 3.0f, 0.0f));
+                PartPose.offset(0.0f, 2.0f, 0.0f));
 
-        // --- RIGHT LEG CHAIN ---
+        // --- RIGHT LEG CHAIN (shorter) ---
 
-        // R_THIGH (child of hip) --- 1,2,1
+        // R_THIGH (child of hip) --- 1,1,1
         uv = layout.getOffset(BirdSkeleton.R_THIGH);
         PartDefinition rThighPart = hipPart.addOrReplaceChild("R_thigh",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 2.0f, 1.0f),
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 1.0f, 1.0f),
                 PartPose.offset(-1.5f, 1.5f, 0.0f));
 
-        // R_SHIN (child of R_thigh) --- 1,4,1 (notably long)
+        // R_SHIN (child of R_thigh) --- 1,3,1 (shorter)
         uv = layout.getOffset(BirdSkeleton.R_SHIN);
         PartDefinition rShinPart = rThighPart.addOrReplaceChild("R_shin",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 4.0f, 1.0f),
-                PartPose.offset(0.0f, 2.0f, 0.0f));
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 3.0f, 1.0f),
+                PartPose.offset(0.0f, 1.0f, 0.0f));
 
-        // R_TARSUS (child of R_shin) --- 1,3,1
+        // R_TARSUS (child of R_shin) --- 1,2,1 (shorter)
         uv = layout.getOffset(BirdSkeleton.R_TARSUS);
         PartDefinition rTarsusPart = rShinPart.addOrReplaceChild("R_tarsus",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 3.0f, 1.0f),
-                PartPose.offset(0.0f, 4.0f, 0.0f));
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 2.0f, 1.0f),
+                PartPose.offset(0.0f, 3.0f, 0.0f));
 
         // R_FOOT (child of R_tarsus) --- 2,1,2 (talons)
         uv = layout.getOffset(BirdSkeleton.R_FOOT);
@@ -470,7 +464,7 @@ public class BarnOwlModel extends AbstractBirdModel<BarnOwlRenderState> {
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
                         .addBox(-1.0f, 0.0f, -1.5f, 2.0f, 1.0f, 2.0f),
-                PartPose.offset(0.0f, 3.0f, 0.0f));
+                PartPose.offset(0.0f, 2.0f, 0.0f));
 
         return LayerDefinition.create(meshDefinition, 512, 512);
     }

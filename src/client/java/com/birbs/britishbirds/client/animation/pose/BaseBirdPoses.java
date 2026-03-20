@@ -4,8 +4,14 @@ import com.birbs.britishbirds.client.animation.BirdSkeleton;
 
 /**
  * Shared base poses and cyclic animations used by all bird species.
- * All angle values are in radians. These are approximate starting points
- * and will be tuned in-game later.
+ * All angle values are in radians. Tuned from preview tool validation.
+ *
+ * Key conventions after lateral wing geometry change:
+ * - Wings extend in +X (left) / -X (right) from the shoulder
+ * - zRot controls wing flap (up/down spread)
+ * - yRot controls wing fold (Z-fold for perched)
+ * - Positive chest xRot = forward pitch (body tilts nose-down)
+ * - Negative tail_base xRot = tail lifts to counteract body pitch
  */
 public final class BaseBirdPoses {
 
@@ -15,16 +21,20 @@ public final class BaseBirdPoses {
     // Static Poses
     // =========================================================================
 
-    /** Resting on a branch — relaxed S-curve neck, wings folded tight, legs gripping. */
+    /** Resting on a branch — relaxed S-curve neck, wings folded tight via yRot Z-fold, legs gripping. */
     public static final PoseData PERCHED = PoseData.builder("perched")
             .joint(BirdSkeleton.CHEST,       0.1f,  0f, 0f)
             .joint(BirdSkeleton.NECK_LOWER, -0.15f, 0f, 0f)
             .joint(BirdSkeleton.NECK_MID,   -0.1f,  0f, 0f)
             .joint(BirdSkeleton.NECK_UPPER, -0.1f,  0f, 0f)
             .joint(BirdSkeleton.HEAD,       -0.05f, 0f, 0f)
-            .joint(BirdSkeleton.L_UPPER_WING, 0f, 0f,  0.05f)
-            .joint(BirdSkeleton.L_FOREARM,    0f, 0f, -2.0f)
-            .joint(BirdSkeleton.L_HAND,       0f, 0f,  1.8f)
+            // Wings folded via yRot Z-fold pattern
+            .joint(BirdSkeleton.L_UPPER_WING, 0f, -1.5f, 0.3f)
+            .joint(BirdSkeleton.L_SCAPULARS,  0f, -0.2f, 0f)
+            .joint(BirdSkeleton.L_FOREARM,    0f,  2.2f, 0f)
+            .joint(BirdSkeleton.L_SECONDARIES,0f, -0.15f, 0f)
+            .joint(BirdSkeleton.L_HAND,       0f, -1.8f, 0f)
+            .joint(BirdSkeleton.L_PRIMARIES,  0f, -0.1f, 0f)
             .joint(BirdSkeleton.TAIL_BASE,  -0.2f, 0f, 0f)
             .joint(BirdSkeleton.L_THIGH,     0.1f, 0f, 0f)
             .joint(BirdSkeleton.L_SHIN,      0.3f, 0f, 0f)
@@ -39,55 +49,65 @@ public final class BaseBirdPoses {
             .joint(BirdSkeleton.NECK_MID,   -0.15f, 0f, 0f)
             .joint(BirdSkeleton.NECK_UPPER, -0.15f, 0f, 0f)
             .joint(BirdSkeleton.HEAD,       -0.1f,  0f, 0f)
-            .joint(BirdSkeleton.L_UPPER_WING, 0f, 0f,  0.05f)
-            .joint(BirdSkeleton.L_FOREARM,    0f, 0f, -2.0f)
-            .joint(BirdSkeleton.L_HAND,       0f, 0f,  1.8f)
+            // Wings folded via yRot Z-fold
+            .joint(BirdSkeleton.L_UPPER_WING, 0f, -1.5f, 0.3f)
+            .joint(BirdSkeleton.L_FOREARM,    0f,  2.2f, 0f)
+            .joint(BirdSkeleton.L_HAND,       0f, -1.8f, 0f)
             .joint(BirdSkeleton.TAIL_BASE,  -0.1f, 0f, 0f)
             .mirror()
             .build();
 
-    /** Level sustained flight — body nearly horizontal, neck extends forward, head slightly up. */
+    /**
+     * Level sustained flight — body pitched forward (positive xRot), wings spread via zRot,
+     * neck extends forward, head slightly up to compensate. Tail counteracts body pitch.
+     */
     public static final PoseData FLYING_CRUISE = PoseData.builder("flying_cruise")
-            .joint(BirdSkeleton.CHEST,      -1.2f, 0f, 0f)   // strong forward pitch
-            .joint(BirdSkeleton.TORSO,      -0.2f, 0f, 0f)   // torso follows
-            .joint(BirdSkeleton.HIP,        -0.15f, 0f, 0f)  // hip aligns with body
-            .joint(BirdSkeleton.NECK_LOWER,  0.05f, 0f, 0f)  // neck extends forward with body
-            .joint(BirdSkeleton.NECK_MID,    0.05f, 0f, 0f)  // minimal compensation
-            .joint(BirdSkeleton.NECK_UPPER,  0.05f, 0f, 0f)
-            .joint(BirdSkeleton.HEAD,        0.15f, 0f, 0f)   // slight upward tilt to see ahead
-            .joint(BirdSkeleton.L_UPPER_WING, -0.3f, 0f, 0f)  // xRot: wings spread in flight frame
-            .joint(BirdSkeleton.L_FOREARM,   -0.2f, 0f, 0f)
-            .joint(BirdSkeleton.L_HAND,      -0.1f, 0f, 0f)
-            .joint(BirdSkeleton.TAIL_BASE,  -0.3f, 0f, 0f)   // tail extends behind
+            .joint(BirdSkeleton.CHEST,       1.0f, 0f, 0f)   // positive = forward pitch
+            .joint(BirdSkeleton.TORSO,       0.15f, 0f, 0f)   // torso follows
+            .joint(BirdSkeleton.HIP,         0.1f, 0f, 0f)    // hip aligns with body
+            .joint(BirdSkeleton.NECK_LOWER,  0.05f, 0f, -0.05f)
+            .joint(BirdSkeleton.NECK_MID,    0.0f, 0f, 0f)
+            .joint(BirdSkeleton.NECK_UPPER,  0.0f, 0f, 0f)
+            .joint(BirdSkeleton.HEAD,       -0.5f, 0f, 0f)    // head up to look ahead
+            // Wings spread via zRot (lateral geometry)
+            .joint(BirdSkeleton.L_UPPER_WING, 0f, 0f, -0.3f)  // zRot spread
+            .joint(BirdSkeleton.L_FOREARM,    0f, 0f, 0f)
+            .joint(BirdSkeleton.L_HAND,       0f, 0f, 0f)
+            // Tail counteracts body pitch
+            .joint(BirdSkeleton.TAIL_BASE,  -0.65f, 0f, 0f)
+            .joint(BirdSkeleton.TAIL_FAN,   -0.15f, 0f, 0f)
             .mirror()
             .build();
 
-    /** Steep launch — body pitched steeply, neck extends forward-up, wings spread wide. */
+    /** Steep launch — body pitched steeply forward, wings spread wide. */
     public static final PoseData FLYING_TAKEOFF = PoseData.builder("flying_takeoff")
-            .joint(BirdSkeleton.CHEST,      -1.4f, 0f, 0f)   // steeper than cruise
-            .joint(BirdSkeleton.TORSO,      -0.3f, 0f, 0f)
-            .joint(BirdSkeleton.HIP,        -0.2f, 0f, 0f)
-            .joint(BirdSkeleton.NECK_LOWER,  0.15f, 0f, 0f)
-            .joint(BirdSkeleton.NECK_MID,    0.1f, 0f, 0f)
-            .joint(BirdSkeleton.NECK_UPPER,  0.1f, 0f, 0f)
-            .joint(BirdSkeleton.HEAD,        0.2f, 0f, 0f)
-            .joint(BirdSkeleton.L_UPPER_WING, -0.5f, 0f, 0f)  // xRot
-            .joint(BirdSkeleton.L_FOREARM,   -0.2f, 0f, 0f)
-            .joint(BirdSkeleton.L_HAND,      -0.1f, 0f, 0f)
-            .joint(BirdSkeleton.TAIL_BASE,  -0.4f, 0f, 0f)   // tail fans for lift
+            .joint(BirdSkeleton.CHEST,       1.2f, 0f, 0f)   // steeper than cruise
+            .joint(BirdSkeleton.TORSO,       0.2f, 0f, 0f)
+            .joint(BirdSkeleton.HIP,         0.15f, 0f, 0f)
+            .joint(BirdSkeleton.NECK_LOWER,  0.05f, 0f, -0.05f)
+            .joint(BirdSkeleton.NECK_MID,    0.0f, 0f, 0f)
+            .joint(BirdSkeleton.NECK_UPPER,  0.0f, 0f, 0f)
+            .joint(BirdSkeleton.HEAD,       -0.6f, 0f, 0f)
+            // Wings wider spread
+            .joint(BirdSkeleton.L_UPPER_WING, 0f, 0f, -0.5f)
+            .joint(BirdSkeleton.L_FOREARM,    0f, 0f, 0f)
+            .joint(BirdSkeleton.L_HAND,       0f, 0f, 0f)
+            .joint(BirdSkeleton.TAIL_BASE,  -0.8f, 0f, 0f)
+            .joint(BirdSkeleton.TAIL_FAN,   -0.2f, 0f, 0f)
             .mirror()
             .build();
 
-    /** Flare posture for landing — body pitched back, wings wide, legs forward, tail as air brake. */
+    /** Flare posture for landing — body pitched back, wings wide via zRot, legs forward, tail as air brake. */
     public static final PoseData FLYING_LAND = PoseData.builder("flying_land")
-            .joint(BirdSkeleton.CHEST,       0.3f, 0f, 0f)
+            .joint(BirdSkeleton.CHEST,      -0.3f, 0f, 0f)    // pitched back for flare
             .joint(BirdSkeleton.NECK_LOWER, -0.1f, 0f, 0f)
             .joint(BirdSkeleton.NECK_MID,   -0.05f, 0f, 0f)
             .joint(BirdSkeleton.NECK_UPPER, -0.05f, 0f, 0f)
             .joint(BirdSkeleton.HEAD,       -0.1f, 0f, 0f)
-            .joint(BirdSkeleton.L_UPPER_WING, -0.8f, 0f, 0f)  // xRot
-            .joint(BirdSkeleton.L_FOREARM,   -0.3f, 0f, 0f)
-            .joint(BirdSkeleton.L_HAND,      -0.15f, 0f, 0f)
+            // Wings wide via zRot
+            .joint(BirdSkeleton.L_UPPER_WING, 0f, 0f, -0.8f)
+            .joint(BirdSkeleton.L_FOREARM,    0f, 0f, -0.1f)
+            .joint(BirdSkeleton.L_HAND,       0f, 0f, -0.05f)
             .joint(BirdSkeleton.TAIL_BASE,  -0.8f, 0f, 0f)
             .joint(BirdSkeleton.L_THIGH,    -0.3f, 0f, 0f)
             .joint(BirdSkeleton.L_SHIN,     -0.5f, 0f, 0f)
@@ -101,9 +121,10 @@ public final class BaseBirdPoses {
             .joint(BirdSkeleton.NECK_MID,   -0.05f, 0f, 0f)
             .joint(BirdSkeleton.NECK_UPPER, -0.05f, 0f, 0f)
             .joint(BirdSkeleton.HEAD,        0.3f,  0f, 0.4f)
-            .joint(BirdSkeleton.L_UPPER_WING, 0f, 0f,  0.05f)
-            .joint(BirdSkeleton.L_FOREARM,    0f, 0f, -2.0f)
-            .joint(BirdSkeleton.L_HAND,       0f, 0f,  1.8f)
+            // Wings folded via yRot Z-fold
+            .joint(BirdSkeleton.L_UPPER_WING, 0f, -1.5f, 0.3f)
+            .joint(BirdSkeleton.L_FOREARM,    0f,  2.2f, 0f)
+            .joint(BirdSkeleton.L_HAND,       0f, -1.8f, 0f)
             .joint(BirdSkeleton.TAIL_BASE,   0.1f, 0f, 0f)
             .mirror()
             .build();
@@ -117,12 +138,12 @@ public final class BaseBirdPoses {
             .joint(BirdSkeleton.LOWER_BEAK, 0.4f, 0f, 0f)
             .build();
 
-    /** Legs tucked for flight — thighs, shins, tarsi, and feet pulled up. */
+    /** Legs tucked for flight — extreme tuck values for in-flight leg retraction. */
     public static final PoseData LEGS_TUCKED = PoseData.builder("legs_tucked")
-            .joint(BirdSkeleton.L_THIGH,   0.5f, 0f, 0f)
-            .joint(BirdSkeleton.L_SHIN,    0.8f, 0f, 0f)
-            .joint(BirdSkeleton.L_TARSUS, -0.3f, 0f, 0f)
-            .joint(BirdSkeleton.L_FOOT,    0.2f, 0f, 0f)
+            .joint(BirdSkeleton.L_THIGH,  -1.5f, 0f, 0f)
+            .joint(BirdSkeleton.L_SHIN,   -2.5f, 0f, 0f)
+            .joint(BirdSkeleton.L_TARSUS,  2.0f, 0f, 0f)
+            .joint(BirdSkeleton.L_FOOT,   -0.8f, 0f, 0f)
             .mirror()
             .build();
 
@@ -132,28 +153,27 @@ public final class BaseBirdPoses {
 
     /**
      * Wingbeat cycle — wings up (A) to wings down (B).
-     * Uses xRot (not zRot) because wings are children of chest — when the body
-     * pitches forward for flight, the local coordinate system rotates with it.
-     * xRot swings wings up/down correctly in the pitched reference frame.
+     * Uses zRot (lateral wing geometry) — wings extend in +X from shoulder,
+     * so zRot rotates them up and down in the body's frame of reference.
      */
     public static final CyclicAnimation WINGBEAT = new CyclicAnimation(
             "wingbeat",
             PoseData.builder("wings_up")
-                    .joint(BirdSkeleton.L_UPPER_WING,  -0.8f, 0f, 0f)
-                    .joint(BirdSkeleton.L_FOREARM,     -0.3f, 0f, 0f)
-                    .joint(BirdSkeleton.L_HAND,        -0.2f, 0f, 0f)
-                    .joint(BirdSkeleton.L_SCAPULARS,   -0.2f, 0f, 0f)
-                    .joint(BirdSkeleton.L_SECONDARIES, -0.15f, 0f, 0f)
-                    .joint(BirdSkeleton.L_PRIMARIES,   -0.1f, 0f, 0f)
+                    .joint(BirdSkeleton.L_UPPER_WING,  0f, 0f, -0.4f)  // zRot up
+                    .joint(BirdSkeleton.L_FOREARM,     0f, 0f, -0.15f)
+                    .joint(BirdSkeleton.L_HAND,        0f, 0f, -0.1f)
+                    .joint(BirdSkeleton.L_SCAPULARS,   0f, 0f, -0.1f)
+                    .joint(BirdSkeleton.L_SECONDARIES, 0f, 0f, -0.08f)
+                    .joint(BirdSkeleton.L_PRIMARIES,   0f, 0f, -0.06f)
                     .mirror()
                     .build(),
             PoseData.builder("wings_down")
-                    .joint(BirdSkeleton.L_UPPER_WING,   0.6f, 0f, 0f)
-                    .joint(BirdSkeleton.L_FOREARM,      0.2f, 0f, 0f)
-                    .joint(BirdSkeleton.L_HAND,         0.15f, 0f, 0f)
-                    .joint(BirdSkeleton.L_SCAPULARS,    0.15f, 0f, 0f)
-                    .joint(BirdSkeleton.L_SECONDARIES,  0.1f, 0f, 0f)
-                    .joint(BirdSkeleton.L_PRIMARIES,    0.08f, 0f, 0f)
+                    .joint(BirdSkeleton.L_UPPER_WING,  0f, 0f, 0.4f)   // zRot down
+                    .joint(BirdSkeleton.L_FOREARM,     0f, 0f, 0.1f)
+                    .joint(BirdSkeleton.L_HAND,        0f, 0f, 0.08f)
+                    .joint(BirdSkeleton.L_SCAPULARS,   0f, 0f, 0.08f)
+                    .joint(BirdSkeleton.L_SECONDARIES, 0f, 0f, 0.06f)
+                    .joint(BirdSkeleton.L_PRIMARIES,   0f, 0f, 0.05f)
                     .mirror()
                     .build()
     );

@@ -164,10 +164,10 @@ public class BlueTitModel extends AbstractBirdModel<BlueTitRenderState> {
     public static Map<String, int[]> getBlueTitDimensions() {
         Map<String, int[]> dims = new LinkedHashMap<>();
 
-        // Blue tit is tiny — smaller body cuboids than Robin
-        dims.put(BirdSkeleton.CHEST,          new int[]{3, 3, 3});    // compact round body
+        // Blue tit is tiny — smaller body cuboids than Robin, deeper bodies
+        dims.put(BirdSkeleton.CHEST,          new int[]{3, 3, 4});    // compact, deeper
         dims.put(BirdSkeleton.SHOULDER_MOUNT, new int[]{2, 2, 2});
-        dims.put(BirdSkeleton.TORSO,          new int[]{2, 2, 2});    // smaller torso
+        dims.put(BirdSkeleton.TORSO,          new int[]{2, 2, 3});    // deeper torso
         dims.put(BirdSkeleton.HIP,            new int[]{2, 2, 2});
         dims.put(BirdSkeleton.NECK_LOWER,     new int[]{2, 1, 1});    // shorter neck
         dims.put(BirdSkeleton.NECK_MID,       new int[]{2, 1, 1});
@@ -176,30 +176,31 @@ public class BlueTitModel extends AbstractBirdModel<BlueTitRenderState> {
         dims.put(BirdSkeleton.UPPER_BEAK,     new int[]{1, 1, 1});    // tiny fine beak
         dims.put(BirdSkeleton.LOWER_BEAK,     new int[]{1, 1, 1});
 
-        dims.put(BirdSkeleton.L_UPPER_WING,   new int[]{1, 3, 3});   // smaller wings
-        dims.put(BirdSkeleton.L_SCAPULARS,    new int[]{1, 2, 2});
-        dims.put(BirdSkeleton.L_FOREARM,      new int[]{1, 3, 2});
-        dims.put(BirdSkeleton.L_SECONDARIES,  new int[]{1, 2, 2});
-        dims.put(BirdSkeleton.L_HAND,         new int[]{1, 2, 2});
-        dims.put(BirdSkeleton.L_PRIMARIES,    new int[]{1, 2, 2});
+        // Lateral wing orientation (width x 1 x depth)
+        dims.put(BirdSkeleton.L_UPPER_WING,   new int[]{3, 1, 3});   // smaller wings
+        dims.put(BirdSkeleton.L_SCAPULARS,    new int[]{2, 1, 2});
+        dims.put(BirdSkeleton.L_FOREARM,      new int[]{3, 1, 2});
+        dims.put(BirdSkeleton.L_SECONDARIES,  new int[]{2, 1, 2});
+        dims.put(BirdSkeleton.L_HAND,         new int[]{2, 1, 2});
+        dims.put(BirdSkeleton.L_PRIMARIES,    new int[]{2, 1, 2});
 
-        dims.put(BirdSkeleton.R_UPPER_WING,   new int[]{1, 3, 3});
-        dims.put(BirdSkeleton.R_SCAPULARS,    new int[]{1, 2, 2});
-        dims.put(BirdSkeleton.R_FOREARM,      new int[]{1, 3, 2});
-        dims.put(BirdSkeleton.R_SECONDARIES,  new int[]{1, 2, 2});
-        dims.put(BirdSkeleton.R_HAND,         new int[]{1, 2, 2});
-        dims.put(BirdSkeleton.R_PRIMARIES,    new int[]{1, 2, 2});
+        dims.put(BirdSkeleton.R_UPPER_WING,   new int[]{3, 1, 3});
+        dims.put(BirdSkeleton.R_SCAPULARS,    new int[]{2, 1, 2});
+        dims.put(BirdSkeleton.R_FOREARM,      new int[]{3, 1, 2});
+        dims.put(BirdSkeleton.R_SECONDARIES,  new int[]{2, 1, 2});
+        dims.put(BirdSkeleton.R_HAND,         new int[]{2, 1, 2});
+        dims.put(BirdSkeleton.R_PRIMARIES,    new int[]{2, 1, 2});
 
         dims.put(BirdSkeleton.TAIL_BASE,      new int[]{2, 1, 2});
-        dims.put(BirdSkeleton.TAIL_FAN,       new int[]{2, 1, 2});    // shorter tail than Robin
+        dims.put(BirdSkeleton.TAIL_FAN,       new int[]{2, 1, 3});    // deeper tail
 
         dims.put(BirdSkeleton.L_THIGH,        new int[]{1, 1, 1});    // short legs
-        dims.put(BirdSkeleton.L_SHIN,         new int[]{1, 2, 1});
+        dims.put(BirdSkeleton.L_SHIN,         new int[]{1, 1, 1});    // shorter shin
         dims.put(BirdSkeleton.L_TARSUS,       new int[]{1, 1, 1});
         dims.put(BirdSkeleton.L_FOOT,         new int[]{1, 1, 1});    // tiny gripping feet
 
         dims.put(BirdSkeleton.R_THIGH,        new int[]{1, 1, 1});
-        dims.put(BirdSkeleton.R_SHIN,         new int[]{1, 2, 1});
+        dims.put(BirdSkeleton.R_SHIN,         new int[]{1, 1, 1});
         dims.put(BirdSkeleton.R_TARSUS,       new int[]{1, 1, 1});
         dims.put(BirdSkeleton.R_FOOT,         new int[]{1, 1, 1});
 
@@ -213,12 +214,12 @@ public class BlueTitModel extends AbstractBirdModel<BlueTitRenderState> {
         // Compute UV offsets from the blue tit dimensions
         BirdUVLayout layout = BirdUVLayout.computeLayout(getBlueTitDimensions());
 
-        // --- CHEST (root) --- 3,3,3 — compact, nearly spherical
+        // --- CHEST (root) --- 3,3,4 — compact, deeper
         int[] uv = layout.getOffset(BirdSkeleton.CHEST);
         PartDefinition chestPart = partDefinition.addOrReplaceChild("chest",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-1.5f, -1.5f, -1.5f, 3.0f, 3.0f, 3.0f),
+                        .addBox(-1.5f, -1.5f, -2.0f, 3.0f, 3.0f, 4.0f),
                 PartPose.offset(0.0f, 20.0f, 0.0f));
 
         // --- SHOULDER_MOUNT (child of chest) --- 2,2,2
@@ -229,13 +230,13 @@ public class BlueTitModel extends AbstractBirdModel<BlueTitRenderState> {
                         .addBox(-1.0f, -1.0f, -1.0f, 2.0f, 2.0f, 2.0f),
                 PartPose.offset(0.0f, -1.0f, 0.0f));
 
-        // --- TORSO (child of chest) --- 2,2,2 (smaller than Robin)
+        // --- TORSO (child of chest) --- 2,2,3 (deeper)
         uv = layout.getOffset(BirdSkeleton.TORSO);
         chestPart.addOrReplaceChild("torso",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-1.0f, -1.0f, -1.0f, 2.0f, 2.0f, 2.0f),
-                PartPose.offset(0.0f, 0.0f, 1.0f));
+                        .addBox(-1.0f, -1.0f, -1.5f, 2.0f, 2.0f, 3.0f),
+                PartPose.offset(0.0f, 0.0f, 1.5f));
 
         // --- HIP (child of chest) --- 2,2,2
         uv = layout.getOffset(BirdSkeleton.HIP);
@@ -315,110 +316,104 @@ public class BlueTitModel extends AbstractBirdModel<BlueTitRenderState> {
                         .addBox(-2.5f, -3.0f, -1.5f, 1.0f, 2.0f, 2.0f),
                 PartPose.ZERO);
 
-        // --- LEFT WING CHAIN ---
+        // --- LEFT WING CHAIN (lateral orientation) ---
 
-        // L_UPPER_WING (child of shoulder_mount) --- 1,3,3
+        // L_UPPER_WING (child of shoulder_mount) --- 3,1,3
         uv = layout.getOffset(BirdSkeleton.L_UPPER_WING);
         PartDefinition lUpperWingPart = shoulderPart.addOrReplaceChild("L_upper_wing",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(0.0f, 0.0f, -1.5f, 1.0f, 3.0f, 3.0f),
-                PartPose.offset(1.0f, -1.0f, 0.0f));
+                        .addBox(0.0f, -0.5f, -1.5f, 3.0f, 1.0f, 3.0f),
+                PartPose.offset(1.0f, -0.5f, 0.0f));
 
-        // L_SCAPULARS (child of L_upper_wing) --- 1,2,2
+        // L_SCAPULARS (child of L_upper_wing) --- 2,1,2
         uv = layout.getOffset(BirdSkeleton.L_SCAPULARS);
         lUpperWingPart.addOrReplaceChild("L_scapulars",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(0.0f, 0.5f, -0.5f, 1.0f, 2.0f, 2.0f),
+                        .addBox(0.5f, -0.5f, -0.5f, 2.0f, 1.0f, 2.0f),
                 PartPose.ZERO);
 
-        // L_FOREARM (child of L_upper_wing) --- 1,3,2
+        // L_FOREARM (child of L_upper_wing) --- 3,1,2 offset at (+3, 0, 0)
         uv = layout.getOffset(BirdSkeleton.L_FOREARM);
         PartDefinition lForearmPart = lUpperWingPart.addOrReplaceChild("L_forearm",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(0.0f, 0.0f, -1.0f, 1.0f, 3.0f, 2.0f),
-                PartPose.offset(0.0f, 3.0f, 0.0f));
+                        .addBox(0.0f, -0.5f, -1.0f, 3.0f, 1.0f, 2.0f),
+                PartPose.offset(3.0f, 0.0f, 0.0f));
 
-        // L_SECONDARIES (child of L_forearm) --- 1,2,2
+        // L_SECONDARIES (child of L_forearm) --- 2,1,2
         uv = layout.getOffset(BirdSkeleton.L_SECONDARIES);
         lForearmPart.addOrReplaceChild("L_secondaries",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(0.0f, 0.5f, -0.5f, 1.0f, 2.0f, 2.0f),
+                        .addBox(0.5f, -0.5f, -0.5f, 2.0f, 1.0f, 2.0f),
                 PartPose.ZERO);
 
-        // L_HAND (child of L_forearm) --- 1,2,2
+        // L_HAND (child of L_forearm) --- 2,1,2 offset at (+3, 0, 0)
         uv = layout.getOffset(BirdSkeleton.L_HAND);
         PartDefinition lHandPart = lForearmPart.addOrReplaceChild("L_hand",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(0.0f, 0.0f, -1.0f, 1.0f, 2.0f, 2.0f),
-                PartPose.offset(0.0f, 3.0f, 0.0f));
+                        .addBox(0.0f, -0.5f, -1.0f, 2.0f, 1.0f, 2.0f),
+                PartPose.offset(3.0f, 0.0f, 0.0f));
 
-        // L_PRIMARIES (child of L_hand) --- 1,2,2
+        // L_PRIMARIES (child of L_hand) --- 2,1,2
         uv = layout.getOffset(BirdSkeleton.L_PRIMARIES);
         lHandPart.addOrReplaceChild("L_primaries",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(0.0f, 0.5f, -0.5f, 1.0f, 2.0f, 2.0f),
+                        .addBox(0.5f, -0.5f, -0.5f, 2.0f, 1.0f, 2.0f),
                 PartPose.ZERO);
 
-        // --- RIGHT WING CHAIN (mirrored) ---
+        // --- RIGHT WING CHAIN (mirrored lateral) ---
 
-        // R_UPPER_WING (child of shoulder_mount) --- 1,3,3
+        // R_UPPER_WING (child of shoulder_mount) --- 3,1,3
         uv = layout.getOffset(BirdSkeleton.R_UPPER_WING);
         PartDefinition rUpperWingPart = shoulderPart.addOrReplaceChild("R_upper_wing",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
+                        .addBox(-3.0f, -0.5f, -1.5f, 3.0f, 1.0f, 3.0f),
+                PartPose.offset(-1.0f, -0.5f, 0.0f));
 
-                        .addBox(-1.0f, 0.0f, -1.5f, 1.0f, 3.0f, 3.0f),
-                PartPose.offset(-1.0f, -1.0f, 0.0f));
-
-        // R_SCAPULARS (child of R_upper_wing) --- 1,2,2
+        // R_SCAPULARS (child of R_upper_wing) --- 2,1,2
         uv = layout.getOffset(BirdSkeleton.R_SCAPULARS);
         rUpperWingPart.addOrReplaceChild("R_scapulars",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-
-                        .addBox(-1.0f, 0.5f, -0.5f, 1.0f, 2.0f, 2.0f),
+                        .addBox(-2.5f, -0.5f, -0.5f, 2.0f, 1.0f, 2.0f),
                 PartPose.ZERO);
 
-        // R_FOREARM (child of R_upper_wing) --- 1,3,2
+        // R_FOREARM (child of R_upper_wing) --- 3,1,2 offset at (-3, 0, 0)
         uv = layout.getOffset(BirdSkeleton.R_FOREARM);
         PartDefinition rForearmPart = rUpperWingPart.addOrReplaceChild("R_forearm",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
+                        .addBox(-3.0f, -0.5f, -1.0f, 3.0f, 1.0f, 2.0f),
+                PartPose.offset(-3.0f, 0.0f, 0.0f));
 
-                        .addBox(-1.0f, 0.0f, -1.0f, 1.0f, 3.0f, 2.0f),
-                PartPose.offset(0.0f, 3.0f, 0.0f));
-
-        // R_SECONDARIES (child of R_forearm) --- 1,2,2
+        // R_SECONDARIES (child of R_forearm) --- 2,1,2
         uv = layout.getOffset(BirdSkeleton.R_SECONDARIES);
         rForearmPart.addOrReplaceChild("R_secondaries",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-
-                        .addBox(-1.0f, 0.5f, -0.5f, 1.0f, 2.0f, 2.0f),
+                        .addBox(-2.5f, -0.5f, -0.5f, 2.0f, 1.0f, 2.0f),
                 PartPose.ZERO);
 
-        // R_HAND (child of R_forearm) --- 1,2,2
+        // R_HAND (child of R_forearm) --- 2,1,2 offset at (-3, 0, 0)
         uv = layout.getOffset(BirdSkeleton.R_HAND);
         PartDefinition rHandPart = rForearmPart.addOrReplaceChild("R_hand",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
+                        .addBox(-2.0f, -0.5f, -1.0f, 2.0f, 1.0f, 2.0f),
+                PartPose.offset(-3.0f, 0.0f, 0.0f));
 
-                        .addBox(-1.0f, 0.0f, -1.0f, 1.0f, 2.0f, 2.0f),
-                PartPose.offset(0.0f, 3.0f, 0.0f));
-
-        // R_PRIMARIES (child of R_hand) --- 1,2,2
+        // R_PRIMARIES (child of R_hand) --- 2,1,2
         uv = layout.getOffset(BirdSkeleton.R_PRIMARIES);
         rHandPart.addOrReplaceChild("R_primaries",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-
-                        .addBox(-1.0f, 0.5f, -0.5f, 1.0f, 2.0f, 2.0f),
+                        .addBox(-2.5f, -0.5f, -0.5f, 2.0f, 1.0f, 2.0f),
                 PartPose.ZERO);
 
         // --- TAIL CHAIN ---
@@ -431,12 +426,12 @@ public class BlueTitModel extends AbstractBirdModel<BlueTitRenderState> {
                         .addBox(-1.0f, -0.5f, 0.0f, 2.0f, 1.0f, 2.0f),
                 PartPose.offset(0.0f, 0.0f, 1.5f));
 
-        // TAIL_FAN (child of tail_base) --- 2,1,2 (shorter tail)
+        // TAIL_FAN (child of tail_base) --- 2,1,3 (deeper tail)
         uv = layout.getOffset(BirdSkeleton.TAIL_FAN);
         tailBasePart.addOrReplaceChild("tail_fan",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-1.0f, -0.5f, 0.0f, 2.0f, 1.0f, 2.0f),
+                        .addBox(-1.0f, -0.5f, 0.0f, 2.0f, 1.0f, 3.0f),
                 PartPose.offset(0.0f, 0.0f, 2.0f));
 
         // --- LEFT LEG CHAIN ---
@@ -449,12 +444,12 @@ public class BlueTitModel extends AbstractBirdModel<BlueTitRenderState> {
                         .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 1.0f, 1.0f),
                 PartPose.offset(0.75f, 1.0f, 0.0f));
 
-        // L_SHIN (child of L_thigh) --- 1,2,1
+        // L_SHIN (child of L_thigh) --- 1,1,1 (shorter)
         uv = layout.getOffset(BirdSkeleton.L_SHIN);
         PartDefinition lShinPart = lThighPart.addOrReplaceChild("L_shin",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 2.0f, 1.0f),
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 1.0f, 1.0f),
                 PartPose.offset(0.0f, 1.0f, 0.0f));
 
         // L_TARSUS (child of L_shin) --- 1,1,1
@@ -463,7 +458,7 @@ public class BlueTitModel extends AbstractBirdModel<BlueTitRenderState> {
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
                         .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 1.0f, 1.0f),
-                PartPose.offset(0.0f, 2.0f, 0.0f));
+                PartPose.offset(0.0f, 1.0f, 0.0f));
 
         // L_FOOT (child of L_tarsus) --- 1,1,1 (tiny gripping feet)
         uv = layout.getOffset(BirdSkeleton.L_FOOT);
@@ -483,12 +478,12 @@ public class BlueTitModel extends AbstractBirdModel<BlueTitRenderState> {
                         .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 1.0f, 1.0f),
                 PartPose.offset(-0.75f, 1.0f, 0.0f));
 
-        // R_SHIN (child of R_thigh) --- 1,2,1
+        // R_SHIN (child of R_thigh) --- 1,1,1 (shorter)
         uv = layout.getOffset(BirdSkeleton.R_SHIN);
         PartDefinition rShinPart = rThighPart.addOrReplaceChild("R_shin",
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
-                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 2.0f, 1.0f),
+                        .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 1.0f, 1.0f),
                 PartPose.offset(0.0f, 1.0f, 0.0f));
 
         // R_TARSUS (child of R_shin) --- 1,1,1
@@ -497,7 +492,7 @@ public class BlueTitModel extends AbstractBirdModel<BlueTitRenderState> {
                 CubeListBuilder.create()
                         .texOffs(uv[0], uv[1])
                         .addBox(-0.5f, 0.0f, -0.5f, 1.0f, 1.0f, 1.0f),
-                PartPose.offset(0.0f, 2.0f, 0.0f));
+                PartPose.offset(0.0f, 1.0f, 0.0f));
 
         // R_FOOT (child of R_tarsus) --- 1,1,1
         uv = layout.getOffset(BirdSkeleton.R_FOOT);

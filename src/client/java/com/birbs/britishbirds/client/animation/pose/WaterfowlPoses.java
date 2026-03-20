@@ -6,6 +6,13 @@ import com.birbs.britishbirds.client.animation.BirdSkeleton;
  * Waterfowl-specific poses and cyclic animations.
  * Covers swimming, dabbling, waddling, and paddling behaviours
  * characteristic of ducks, geese, and swans.
+ *
+ * Key conventions (lateral wing geometry):
+ * - Positive chest xRot = forward pitch
+ * - zRot controls wing spread and flap
+ * - yRot controls wing fold (Z-fold for swimming/resting)
+ * - Negative tail_base xRot counteracts body pitch
+ * - Extreme negative leg tuck values for flight
  */
 public final class WaterfowlPoses {
 
@@ -16,7 +23,7 @@ public final class WaterfowlPoses {
     // =========================================================================
 
     /**
-     * Swimming: body level and low in water, wings folded, legs hidden below waterline.
+     * Swimming: body level and low in water, wings folded via yRot Z-fold, legs hidden below waterline.
      * Relaxed, buoyant posture.
      */
     public static final PoseData SWIM = PoseData.builder("swim")
@@ -25,10 +32,10 @@ public final class WaterfowlPoses {
             .joint(BirdSkeleton.NECK_MID,   -0.05f, 0f, 0f)
             .joint(BirdSkeleton.NECK_UPPER, -0.05f, 0f, 0f)
             .joint(BirdSkeleton.HEAD,       -0.05f, 0f, 0f)
-            // Wings folded
-            .joint(BirdSkeleton.L_UPPER_WING, 0f, 0f,  0.05f)
-            .joint(BirdSkeleton.L_FOREARM,    0f, 0f, -2.0f)
-            .joint(BirdSkeleton.L_HAND,       0f, 0f,  1.8f)
+            // Wings folded via yRot Z-fold
+            .joint(BirdSkeleton.L_UPPER_WING, 0f, -1.5f, 0.3f)
+            .joint(BirdSkeleton.L_FOREARM,    0f,  2.2f, 0f)
+            .joint(BirdSkeleton.L_HAND,       0f, -1.8f, 0f)
             .joint(BirdSkeleton.TAIL_BASE,  -0.17f, 0f, 0f)
             // Legs extended slightly below for paddling
             .joint(BirdSkeleton.L_THIGH,     0.3f, 0f, 0f)
@@ -42,17 +49,17 @@ public final class WaterfowlPoses {
      * The classic duck upending posture for feeding.
      */
     public static final PoseData DABBLE = PoseData.builder("dabble")
-            // Body pitched steeply down — chest approaching 90 degrees
+            // Body pitched steeply down — positive xRot
             .joint(BirdSkeleton.CHEST,       1.3f, 0f, 0f)
             .joint(BirdSkeleton.NECK_LOWER,  0.2f, 0f, 0f)
             .joint(BirdSkeleton.NECK_MID,    0.1f, 0f, 0f)
             .joint(BirdSkeleton.NECK_UPPER,  0.1f, 0f, 0f)
             .joint(BirdSkeleton.HEAD,        0.2f, 0f, 0f)
-            // Wings folded
-            .joint(BirdSkeleton.L_UPPER_WING, 0f, 0f,  0.05f)
-            .joint(BirdSkeleton.L_FOREARM,    0f, 0f, -2.0f)
-            .joint(BirdSkeleton.L_HAND,       0f, 0f,  1.8f)
-            // Tail up
+            // Wings folded via yRot Z-fold
+            .joint(BirdSkeleton.L_UPPER_WING, 0f, -1.5f, 0.3f)
+            .joint(BirdSkeleton.L_FOREARM,    0f,  2.2f, 0f)
+            .joint(BirdSkeleton.L_HAND,       0f, -1.8f, 0f)
+            // Tail up (negative counteracts body pitch, making tail point upward)
             .joint(BirdSkeleton.TAIL_BASE,  -1.2f, 0f, 0f)
             .joint(BirdSkeleton.TAIL_FAN,   -0.3f, 0f, 0f)
             // Legs paddle gently
@@ -123,32 +130,28 @@ public final class WaterfowlPoses {
     );
 
     /**
-     * Waterfowl wingbeat: fast, stiff strokes — rapid wing cycling typical
-     * of heavy-bodied ducks in direct flight.
-     */
-    /**
      * Waterfowl wingbeat: fast, stiff strokes.
-     * Uses xRot — wings are children of chest, so when body pitches
-     * forward for flight, xRot correctly flaps up/down.
+     * Uses zRot (lateral wing geometry) — wings extend in +X from shoulder,
+     * so zRot rotates them up and down correctly.
      */
     public static final CyclicAnimation WATERFOWL_WINGBEAT = new CyclicAnimation(
             "waterfowl_wingbeat",
             PoseData.builder("waterfowl_wings_up")
-                    .joint(BirdSkeleton.L_UPPER_WING,  -1.0f, 0f, 0f)
-                    .joint(BirdSkeleton.L_FOREARM,     -0.35f, 0f, 0f)
-                    .joint(BirdSkeleton.L_HAND,        -0.25f, 0f, 0f)
-                    .joint(BirdSkeleton.L_SCAPULARS,   -0.2f, 0f, 0f)
-                    .joint(BirdSkeleton.L_SECONDARIES, -0.15f, 0f, 0f)
-                    .joint(BirdSkeleton.L_PRIMARIES,   -0.1f, 0f, 0f)
+                    .joint(BirdSkeleton.L_UPPER_WING,  0f, 0f, -0.5f)  // zRot up
+                    .joint(BirdSkeleton.L_FOREARM,     0f, 0f, -0.18f)
+                    .joint(BirdSkeleton.L_HAND,        0f, 0f, -0.12f)
+                    .joint(BirdSkeleton.L_SCAPULARS,   0f, 0f, -0.1f)
+                    .joint(BirdSkeleton.L_SECONDARIES, 0f, 0f, -0.08f)
+                    .joint(BirdSkeleton.L_PRIMARIES,   0f, 0f, -0.06f)
                     .mirror()
                     .build(),
             PoseData.builder("waterfowl_wings_down")
-                    .joint(BirdSkeleton.L_UPPER_WING,   0.8f, 0f, 0f)
-                    .joint(BirdSkeleton.L_FOREARM,      0.25f, 0f, 0f)
-                    .joint(BirdSkeleton.L_HAND,         0.2f, 0f, 0f)
-                    .joint(BirdSkeleton.L_SCAPULARS,    0.15f, 0f, 0f)
-                    .joint(BirdSkeleton.L_SECONDARIES,  0.12f, 0f, 0f)
-                    .joint(BirdSkeleton.L_PRIMARIES,    0.1f, 0f, 0f)
+                    .joint(BirdSkeleton.L_UPPER_WING,  0f, 0f, 0.5f)   // zRot down
+                    .joint(BirdSkeleton.L_FOREARM,     0f, 0f, 0.12f)
+                    .joint(BirdSkeleton.L_HAND,        0f, 0f, 0.1f)
+                    .joint(BirdSkeleton.L_SCAPULARS,   0f, 0f, 0.08f)
+                    .joint(BirdSkeleton.L_SECONDARIES, 0f, 0f, 0.06f)
+                    .joint(BirdSkeleton.L_PRIMARIES,   0f, 0f, 0.05f)
                     .mirror()
                     .build()
     );

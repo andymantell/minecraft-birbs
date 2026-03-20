@@ -93,10 +93,11 @@ public class BirdUVLayout {
     public static Map<String, int[]> getDefaultPasserineDimensions() {
         Map<String, int[]> dims = new LinkedHashMap<>();
 
-        dims.put(BirdSkeleton.CHEST,          new int[]{3, 3, 3});
+        // Body: deeper/longer torso, shorter legs
+        dims.put(BirdSkeleton.CHEST,          new int[]{3, 3, 4});    // deeper chest
         dims.put(BirdSkeleton.SHOULDER_MOUNT, new int[]{2, 2, 2});
-        dims.put(BirdSkeleton.TORSO,          new int[]{3, 3, 3});
-        dims.put(BirdSkeleton.HIP,            new int[]{2, 2, 2});
+        dims.put(BirdSkeleton.TORSO,          new int[]{3, 3, 4});    // deeper torso
+        dims.put(BirdSkeleton.HIP,            new int[]{2, 2, 3});    // deeper hip
         dims.put(BirdSkeleton.NECK_LOWER,     new int[]{2, 1, 1});
         dims.put(BirdSkeleton.NECK_MID,       new int[]{2, 1, 1});
         dims.put(BirdSkeleton.NECK_UPPER,     new int[]{2, 1, 1});
@@ -104,30 +105,32 @@ public class BirdUVLayout {
         dims.put(BirdSkeleton.UPPER_BEAK,     new int[]{1, 1, 2});
         dims.put(BirdSkeleton.LOWER_BEAK,     new int[]{1, 1, 2});
 
-        dims.put(BirdSkeleton.L_UPPER_WING,   new int[]{1, 4, 4});
-        dims.put(BirdSkeleton.L_SCAPULARS,    new int[]{1, 3, 3});
-        dims.put(BirdSkeleton.L_FOREARM,      new int[]{1, 3, 3});
-        dims.put(BirdSkeleton.L_SECONDARIES,  new int[]{1, 3, 3});
-        dims.put(BirdSkeleton.L_HAND,         new int[]{1, 3, 2});
-        dims.put(BirdSkeleton.L_PRIMARIES,    new int[]{1, 3, 2});
+        // Wings: lateral orientation (width x 1 x depth)
+        dims.put(BirdSkeleton.L_UPPER_WING,   new int[]{4, 1, 4});
+        dims.put(BirdSkeleton.L_SCAPULARS,    new int[]{3, 1, 3});
+        dims.put(BirdSkeleton.L_FOREARM,      new int[]{3, 1, 3});
+        dims.put(BirdSkeleton.L_SECONDARIES,  new int[]{3, 1, 3});
+        dims.put(BirdSkeleton.L_HAND,         new int[]{3, 1, 2});
+        dims.put(BirdSkeleton.L_PRIMARIES,    new int[]{3, 1, 2});
 
-        dims.put(BirdSkeleton.R_UPPER_WING,   new int[]{1, 4, 4});
-        dims.put(BirdSkeleton.R_SCAPULARS,    new int[]{1, 3, 3});
-        dims.put(BirdSkeleton.R_FOREARM,      new int[]{1, 3, 3});
-        dims.put(BirdSkeleton.R_SECONDARIES,  new int[]{1, 3, 3});
-        dims.put(BirdSkeleton.R_HAND,         new int[]{1, 3, 2});
-        dims.put(BirdSkeleton.R_PRIMARIES,    new int[]{1, 3, 2});
+        dims.put(BirdSkeleton.R_UPPER_WING,   new int[]{4, 1, 4});
+        dims.put(BirdSkeleton.R_SCAPULARS,    new int[]{3, 1, 3});
+        dims.put(BirdSkeleton.R_FOREARM,      new int[]{3, 1, 3});
+        dims.put(BirdSkeleton.R_SECONDARIES,  new int[]{3, 1, 3});
+        dims.put(BirdSkeleton.R_HAND,         new int[]{3, 1, 2});
+        dims.put(BirdSkeleton.R_PRIMARIES,    new int[]{3, 1, 2});
 
         dims.put(BirdSkeleton.TAIL_BASE,      new int[]{2, 1, 2});
-        dims.put(BirdSkeleton.TAIL_FAN,       new int[]{2, 1, 3});
+        dims.put(BirdSkeleton.TAIL_FAN,       new int[]{2, 1, 4});    // deeper tail
 
-        dims.put(BirdSkeleton.L_THIGH,        new int[]{1, 2, 1});
-        dims.put(BirdSkeleton.L_SHIN,         new int[]{1, 3, 1});
-        dims.put(BirdSkeleton.L_TARSUS,       new int[]{1, 2, 1});
-        dims.put(BirdSkeleton.L_FOOT,         new int[]{2, 1, 2});
+        // Shorter legs
+        dims.put(BirdSkeleton.L_THIGH,        new int[]{1, 1, 1});
+        dims.put(BirdSkeleton.L_SHIN,         new int[]{1, 2, 1});
+        dims.put(BirdSkeleton.L_TARSUS,       new int[]{1, 2, 1});    // 1.5 rounds to 2
+        dims.put(BirdSkeleton.L_FOOT,         new int[]{2, 1, 2});    // 0.5 rounds to 1
 
-        dims.put(BirdSkeleton.R_THIGH,        new int[]{1, 2, 1});
-        dims.put(BirdSkeleton.R_SHIN,         new int[]{1, 3, 1});
+        dims.put(BirdSkeleton.R_THIGH,        new int[]{1, 1, 1});
+        dims.put(BirdSkeleton.R_SHIN,         new int[]{1, 2, 1});
         dims.put(BirdSkeleton.R_TARSUS,       new int[]{1, 2, 1});
         dims.put(BirdSkeleton.R_FOOT,         new int[]{2, 1, 2});
 
