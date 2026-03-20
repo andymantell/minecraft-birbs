@@ -519,7 +519,7 @@ public class PoseEditor extends JFrame {
                 if (!pose.containsKey(rName)) {
                     // Lateral wing geometry: yRot flips (fold direction), zRot does NOT (flap direction)
                     // xRot stays the same (pitch is symmetric)
-                    mirrored.put(rName, new float[]{v[0], -v[1], v[2]});
+                    mirrored.put(rName, new float[]{v[0], -v[1], -v[2]});
                 }
             }
         }
@@ -2030,7 +2030,7 @@ public class PoseEditor extends JFrame {
                     if (lj != null && rj != null) {
                         rj.angleX = lj.angleX;
                         rj.angleY = -lj.angleY;
-                        rj.angleZ = lj.angleZ;
+                        rj.angleZ = -lj.angleZ;
                     }
                 }
             }
@@ -2667,9 +2667,9 @@ public class PoseEditor extends JFrame {
                             }
                         }
                     } else {
-                        // Auto-mirror from L_
+                        // Auto-mirror from L_ (both yRot and zRot flip for mirrored geometry)
                         if (x != 0 || y != 0 || z != 0) {
-                            pose.put(rName, new float[]{x, -y, z});
+                            pose.put(rName, new float[]{x, -y, -z});
                         }
                     }
                 }
@@ -2874,8 +2874,11 @@ public class PoseEditor extends JFrame {
         resetBtnPanel.setMaximumSize(new Dimension(200, 32));
         JButton resetBtn = new JButton("Zero All");
         JButton resetToPresetBtn = new JButton("Reset to Preset");
+        JButton revertToSavedBtn = new JButton("Revert to Saved");
+        revertToSavedBtn.setToolTipText("Reload all poses from the last saved JSON file");
         resetBtnPanel.add(resetBtn);
         resetBtnPanel.add(resetToPresetBtn);
+        resetBtnPanel.add(revertToSavedBtn);
         leftPanel.add(resetBtnPanel);
         leftPanel.add(Box.createVerticalStrut(16));
 
@@ -3106,8 +3109,23 @@ public class PoseEditor extends JFrame {
             // Discard saved edits for this pose and reload the original preset values
             editedPoses.remove(currentPoseName);
             String pose = currentPoseName;
-            currentPoseName = null; // prevent save-on-switch from re-saving stale edits
+            currentPoseName = null;
             loadPresetByName(pose, true);
+        });
+
+        revertToSavedBtn.addActionListener(e -> {
+            // Clear all edits and reload from JSON
+            captureState();
+            editedPoses.clear();
+            tryAutoLoadJson();
+            buildPoseButtons();
+            if (currentPoseName != null) {
+                String pose = currentPoseName;
+                currentPoseName = null;
+                loadPresetByName(pose, true);
+            } else {
+                loadSelectedPreset();
+            }
         });
 
         geometryToggle.addActionListener(e -> {

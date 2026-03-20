@@ -79,8 +79,9 @@ public final class PoseData {
                 if (key.startsWith("L_")) {
                     String mirroredKey = "R_" + key.substring(2);
                     Vector3f v = entry.getValue();
-                    // yRot flips (fold direction mirrors), zRot does NOT (flap direction same for both wings)
-                    toAdd.put(mirroredKey, new Vector3f(v.x, -v.y, v.z));
+                    // Both yRot and zRot flip — wing geometry is mirrored in X,
+                    // so the same rotation produces opposite visual directions
+                    toAdd.put(mirroredKey, new Vector3f(v.x, -v.y, -v.z));
                 }
             }
             jointAngles.putAll(toAdd);
