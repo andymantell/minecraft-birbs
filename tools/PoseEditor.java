@@ -2583,7 +2583,8 @@ public class PoseEditor extends JFrame {
     PreviewPanel previewPanel;
     JTextArea exportTextArea;
     JComboBox<String> archetypeCombo;
-    JComboBox<String> poseCombo;
+    JPanel poseBtnPanel;                                   // holds instant-load pose buttons
+    Map<String, JButton> poseButtons = new LinkedHashMap<>(); // preset name -> button
     JPanel sliderPanel;
     JScrollPane sliderScrollPane;
     JCheckBox geometryToggle;
@@ -2799,20 +2800,14 @@ public class PoseEditor extends JFrame {
         leftPanel.add(archetypeCombo);
         leftPanel.add(Box.createVerticalStrut(8));
 
-        JLabel poseLabel = new JLabel("Pose Preset:");
+        JLabel poseLabel = new JLabel("Poses:");
         poseLabel.setAlignmentX(0f);
         leftPanel.add(poseLabel);
-        poseCombo = new JComboBox<>();
-        poseCombo.setMaximumSize(new Dimension(200, 28));
-        poseCombo.setAlignmentX(0f);
-        updatePoseCombo();
-        leftPanel.add(poseCombo);
+        poseBtnPanel = new JPanel();
+        poseBtnPanel.setAlignmentX(0f);
+        poseBtnPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 120));
+        leftPanel.add(poseBtnPanel);
         leftPanel.add(Box.createVerticalStrut(8));
-
-        JButton loadBtn = new JButton("Load Preset");
-        loadBtn.setAlignmentX(0f);
-        leftPanel.add(loadBtn);
-        leftPanel.add(Box.createVerticalStrut(16));
 
         JButton resetBtn = new JButton("Reset All to Zero");
         resetBtn.setAlignmentX(0f);
@@ -3009,13 +3004,11 @@ public class PoseEditor extends JFrame {
                 case "Raptor":    skeleton = buildRaptor(); break;
                 case "Waterfowl": skeleton = buildWaterfowl(); break;
             }
-            updatePoseCombo();
+            buildPoseButtons();
             initGeometrySliders();
             previewPanel.repaint();
             updateExportText();
         });
-
-        loadBtn.addActionListener(e -> loadSelectedPreset());
 
         resetBtn.addActionListener(e -> {
             batchUpdating = true;
@@ -3067,22 +3060,125 @@ public class PoseEditor extends JFrame {
 
         exportAllBtn.addActionListener(e -> exportAllPresets());
 
-        // Load default preset
+        // Build pose buttons and load default preset
+        buildPoseButtons();
         loadSelectedPreset();
     }
 
-    void updatePoseCombo() {
-        poseCombo.removeAllItems();
+    /** Rebuild the pose button panel for the current archetype. */
+    void buildPoseButtons() {
+        if (poseBtnPanel == null) return;
+        poseBtnPanel.removeAll();
+        poseButtons.clear();
+
         List<Preset> presets = allPresets.get(currentArchetype);
-        if (presets != null) {
-            for (Preset p : presets) {
-                poseCombo.addItem(p.name);
+        if (presets == null) { poseBtnPanel.revalidate(); poseBtnPanel.repaint(); return; }
+
+        Font btnFont = new Font("SansSerif", Font.PLAIN, 11);
+
+        // Split into static and cyclic groups
+        List<Preset> staticPresets = new ArrayList<>();
+        List<Preset> cyclicPresets = new ArrayList<>();
+        for (Preset p : presets) {
+            if (p.isCyclic()) cyclicPresets.add(p);
+            else staticPresets.add(p);
+        }
+
+        poseBtnPanel.setLayout(new BoxLayout(poseBtnPanel, BoxLayout.Y_AXIS));
+
+        // Static row
+        if (!staticPresets.isEmpty()) {
+            JLabel lbl = new JLabel("Poses:");
+            lbl.setFont(new Font("SansSerif", Font.BOLD, 10));
+            lbl.setAlignmentX(0f);
+            poseBtnPanel.add(lbl);
+            JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 2));
+            row.setAlignmentX(0f);
+            for (Preset p : staticPresets) {
+                JButton btn = makePresetButton(p, btnFont);
+                row.add(btn);
+                poseButtons.put(p.name, btn);
             }
+            poseBtnPanel.add(row);
+        }
+
+        // Cyclic row
+        if (!cyclicPresets.isEmpty()) {
+            JLabel lbl = new JLabel("Cyclic:");
+            lbl.setFont(new Font("SansSerif", Font.BOLD, 10));
+            lbl.setAlignmentX(0f);
+            poseBtnPanel.add(lbl);
+            JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 2));
+            row.setAlignmentX(0f);
+            for (Preset p : cyclicPresets) {
+                JButton btn = makePresetButton(p, btnFont);
+                row.add(btn);
+                poseButtons.put(p.name, btn);
+            }
+            poseBtnPanel.add(row);
+        }
+
+        poseBtnPanel.revalidate();
+        poseBtnPanel.repaint();
+        updateActivePoseButton();
+    }
+
+    JButton makePresetButton(Preset p, Font f) {
+        // Shorten cyclic names: "wingbeat: wings_up" -> "Wing↑" etc.
+        String label = shortenPresetName(p.name);
+        JButton btn = new JButton(label);
+        btn.setFont(f);
+        btn.setMargin(new Insets(1, 4, 1, 4));
+        btn.setToolTipText(p.name);
+        btn.addActionListener(e -> loadPresetByName(p.name));
+        return btn;
+    }
+
+    String shortenPresetName(String name) {
+        // Cyclic names like "wingbeat: wings_up" / "wingbeat: wings_down"
+        // walk: legs_forward / legs_back, hop: crouch / spring
+        // raptor_wingbeat: up/down, waterfowl_wingbeat: up/down
+        if (name.contains(": ")) {
+            String[] parts = name.split(": ", 2);
+            String anim = parts[0];
+            String ep = parts[1];
+            // Map to short unicode labels
+            if (ep.equals("wings_up") || ep.equals("up")) return "Wing\u2191";
+            if (ep.equals("wings_down") || ep.equals("down")) return "Wing\u2193";
+            if (ep.equals("legs_forward")) return "Walk\u2192";
+            if (ep.equals("legs_back")) return "Walk\u2190";
+            if (ep.equals("crouch")) return "Hop\u2193";
+            if (ep.equals("spring")) return "Hop\u2191";
+            // Generic fallback: truncate
+            return anim.substring(0, Math.min(4, anim.length())) + ":" + ep.substring(0, Math.min(3, ep.length()));
+        }
+        // Static names
+        switch (name) {
+            case "flying_cruise":  return "Cruise";
+            case "flying_takeoff": return "Takeoff";
+            case "flying_land":    return "Land";
+            case "raptor_perch":   return "R.Perch";
+            default:
+                // Capitalise first letter
+                return name.substring(0, 1).toUpperCase() + name.substring(1);
         }
     }
 
-    void loadSelectedPreset() {
-        String poseName = (String) poseCombo.getSelectedItem();
+    void updateActivePoseButton() {
+        Color highlight = new Color(180, 220, 255);
+        Color normal = null; // default L&F background
+        for (var entry : poseButtons.entrySet()) {
+            boolean active = entry.getKey().equals(currentPoseName);
+            JButton btn = entry.getValue();
+            btn.setBackground(active ? highlight : normal);
+            btn.setOpaque(active);
+            btn.setBorderPainted(true);
+        }
+        if (poseBtnPanel != null) poseBtnPanel.repaint();
+    }
+
+    /** Load a preset by name directly (used by pose buttons and default load). */
+    void loadPresetByName(String poseName) {
         if (poseName == null) return;
         currentPoseName = poseName;
 
@@ -3157,6 +3253,15 @@ public class PoseEditor extends JFrame {
         previewPanel.repaint();
         updateExportText();
         captureState();
+        updateActivePoseButton();
+    }
+
+    /** Load the first preset for the current archetype (used at startup). */
+    void loadSelectedPreset() {
+        List<Preset> presets = allPresets.get(currentArchetype);
+        if (presets != null && !presets.isEmpty()) {
+            loadPresetByName(presets.get(0).name);
+        }
     }
 
     /** True if this preset represents the "A" (phase=0) endpoint. */
@@ -3313,6 +3418,18 @@ public class PoseEditor extends JFrame {
                         borderColour),
                 BorderFactory.createEmptyBorder(4, 4, 4, 4)));
 
+        // "Copy from..." button at the top of each section
+        JButton copyFromBtn = new JButton("\uD83D\uDCCB Copy from...");
+        copyFromBtn.setFont(new Font("SansSerif", Font.PLAIN, 10));
+        copyFromBtn.setMargin(new Insets(1, 4, 1, 4));
+        copyFromBtn.setAlignmentX(0f);
+        copyFromBtn.addActionListener(e -> showCopyFromMenu(copyFromBtn, jointNames));
+        JPanel copyRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        copyRow.setAlignmentX(0f);
+        copyRow.add(copyFromBtn);
+        section.add(copyRow);
+        section.add(Box.createVerticalStrut(2));
+
         for (String name : jointNames) {
             JointSliderGroup group = new JointSliderGroup(name);
             sliderGroups.put(name, group);
@@ -3330,6 +3447,47 @@ public class PoseEditor extends JFrame {
         allSections.add(section);
         sliderPanel.add(section);
         sliderPanel.add(Box.createVerticalStrut(4));
+    }
+
+    /**
+     * Show a popup menu listing all presets. When one is chosen, copy only the joints
+     * in {@code sectionJointNames} from that preset into the current sliders.
+     */
+    void showCopyFromMenu(JButton anchor, String[] sectionJointNames) {
+        List<Preset> presets = allPresets.get(currentArchetype);
+        if (presets == null || presets.isEmpty()) return;
+
+        JPopupMenu menu = new JPopupMenu("Copy from...");
+        for (Preset p : presets) {
+            JMenuItem item = new JMenuItem(p.name);
+            item.addActionListener(ev -> copyJointsFromPreset(p, sectionJointNames));
+            menu.add(item);
+        }
+        menu.show(anchor, 0, anchor.getHeight());
+    }
+
+    /**
+     * Copy only the joints in {@code sectionJointNames} from the given preset into
+     * the current sliders. All other sections remain unchanged.
+     */
+    void copyJointsFromPreset(Preset preset, String[] sectionJointNames) {
+        captureState();
+        batchUpdating = true;
+        for (String name : sectionJointNames) {
+            float[] v = preset.joints.get(name);
+            JointSliderGroup g = sliderGroups.get(name);
+            if (g != null) {
+                if (v != null) {
+                    g.setValues(v[0], v[1], v[2]);
+                } else {
+                    g.setValues(0f, 0f, 0f);  // joint not in preset → zero
+                }
+            }
+        }
+        batchUpdating = false;
+        previewPanel.repaint();
+        updateExportText();
+        if (editingCyclic) updateCurrentEndpointFromSliders();
     }
 
     void updateSliderVisibility() {
