@@ -755,27 +755,84 @@ public class PoseEditor extends JFrame {
     class PreviewPanel extends JPanel {
         final float SCALE = 14f;
 
+        // 3D camera rotation (mouse drag)
+        double camYaw = 0.4;    // initial slight angle
+        double camPitch = 0.3;
+        int dragStartX, dragStartY;
+        double dragStartYaw, dragStartPitch;
+
         PreviewPanel() {
-            setPreferredSize(new Dimension(900, 400));
-            setMinimumSize(new Dimension(600, 300));
+            setPreferredSize(new Dimension(900, 600));
+            setOpaque(true);
             setBackground(new Color(245, 245, 240));
+            setMinimumSize(new Dimension(600, 400));
+
+            // Mouse drag for 3D rotation (only in bottom-right quadrant)
+            addMouseListener(new MouseAdapter() {
+                @Override
+                public void mousePressed(MouseEvent e) {
+                    dragStartX = e.getX();
+                    dragStartY = e.getY();
+                    dragStartYaw = camYaw;
+                    dragStartPitch = camPitch;
+                }
+            });
+            addMouseMotionListener(new MouseMotionAdapter() {
+                @Override
+                public void mouseDragged(MouseEvent e) {
+                    // Only drag in bottom-right quadrant (the 3D view)
+                    int w = getWidth(), h = getHeight();
+                    if (dragStartX > w / 2 && dragStartY > h / 2) {
+                        camYaw = dragStartYaw + (e.getX() - dragStartX) * 0.01;
+                        camPitch = dragStartPitch + (e.getY() - dragStartY) * 0.01;
+                        camPitch = Math.max(-1.5, Math.min(1.5, camPitch));
+                        repaint();
+                    }
+                }
+            });
         }
 
-        int toScreenX(double worldCoord, int panelW, int panelIndex) {
-            return panelIndex * panelW + panelW / 2 + (int)(worldCoord * SCALE);
+        // For 2x2 grid: col 0-1, row 0-1
+        int toScreenX(double worldCoord, int cellW, int col, int row) {
+            return col * cellW + cellW / 2 + (int)(worldCoord * SCALE);
         }
 
-        int toScreenY(double worldCoord, int panelH) {
-            return panelH / 2 + (int)((worldCoord - 19f) * SCALE);
+        int toScreenY(double worldCoord, int cellH, int col, int row) {
+            return row * cellH + cellH / 2 + (int)((worldCoord - 19f) * SCALE);
         }
 
-        void drawCuboid(Graphics2D g, Joint j, View view, int panelW, int panelH, int panelIndex) {
+        // 3D perspective projection: rotate point by camera yaw/pitch, then project
+        double[] project3D(double[] p, int cellW, int cellH, int col, int row) {
+            // Center around bird's body (approximately Y=19)
+            double px = p[0], py = p[1] - 19.0, pz = p[2];
+
+            // Rotate by camera yaw (around Y)
+            double cosY = Math.cos(camYaw), sinY = Math.sin(camYaw);
+            double rx = px * cosY + pz * sinY;
+            double rz = -px * sinY + pz * cosY;
+            double ry = py;
+
+            // Rotate by camera pitch (around X)
+            double cosP = Math.cos(camPitch), sinP = Math.sin(camPitch);
+            double ry2 = ry * cosP - rz * sinP;
+            double rz2 = ry * sinP + rz * cosP;
+
+            // Simple perspective (distance = 30)
+            double dist = 30.0;
+            double scale = dist / (dist + rz2) * SCALE;
+
+            double screenX = col * cellW + cellW / 2 + rx * scale;
+            double screenY = row * cellH + cellH / 2 + ry2 * scale;
+            return new double[]{screenX, screenY, rz2}; // z for depth sorting
+        }
+
+        void drawCuboid(Graphics2D g, Joint j, View view, int cellW, int cellH, int col, int row) {
             double[][] corners = getCuboidCorners(j);
             int[] sx = new int[8], sy = new int[8];
             for (int i = 0; i < 8; i++) {
                 double[] p2d = project(corners[i], view);
-                sx[i] = toScreenX(p2d[0], panelW, panelIndex);
-                sy[i] = toScreenY(p2d[1], panelH);
+                sx[i] = toScreenX(p2d[0], cellW, col, row);
+                sy[i] = toScreenY(p2d[1], cellH, col, row);
             }
             Color fill = new Color(j.colour.getRed(), j.colour.getGreen(), j.colour.getBlue(), 60);
             g.setColor(fill);
@@ -798,10 +855,10 @@ public class PoseEditor extends JFrame {
             }
         }
 
-        void drawJointDot(Graphics2D g, Joint j, View view, int panelW, int panelH, int panelIndex) {
+        void drawJointDot(Graphics2D g, Joint j, View view, int cellW, int cellH, int col, int row) {
             double[] p2d = project(j.worldPos, view);
-            int x = toScreenX(p2d[0], panelW, panelIndex);
-            int y = toScreenY(p2d[1], panelH);
+            int x = toScreenX(p2d[0], cellW, col, row);
+            int y = toScreenY(p2d[1], cellH, col, row);
             g.setColor(j.colour);
             g.fillOval(x-3, y-3, 6, 6);
             g.setColor(j.colour.darker().darker());
@@ -809,30 +866,87 @@ public class PoseEditor extends JFrame {
             g.drawOval(x-3, y-3, 6, 6);
         }
 
-        void drawGroundPlane(Graphics2D g, int panelW, int panelH, int panelIndex) {
-            int groundY = toScreenY(24.0, panelH);
+        void drawGroundPlane(Graphics2D g, int cellW, int cellH, int col, int row) {
+            int groundY = toScreenY(24.0, cellH, col, row);
             g.setColor(new Color(140, 100, 60, 100));
             g.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER,
                     10f, new float[]{6f, 4f}, 0f));
-            int x0 = panelIndex * panelW + 10;
-            int x1 = panelIndex * panelW + panelW - 10;
+            int x0 = col * cellW + 10;
+            int x1 = col * cellW + cellW - 10;
             g.drawLine(x0, groundY, x1, groundY);
         }
 
-        void drawPanel(Graphics2D g, View view, int panelW, int panelH, int panelIndex, String label) {
-            int x0 = panelIndex * panelW;
+        void drawPanel(Graphics2D g, View view, int cellW, int cellH, int col, int row, String label) {
+            int x0 = col * cellW, y0 = row * cellH;
             g.setColor(new Color(245, 245, 240));
-            g.fillRect(x0, 0, panelW, panelH);
+            g.fillRect(x0, y0, cellW, cellH);
             g.setColor(new Color(180, 180, 180));
             g.setStroke(new BasicStroke(1f));
-            g.drawRect(x0, 0, panelW - 1, panelH - 1);
+            g.drawRect(x0, y0, cellW - 1, cellH - 1);
             g.setColor(new Color(100, 100, 100));
             g.setFont(new Font("SansSerif", Font.BOLD, 12));
-            g.drawString(label, x0 + 8, 16);
-            drawGroundPlane(g, panelW, panelH, panelIndex);
+            g.drawString(label, x0 + 8, y0 + 16);
+            drawGroundPlane(g, cellW, cellH, col, row);
 
-            for (Joint j : skeleton.allJoints) drawCuboid(g, j, view, panelW, panelH, panelIndex);
-            for (Joint j : skeleton.allJoints) drawJointDot(g, j, view, panelW, panelH, panelIndex);
+            for (Joint j : skeleton.allJoints) drawCuboid(g, j, view, cellW, cellH, col, row);
+            for (Joint j : skeleton.allJoints) drawJointDot(g, j, view, cellW, cellH, col, row);
+        }
+
+        void drawCuboid3D(Graphics2D g, Joint j, int cellW, int cellH, int col, int row) {
+            double[][] corners = getCuboidCorners(j);
+            int[] sx = new int[8], sy = new int[8];
+            double[] depths = new double[8];
+            for (int i = 0; i < 8; i++) {
+                double[] p3 = project3D(corners[i], cellW, cellH, col, row);
+                sx[i] = (int) p3[0];
+                sy[i] = (int) p3[1];
+                depths[i] = p3[2];
+            }
+            Color fill = new Color(j.colour.getRed(), j.colour.getGreen(), j.colour.getBlue(), 60);
+            g.setColor(fill);
+            int[][] faces = {
+                    {0,1,2,3},{4,5,6,7},{0,3,7,4},{1,2,6,5},{0,1,5,4},{3,2,6,7}
+            };
+            for (int[] face : faces) {
+                int[] fx = new int[4], fy = new int[4];
+                for (int i = 0; i < 4; i++) { fx[i] = sx[face[i]]; fy[i] = sy[face[i]]; }
+                g.fillPolygon(fx, fy, 4);
+            }
+            Color edge = new Color(j.colour.getRed()/2, j.colour.getGreen()/2, j.colour.getBlue()/2, 200);
+            g.setColor(edge);
+            g.setStroke(new BasicStroke(1.2f));
+            int[][] edges = {
+                    {0,1},{1,2},{2,3},{3,0},{4,5},{5,6},{6,7},{7,4},{0,4},{1,5},{2,6},{3,7}
+            };
+            for (int[] e : edges) {
+                g.drawLine(sx[e[0]], sy[e[0]], sx[e[1]], sy[e[1]]);
+            }
+        }
+
+        void drawJointDot3D(Graphics2D g, Joint j, int cellW, int cellH, int col, int row) {
+            double[] p3 = project3D(j.worldPos, cellW, cellH, col, row);
+            int x = (int) p3[0];
+            int y = (int) p3[1];
+            g.setColor(j.colour);
+            g.fillOval(x-3, y-3, 6, 6);
+            g.setColor(j.colour.darker().darker());
+            g.setStroke(new BasicStroke(1f));
+            g.drawOval(x-3, y-3, 6, 6);
+        }
+
+        void draw3DPanel(Graphics2D g, int cellW, int cellH, int col, int row, String label) {
+            int x0 = col * cellW, y0 = row * cellH;
+            g.setColor(new Color(235, 235, 230));
+            g.fillRect(x0, y0, cellW, cellH);
+            g.setColor(new Color(180, 180, 180));
+            g.setStroke(new BasicStroke(1f));
+            g.drawRect(x0, y0, cellW - 1, cellH - 1);
+            g.setColor(new Color(100, 100, 100));
+            g.setFont(new Font("SansSerif", Font.BOLD, 12));
+            g.drawString(label, x0 + 8, y0 + 16);
+
+            for (Joint j : skeleton.allJoints) drawCuboid3D(g, j, cellW, cellH, col, row);
+            for (Joint j : skeleton.allJoints) drawJointDot3D(g, j, cellW, cellH, col, row);
         }
 
         @Override
@@ -842,16 +956,17 @@ public class PoseEditor extends JFrame {
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
             int w = getWidth(), h = getHeight();
-            int panelW = w / 3;
+            int cellW = w / 2, cellH = h / 2;
 
             // Apply current slider values and compute FK
             Map<String, float[]> poseData = getCurrentPose();
             applyPose(skeleton, poseData);
             computeFK(skeleton);
 
-            drawPanel(g, View.FRONT, panelW, h, 0, "FRONT");
-            drawPanel(g, View.SIDE,  panelW, h, 1, "SIDE");
-            drawPanel(g, View.TOP,   panelW, h, 2, "TOP");
+            drawPanel(g, View.FRONT, cellW, cellH, 0, 0, "FRONT (from +Z)");
+            drawPanel(g, View.SIDE,  cellW, cellH, 1, 0, "SIDE (from +X)");
+            drawPanel(g, View.TOP,   cellW, cellH, 0, 1, "TOP (from -Y)");
+            draw3DPanel(g, cellW, cellH, 1, 1, "3D (drag to rotate)");
 
             // Overlay: archetype + pose name
             g.setColor(new Color(40, 40, 40));
@@ -1317,6 +1432,7 @@ public class PoseEditor extends JFrame {
 
         // --- Center panel: preview ---
         previewPanel = new PreviewPanel();
+        previewPanel.setMinimumSize(new Dimension(600, 300));
 
         // --- Right panel: sliders ---
         sliderPanel = new JPanel();
@@ -1346,8 +1462,8 @@ public class PoseEditor extends JFrame {
 
         // --- Layout ---
         JSplitPane centerSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, previewPanel, sliderScrollPane);
-        centerSplit.setResizeWeight(1.0);
-        centerSplit.setDividerLocation(900);
+        centerSplit.setResizeWeight(0.7);  // preview gets 70% of space
+        centerSplit.setDividerLocation(700);
 
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.add(leftPanel, BorderLayout.WEST);
