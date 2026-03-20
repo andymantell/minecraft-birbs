@@ -27,3 +27,5 @@ tools/*.png
 tools/*.class
 tools/*_b64.txt
 .superpowers/
+tools/exported_pose.java
+tools/hs_err_*
