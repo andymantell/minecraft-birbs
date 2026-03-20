@@ -2554,6 +2554,7 @@ public class PoseEditor extends JFrame {
     javax.swing.Timer animTimer;
     JSlider phaseSlider;
     JSlider speedSlider;
+    JPanel animControlsPanel;
     JButton playPauseBtn;
     JLabel cyclicStatusLabel;
 
@@ -2834,11 +2835,16 @@ public class PoseEditor extends JFrame {
         leftPanel.add(cyclicStatusLabel);
         leftPanel.add(Box.createVerticalStrut(6));
 
-        // --- Animation Phase slider ---
+        // --- Animation controls (only visible when cyclic preset loaded) ---
+        animControlsPanel = new JPanel();
+        animControlsPanel.setLayout(new BoxLayout(animControlsPanel, BoxLayout.Y_AXIS));
+        animControlsPanel.setAlignmentX(0f);
+        animControlsPanel.setVisible(false);  // hidden by default
+
         JLabel phaseLabel = new JLabel("Animation Phase:");
         phaseLabel.setAlignmentX(0f);
         phaseLabel.setFont(new Font("SansSerif", Font.PLAIN, 11));
-        leftPanel.add(phaseLabel);
+        animControlsPanel.add(phaseLabel);
         phaseSlider = new JSlider(0, 100, 0);
         phaseSlider.setMaximumSize(new Dimension(200, 22));
         phaseSlider.setAlignmentX(0f);
@@ -2849,10 +2855,9 @@ public class PoseEditor extends JFrame {
                 applyPhase(animPhase);
             }
         });
-        leftPanel.add(phaseSlider);
-        leftPanel.add(Box.createVerticalStrut(4));
+        animControlsPanel.add(phaseSlider);
+        animControlsPanel.add(Box.createVerticalStrut(4));
 
-        // --- Play/Pause + Speed controls ---
         JPanel playRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
         playRow.setAlignmentX(0f);
         playRow.setMaximumSize(new Dimension(200, 32));
@@ -2860,17 +2865,14 @@ public class PoseEditor extends JFrame {
         playPauseBtn.setFont(new Font("SansSerif", Font.BOLD, 11));
         playPauseBtn.addActionListener(e -> togglePlayPause());
         playRow.add(playPauseBtn);
-        leftPanel.add(playRow);
-        leftPanel.add(Box.createVerticalStrut(4));
+        animControlsPanel.add(playRow);
+        animControlsPanel.add(Box.createVerticalStrut(4));
 
-        JLabel speedLabel = new JLabel("Flap Freq: 1.0 (1.6 flaps/sec)");
+        JLabel speedLabel = new JLabel("Flap Freq: 1.0 (3.2 flaps/sec)");
         speedLabel.setAlignmentX(0f);
         speedLabel.setFont(new Font("SansSerif", Font.PLAIN, 11));
-        leftPanel.add(speedLabel);
-        // Flap frequency slider: maps to MC flapFrequency value (0.1 to 3.0)
-        // MC formula: flapAngle = sin(ageInTicks * freq) * amplitude
-        // flaps/sec = freq * 20 / (2*PI)
-        speedSlider = new JSlider(1, 30, 10);  // 0.1 to 3.0 in steps of 0.1
+        animControlsPanel.add(speedLabel);
+        speedSlider = new JSlider(1, 30, 10);
         speedSlider.setMaximumSize(new Dimension(200, 22));
         speedSlider.setAlignmentX(0f);
         speedSlider.addChangeListener(e -> {
@@ -2878,8 +2880,10 @@ public class PoseEditor extends JFrame {
             float flapsPerSec = animSpeed * 20f / (2f * (float) Math.PI);
             speedLabel.setText(String.format("Flap Freq: %.1f (%.1f flaps/sec)", animSpeed, flapsPerSec));
         });
-        leftPanel.add(speedSlider);
-        leftPanel.add(Box.createVerticalStrut(4));
+        animControlsPanel.add(speedSlider);
+        animControlsPanel.add(Box.createVerticalStrut(4));
+
+        leftPanel.add(animControlsPanel);
 
         // Set up the animation timer using MC-equivalent math
         // In MC: flapAngle = sin(ageInTicks * flapFrequency) * flapAmplitude
@@ -2972,6 +2976,7 @@ public class PoseEditor extends JFrame {
                 if (playPauseBtn != null) playPauseBtn.setText("Play");
             }
             editingCyclic = false;
+            animControlsPanel.setVisible(false);
             cyclicBasePose = null; cyclicOffsetA = null; cyclicOffsetB = null;
             cyclicAnimName = null; cyclicEndpoint = null;
             updateCyclicStatusLabel();
@@ -3076,6 +3081,7 @@ public class PoseEditor extends JFrame {
         // Set up cyclic editing state
         if (found.isCyclic()) {
             editingCyclic = true;
+            animControlsPanel.setVisible(true);
             cyclicBasePose = found.basePose;
             cyclicOffsetA = found.offsetA;
             cyclicOffsetB = found.offsetB;
@@ -3094,6 +3100,7 @@ public class PoseEditor extends JFrame {
             updateCyclicStatusLabel();
         } else {
             editingCyclic = false;
+            animControlsPanel.setVisible(false);
             cyclicBasePose = null;
             cyclicOffsetA = null;
             cyclicOffsetB = null;
