@@ -118,14 +118,14 @@ public abstract class AbstractBirdModel<S extends BirdRenderState> extends Entit
         // 2. Load skeleton state from persistent storage
         skeleton.loadState(animState.skeletonState);
 
-        // 3. Compute deltaTime
+        // 3. Compute deltaTime in seconds (ageInTicks is in game ticks, 20 ticks/sec)
         float dt;
         if (animState.skeletonState.prevAgeAndPartial < 0) {
             // First frame — no previous timestamp
             dt = 0.05f;
         } else {
-            dt = state.ageInTicks - animState.skeletonState.prevAgeAndPartial;
-            dt = Math.clamp(dt, 0.001f, 0.5f);
+            float dtTicks = state.ageInTicks - animState.skeletonState.prevAgeAndPartial;
+            dt = Math.clamp(dtTicks / 20.0f, 0.001f, 0.5f);
         }
         animState.skeletonState.prevAgeAndPartial = state.ageInTicks;
 
