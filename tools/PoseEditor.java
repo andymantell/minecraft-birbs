@@ -848,6 +848,7 @@ public class PoseEditor extends JFrame {
                     if (selectedJoint != null) {
                         int handleHit = hitTestHandles(mx, my, cellW, cellH);
                         if (handleHit > 0) {
+                            captureState();  // snapshot BEFORE drag starts
                             draggingAxis = handleHit;
                             draggingJoint = selectedJoint;
                             handleDragStartX = mx;
@@ -902,9 +903,6 @@ public class PoseEditor extends JFrame {
 
                 @Override
                 public void mouseReleased(MouseEvent e) {
-                    if (draggingAxis > 0) {
-                        captureState();
-                    }
                     draggingAxis = 0;
                     draggingJoint = null;
                     dragging3DCamera = false;
@@ -1504,15 +1502,19 @@ public class PoseEditor extends JFrame {
         }
 
         void linkRotSliderAndField(JSlider slider, JTextField field) {
+            // Capture state BEFORE slider drag starts
+            slider.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mousePressed(MouseEvent e) {
+                    if (!batchUpdating) captureState();
+                }
+            });
             slider.addChangeListener(e -> {
                 if (!batchUpdating) {
                     float val = slider.getValue() / 100f;
                     field.setText(String.format("%.2f", val));
                     previewPanel.repaint();
                     updateExportText();
-                    if (!slider.getValueIsAdjusting()) {
-                        captureState();
-                    }
                 }
             });
             field.addActionListener(e -> {
@@ -1988,21 +1990,23 @@ public class PoseEditor extends JFrame {
         setSize(1400, 800);
         setLocationRelativeTo(null);
 
-        // --- Keyboard shortcuts ---
-        getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-                .put(KeyStroke.getKeyStroke(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK), "undo");
-        getRootPane().getActionMap().put("undo", new AbstractAction() {
-            public void actionPerformed(ActionEvent e) { undo(); }
-        });
-        getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-                .put(KeyStroke.getKeyStroke(KeyEvent.VK_Y, InputEvent.CTRL_DOWN_MASK), "redo");
-        getRootPane().getActionMap().put("redo", new AbstractAction() {
-            public void actionPerformed(ActionEvent e) { redo(); }
-        });
-        getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-                .put(KeyStroke.getKeyStroke(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "redo2");
-        getRootPane().getActionMap().put("redo2", new AbstractAction() {
-            public void actionPerformed(ActionEvent e) { redo(); }
+        // --- Keyboard shortcuts (global, works even when sliders/fields have focus) ---
+        KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(e -> {
+            if (e.getID() == KeyEvent.KEY_PRESSED) {
+                if (e.isControlDown() && e.getKeyCode() == KeyEvent.VK_Z) {
+                    if (e.isShiftDown()) {
+                        redo();
+                    } else {
+                        undo();
+                    }
+                    return true;  // consumed
+                }
+                if (e.isControlDown() && e.getKeyCode() == KeyEvent.VK_Y) {
+                    redo();
+                    return true;
+                }
+            }
+            return false;
         });
 
         // --- Event handlers ---
