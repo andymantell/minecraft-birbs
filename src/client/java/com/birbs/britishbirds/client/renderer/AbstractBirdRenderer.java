@@ -4,6 +4,9 @@ import com.birbs.britishbirds.entity.base.AbstractBritishBird;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Base renderer for all British bird species.
@@ -30,6 +33,15 @@ public abstract class AbstractBirdRenderer<E extends AbstractBritishBird, S exte
             state.flapAngle = 0.0f;
         }
 
+        // Skeletal animation fields
+        state.entityId = entity.getId();
+        state.yawDelta = entity.getYRot() - entity.yRotO;
+        state.verticalVelocity = (float) entity.getDeltaMovement().y;
+        state.speed = (float) entity.getDeltaMovement().horizontalDistance();
+        state.justLanded = !state.isFlying && entity.onGround() && entity.fallDistance > 0.0f;
+        state.justStartled = false; // stub — species extractors will set this later
+        state.lookTarget = findLookTarget(entity, state);
+
         extractSpeciesState(entity, state, partialTick);
     }
 
@@ -52,5 +64,28 @@ public abstract class AbstractBirdRenderer<E extends AbstractBritishBird, S exte
     /** Extract any species-specific render state fields. Called after common extraction. */
     protected void extractSpeciesState(E entity, S state, float partialTick) {
         // Default: nothing extra. Override in subclasses.
+    }
+
+    /**
+     * Find the nearest LivingEntity within 8 blocks for head-tracking.
+     * Throttled to recompute only every 5 ticks to avoid per-frame entity scans.
+     */
+    protected Vec3 findLookTarget(E entity, S state) {
+        if (entity.tickCount % 5 != 0) {
+            return state.lookTarget; // return cached value from previous extraction
+        }
+        AABB searchBox = entity.getBoundingBox().inflate(8.0);
+        var nearby = entity.level().getEntitiesOfClass(LivingEntity.class, searchBox, e -> e != entity);
+        Vec3 entityPos = entity.position();
+        double closestDist = Double.MAX_VALUE;
+        LivingEntity closest = null;
+        for (LivingEntity candidate : nearby) {
+            double dist = candidate.position().distanceToSqr(entityPos);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closest = candidate;
+            }
+        }
+        return closest != null ? closest.position() : null;
     }
 }
