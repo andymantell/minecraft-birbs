@@ -758,6 +758,12 @@ public class PoseEditor extends JFrame {
         // Per-panel zoom levels
         float zoomFront = 1.0f, zoomSide = 1.0f, zoomTop = 1.0f, zoom3D = 1.0f;
 
+        // Per-panel pan offsets (in screen pixels)
+        float panFrontX = 0, panFrontY = 0;
+        float panSideX  = 0, panSideY  = 0;
+        float panTopX   = 0, panTopY   = 0;
+        float pan3DX    = 0, pan3DY    = 0;
+
         // 3D camera rotation (mouse drag)
         double camYaw = 0.4;    // initial slight angle
         double camPitch = 0.3;
@@ -784,20 +790,46 @@ public class PoseEditor extends JFrame {
             setBackground(new Color(245, 245, 240));
             setMinimumSize(new Dimension(600, 400));
 
-            // Mouse wheel zoom per panel
+            // Mouse wheel zoom per panel — zooms toward mouse cursor position
             addMouseWheelListener(e -> {
                 int w = getWidth(), h = getHeight();
-                boolean rightCol = e.getX() > w / 2;
-                boolean bottomRow = e.getY() > h / 2;
+                int cellW = w / 2, cellH = h / 2;
+                int mx = e.getX(), my = e.getY();
+                boolean rightCol = mx > cellW;
+                boolean bottomRow = my > cellH;
                 float factor = e.getWheelRotation() < 0 ? 1.1f : 0.9f;
+
+                // Panel centre in screen coords
+                int panelCX = (rightCol ? 1 : 0) * cellW + cellW / 2;
+                int panelCY = (bottomRow ? 1 : 0) * cellH + cellH / 2;
+                // Mouse position relative to panel centre
+                float relX = mx - panelCX;
+                float relY = my - panelCY;
+
                 if (!rightCol && !bottomRow) {
+                    float oldZoom = zoomFront;
                     zoomFront = Math.max(0.3f, Math.min(5.0f, zoomFront * factor));
+                    float ratio = zoomFront / oldZoom;
+                    panFrontX = panFrontX * ratio + relX * (1 - ratio);
+                    panFrontY = panFrontY * ratio + relY * (1 - ratio);
                 } else if (rightCol && !bottomRow) {
+                    float oldZoom = zoomSide;
                     zoomSide = Math.max(0.3f, Math.min(5.0f, zoomSide * factor));
+                    float ratio = zoomSide / oldZoom;
+                    panSideX = panSideX * ratio + relX * (1 - ratio);
+                    panSideY = panSideY * ratio + relY * (1 - ratio);
                 } else if (!rightCol && bottomRow) {
+                    float oldZoom = zoomTop;
                     zoomTop = Math.max(0.3f, Math.min(5.0f, zoomTop * factor));
+                    float ratio = zoomTop / oldZoom;
+                    panTopX = panTopX * ratio + relX * (1 - ratio);
+                    panTopY = panTopY * ratio + relY * (1 - ratio);
                 } else {
+                    float oldZoom = zoom3D;
                     zoom3D = Math.max(0.3f, Math.min(5.0f, zoom3D * factor));
+                    float ratio = zoom3D / oldZoom;
+                    pan3DX = pan3DX * ratio + relX * (1 - ratio);
+                    pan3DY = pan3DY * ratio + relY * (1 - ratio);
                 }
                 repaint();
             });
@@ -935,6 +967,14 @@ public class PoseEditor extends JFrame {
             return switch (q) { case 0 -> zoomFront; case 1 -> zoomSide; case 2 -> zoomTop; default -> zoom3D; };
         }
 
+        float panXForQuadrant(int q) {
+            return switch (q) { case 0 -> panFrontX; case 1 -> panSideX; case 2 -> panTopX; default -> pan3DX; };
+        }
+
+        float panYForQuadrant(int q) {
+            return switch (q) { case 0 -> panFrontY; case 1 -> panSideY; case 2 -> panTopY; default -> pan3DY; };
+        }
+
         /** Hit test rotation handles around selected joint. Returns axis (1/2/3) or 0 for no hit. */
         int hitTestHandles(int mx, int my, int cellW, int cellH) {
             if (selectedJoint == null) return 0;
@@ -943,6 +983,8 @@ public class PoseEditor extends JFrame {
 
             int q = getQuadrant(mx, my, cellW, cellH);
             float es = SCALE * zoomForQuadrant(q);
+            float px = panXForQuadrant(q);
+            float py = panYForQuadrant(q);
             int col = (q == 1 || q == 3) ? 1 : 0;
             int row = (q == 2 || q == 3) ? 1 : 0;
 
@@ -950,10 +992,10 @@ public class PoseEditor extends JFrame {
             if (q < 3) {
                 View view = q == 0 ? View.FRONT : q == 1 ? View.SIDE : View.TOP;
                 double[] p2d = project(j.worldPos, view);
-                jx = toScreenX(p2d[0], cellW, col, row, es);
-                jy = toScreenY(p2d[1], cellH, col, row, es);
+                jx = toScreenX(p2d[0], cellW, col, row, es, px);
+                jy = toScreenY(p2d[1], cellH, col, row, es, py);
             } else {
-                double[] p3 = project3D(j.worldPos, cellW, cellH, col, row, es);
+                double[] p3 = project3D(j.worldPos, cellW, cellH, col, row, es, px, py);
                 jx = (int) p3[0];
                 jy = (int) p3[1];
             }
@@ -971,6 +1013,8 @@ public class PoseEditor extends JFrame {
         String hitTestJoint(int mx, int my, int cellW, int cellH) {
             int q = getQuadrant(mx, my, cellW, cellH);
             float es = SCALE * zoomForQuadrant(q);
+            float px = panXForQuadrant(q);
+            float py = panYForQuadrant(q);
             int col = (q == 1 || q == 3) ? 1 : 0;
             int row = (q == 2 || q == 3) ? 1 : 0;
 
@@ -987,10 +1031,10 @@ public class PoseEditor extends JFrame {
                     if (q < 3) {
                         View view = q == 0 ? View.FRONT : q == 1 ? View.SIDE : View.TOP;
                         double[] p2d = project(corners[i], view);
-                        sx = toScreenX(p2d[0], cellW, col, row, es);
-                        sy = toScreenY(p2d[1], cellH, col, row, es);
+                        sx = toScreenX(p2d[0], cellW, col, row, es, px);
+                        sy = toScreenY(p2d[1], cellH, col, row, es, py);
                     } else {
-                        double[] p3 = project3D(corners[i], cellW, cellH, col, row, es);
+                        double[] p3 = project3D(corners[i], cellW, cellH, col, row, es, px, py);
                         sx = (int) p3[0];
                         sy = (int) p3[1];
                     }
@@ -1011,17 +1055,17 @@ public class PoseEditor extends JFrame {
             return bestJoint;
         }
 
-        // For 2x2 grid: col 0-1, row 0-1 — with effective scale
-        int toScreenX(double worldCoord, int cellW, int col, int row, float scale) {
-            return col * cellW + cellW / 2 + (int)(worldCoord * scale);
+        // For 2x2 grid: col 0-1, row 0-1 — with effective scale and pan offset
+        int toScreenX(double worldCoord, int cellW, int col, int row, float scale, float panX) {
+            return col * cellW + cellW / 2 + (int)(worldCoord * scale) + (int)panX;
         }
 
-        int toScreenY(double worldCoord, int cellH, int col, int row, float scale) {
-            return row * cellH + cellH / 2 + (int)((worldCoord - 19f) * scale);
+        int toScreenY(double worldCoord, int cellH, int col, int row, float scale, float panY) {
+            return row * cellH + cellH / 2 + (int)((worldCoord - 19f) * scale) + (int)panY;
         }
 
-        // 3D perspective projection with effective scale
-        double[] project3D(double[] p, int cellW, int cellH, int col, int row, float scale) {
+        // 3D perspective projection with effective scale and pan offset
+        double[] project3D(double[] p, int cellW, int cellH, int col, int row, float scale, float panX, float panY) {
             double px = p[0], py = p[1] - 19.0, pz = p[2];
 
             double cosY = Math.cos(camYaw), sinY = Math.sin(camYaw);
@@ -1036,8 +1080,8 @@ public class PoseEditor extends JFrame {
             double dist = 30.0;
             double perspScale = dist / (dist + rz2) * scale;
 
-            double screenX = col * cellW + cellW / 2 + rx * perspScale;
-            double screenY = row * cellH + cellH / 2 + ry2 * perspScale;
+            double screenX = col * cellW + cellW / 2 + rx * perspScale + panX;
+            double screenY = row * cellH + cellH / 2 + ry2 * perspScale + panY;
             return new double[]{screenX, screenY, rz2};
         }
 
@@ -1045,13 +1089,13 @@ public class PoseEditor extends JFrame {
             return selectedJoint != null && selectedJoint.equals(j.name);
         }
 
-        void drawCuboid(Graphics2D g, Joint j, View view, int cellW, int cellH, int col, int row, float scale) {
+        void drawCuboid(Graphics2D g, Joint j, View view, int cellW, int cellH, int col, int row, float scale, float panX, float panY) {
             double[][] corners = getCuboidCorners(j);
             int[] sx = new int[8], sy = new int[8];
             for (int i = 0; i < 8; i++) {
                 double[] p2d = project(corners[i], view);
-                sx[i] = toScreenX(p2d[0], cellW, col, row, scale);
-                sy[i] = toScreenY(p2d[1], cellH, col, row, scale);
+                sx[i] = toScreenX(p2d[0], cellW, col, row, scale, panX);
+                sy[i] = toScreenY(p2d[1], cellH, col, row, scale, panY);
             }
             Color fill = new Color(j.colour.getRed(), j.colour.getGreen(), j.colour.getBlue(), 60);
             g.setColor(fill);
@@ -1079,10 +1123,10 @@ public class PoseEditor extends JFrame {
             }
         }
 
-        void drawJointDot(Graphics2D g, Joint j, View view, int cellW, int cellH, int col, int row, float scale) {
+        void drawJointDot(Graphics2D g, Joint j, View view, int cellW, int cellH, int col, int row, float scale, float panX, float panY) {
             double[] p2d = project(j.worldPos, view);
-            int x = toScreenX(p2d[0], cellW, col, row, scale);
-            int y = toScreenY(p2d[1], cellH, col, row, scale);
+            int x = toScreenX(p2d[0], cellW, col, row, scale, panX);
+            int y = toScreenY(p2d[1], cellH, col, row, scale, panY);
             g.setColor(j.colour);
             g.fillOval(x-3, y-3, 6, 6);
             g.setColor(j.colour.darker().darker());
@@ -1107,8 +1151,8 @@ public class PoseEditor extends JFrame {
             g.drawOval(cx - 4, cy - 4, 8, 8);
         }
 
-        void drawGroundPlane(Graphics2D g, int cellW, int cellH, int col, int row, float scale) {
-            int groundY = toScreenY(24.0, cellH, col, row, scale);
+        void drawGroundPlane(Graphics2D g, int cellW, int cellH, int col, int row, float scale, float panY) {
+            int groundY = toScreenY(24.0, cellH, col, row, scale, panY);
             g.setColor(new Color(140, 100, 60, 100));
             g.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER,
                     10f, new float[]{6f, 4f}, 0f));
@@ -1117,7 +1161,7 @@ public class PoseEditor extends JFrame {
             g.drawLine(x0, groundY, x1, groundY);
         }
 
-        void drawPanel(Graphics2D g, View view, int cellW, int cellH, int col, int row, String label, float zoom) {
+        void drawPanel(Graphics2D g, View view, int cellW, int cellH, int col, int row, String label, float zoom, float panX, float panY) {
             float es = SCALE * zoom;
             int x0 = col * cellW, y0 = row * cellH;
             g.setColor(new Color(245, 245, 240));
@@ -1128,29 +1172,36 @@ public class PoseEditor extends JFrame {
             g.setColor(new Color(100, 100, 100));
             g.setFont(new Font("SansSerif", Font.BOLD, 12));
             g.drawString(label, x0 + 8, y0 + 16);
-            drawGroundPlane(g, cellW, cellH, col, row, es);
 
-            for (Joint j : skeleton.allJoints) drawCuboid(g, j, view, cellW, cellH, col, row, es);
-            for (Joint j : skeleton.allJoints) drawJointDot(g, j, view, cellW, cellH, col, row, es);
+            // Clip to panel bounds so nothing bleeds into adjacent panels
+            Shape oldClip = g.getClip();
+            g.setClip(x0, y0, cellW, cellH);
+
+            drawGroundPlane(g, cellW, cellH, col, row, es, panY);
+
+            for (Joint j : skeleton.allJoints) drawCuboid(g, j, view, cellW, cellH, col, row, es, panX, panY);
+            for (Joint j : skeleton.allJoints) drawJointDot(g, j, view, cellW, cellH, col, row, es, panX, panY);
 
             // Draw handles on selected joint
             if (selectedJoint != null) {
                 Joint sel = skeleton.jointMap.get(selectedJoint);
                 if (sel != null) {
                     double[] p2d = project(sel.worldPos, view);
-                    int jx = toScreenX(p2d[0], cellW, col, row, es);
-                    int jy = toScreenY(p2d[1], cellH, col, row, es);
+                    int jx = toScreenX(p2d[0], cellW, col, row, es, panX);
+                    int jy = toScreenY(p2d[1], cellH, col, row, es, panY);
                     drawHandles(g, sel, jx, jy);
                 }
             }
+
+            g.setClip(oldClip);
         }
 
-        void drawCuboid3D(Graphics2D g, Joint j, int cellW, int cellH, int col, int row, float scale) {
+        void drawCuboid3D(Graphics2D g, Joint j, int cellW, int cellH, int col, int row, float scale, float panX, float panY) {
             double[][] corners = getCuboidCorners(j);
             int[] sx = new int[8], sy = new int[8];
             double[] depths = new double[8];
             for (int i = 0; i < 8; i++) {
-                double[] p3 = project3D(corners[i], cellW, cellH, col, row, scale);
+                double[] p3 = project3D(corners[i], cellW, cellH, col, row, scale, panX, panY);
                 sx[i] = (int) p3[0];
                 sy[i] = (int) p3[1];
                 depths[i] = p3[2];
@@ -1181,8 +1232,8 @@ public class PoseEditor extends JFrame {
             }
         }
 
-        void drawJointDot3D(Graphics2D g, Joint j, int cellW, int cellH, int col, int row, float scale) {
-            double[] p3 = project3D(j.worldPos, cellW, cellH, col, row, scale);
+        void drawJointDot3D(Graphics2D g, Joint j, int cellW, int cellH, int col, int row, float scale, float panX, float panY) {
+            double[] p3 = project3D(j.worldPos, cellW, cellH, col, row, scale, panX, panY);
             int x = (int) p3[0];
             int y = (int) p3[1];
             g.setColor(j.colour);
@@ -1192,7 +1243,7 @@ public class PoseEditor extends JFrame {
             g.drawOval(x-3, y-3, 6, 6);
         }
 
-        void draw3DPanel(Graphics2D g, int cellW, int cellH, int col, int row, String label, float zoom) {
+        void draw3DPanel(Graphics2D g, int cellW, int cellH, int col, int row, String label, float zoom, float panX, float panY) {
             float es = SCALE * zoom;
             int x0 = col * cellW, y0 = row * cellH;
             g.setColor(new Color(235, 235, 230));
@@ -1204,19 +1255,25 @@ public class PoseEditor extends JFrame {
             g.setFont(new Font("SansSerif", Font.BOLD, 12));
             g.drawString(label, x0 + 8, y0 + 16);
 
-            for (Joint j : skeleton.allJoints) drawCuboid3D(g, j, cellW, cellH, col, row, es);
-            for (Joint j : skeleton.allJoints) drawJointDot3D(g, j, cellW, cellH, col, row, es);
+            // Clip to panel bounds so nothing bleeds into adjacent panels
+            Shape oldClip = g.getClip();
+            g.setClip(x0, y0, cellW, cellH);
+
+            for (Joint j : skeleton.allJoints) drawCuboid3D(g, j, cellW, cellH, col, row, es, panX, panY);
+            for (Joint j : skeleton.allJoints) drawJointDot3D(g, j, cellW, cellH, col, row, es, panX, panY);
 
             // Draw handles on selected joint
             if (selectedJoint != null) {
                 Joint sel = skeleton.jointMap.get(selectedJoint);
                 if (sel != null) {
-                    double[] p3 = project3D(sel.worldPos, cellW, cellH, col, row, es);
+                    double[] p3 = project3D(sel.worldPos, cellW, cellH, col, row, es, panX, panY);
                     int jx = (int) p3[0];
                     int jy = (int) p3[1];
                     drawHandles(g, sel, jx, jy);
                 }
             }
+
+            g.setClip(oldClip);
         }
 
         @Override
@@ -1233,10 +1290,10 @@ public class PoseEditor extends JFrame {
             applyPose(skeleton, poseData);
             computeFK(skeleton);
 
-            drawPanel(g, View.FRONT, cellW, cellH, 0, 0, "FRONT (from +Z)", zoomFront);
-            drawPanel(g, View.SIDE,  cellW, cellH, 1, 0, "SIDE (from +X)", zoomSide);
-            drawPanel(g, View.TOP,   cellW, cellH, 0, 1, "TOP (from -Y)", zoomTop);
-            draw3DPanel(g, cellW, cellH, 1, 1, "3D (drag to rotate)", zoom3D);
+            drawPanel(g, View.FRONT, cellW, cellH, 0, 0, "FRONT (from +Z)", zoomFront, panFrontX, panFrontY);
+            drawPanel(g, View.SIDE,  cellW, cellH, 1, 0, "SIDE (from +X)",  zoomSide,  panSideX,  panSideY);
+            drawPanel(g, View.TOP,   cellW, cellH, 0, 1, "TOP (from -Y)",   zoomTop,   panTopX,   panTopY);
+            draw3DPanel(g, cellW, cellH, 1, 1, "3D (drag to rotate)", zoom3D, pan3DX, pan3DY);
 
             // Draw drag tooltip
             if (draggingAxis > 0 && draggingJoint != null) {
