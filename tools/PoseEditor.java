@@ -567,18 +567,18 @@ public class PoseEditor extends JFrame {
 
         // --- Base poses (shared) ---
         List<Preset> base = new ArrayList<>();
-        base.add(preset("perched",
+        base.add(preset("perched",  // synced with mod BaseBirdPoses.PERCHED (tuned 2026-03-20)
                 "chest", 0.1f, 0f, 0f,
-                "neck_lower", -0.15f, 0f, 0f,
+                "neck_lower", 0.42f, 0f, 0f,
                 "neck_mid", -0.1f, 0f, 0f,
                 "neck_upper", -0.1f, 0f, 0f,
                 "head", -0.05f, 0f, 0f,
-                "L_upper_wing", 0f, -1.5f, 0.3f,
+                "L_upper_wing", 1.16f, -0.02f, 1.35f,
                 "L_scapulars", 0f, -0.2f, 0f,
-                "L_forearm", 0f, 2.2f, 0f,
-                "L_secondaries", 0f, -0.15f, 0f,
-                "L_hand", 0f, -1.8f, 0f,
-                "L_primaries", 0f, -0.1f, 0f,
+                "L_forearm", 0f, 0.08f, 0.2f,
+                "L_secondaries", 0f, -0.15f, 0.08f,
+                "L_hand", 0f, 0.05f, 0.36f,
+                "L_primaries", 0.05f, -0.1f, -0.17f,
                 "tail_base", -0.2f, 0f, 0f,
                 "L_thigh", 0.1f, 0f, 0f,
                 "L_shin", 0.3f, 0f, 0f,
@@ -593,7 +593,7 @@ public class PoseEditor extends JFrame {
                 "L_forearm", 0f, 2.2f, 0f,
                 "L_hand", 0f, -1.8f, 0f,
                 "tail_base", -0.1f, 0f, 0f));
-        base.add(preset("flying_cruise",
+        base.add(preset("flying_cruise",  // synced with mod BaseBirdPoses.FLYING_CRUISE
                 "chest", 1.0f, 0f, 0f,
                 "torso", 0.15f, 0f, 0f,
                 "hip", 0.1f, 0f, 0f,
@@ -601,7 +601,7 @@ public class PoseEditor extends JFrame {
                 "neck_mid", 0.0f, 0f, 0f,
                 "neck_upper", 0.0f, 0f, 0f,
                 "head", -0.5f, 0f, 0f,
-                "L_upper_wing", 0f, 0f, -0.3f,
+                "L_upper_wing", 0f, 0f, -0.1f,
                 "L_forearm", 0f, 0f, 0f,
                 "L_hand", 0f, 0f, 0f,
                 "tail_base", -0.65f, 0f, 0f,
