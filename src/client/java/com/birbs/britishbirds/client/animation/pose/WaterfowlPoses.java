@@ -126,24 +126,29 @@ public final class WaterfowlPoses {
      * Waterfowl wingbeat: fast, stiff strokes — rapid wing cycling typical
      * of heavy-bodied ducks in direct flight.
      */
+    /**
+     * Waterfowl wingbeat: fast, stiff strokes.
+     * Uses xRot — wings are children of chest, so when body pitches
+     * forward for flight, xRot correctly flaps up/down.
+     */
     public static final CyclicAnimation WATERFOWL_WINGBEAT = new CyclicAnimation(
             "waterfowl_wingbeat",
             PoseData.builder("waterfowl_wings_up")
-                    .joint(BirdSkeleton.L_UPPER_WING,  0f, 0f, -1.0f)
-                    .joint(BirdSkeleton.L_FOREARM,     0f, 0f, -0.35f)
-                    .joint(BirdSkeleton.L_HAND,        0f, 0f, -0.25f)
-                    .joint(BirdSkeleton.L_SCAPULARS,   0f, 0f, -0.2f)
-                    .joint(BirdSkeleton.L_SECONDARIES, 0f, 0f, -0.15f)
-                    .joint(BirdSkeleton.L_PRIMARIES,   0f, 0f, -0.1f)
+                    .joint(BirdSkeleton.L_UPPER_WING,  -1.0f, 0f, 0f)
+                    .joint(BirdSkeleton.L_FOREARM,     -0.35f, 0f, 0f)
+                    .joint(BirdSkeleton.L_HAND,        -0.25f, 0f, 0f)
+                    .joint(BirdSkeleton.L_SCAPULARS,   -0.2f, 0f, 0f)
+                    .joint(BirdSkeleton.L_SECONDARIES, -0.15f, 0f, 0f)
+                    .joint(BirdSkeleton.L_PRIMARIES,   -0.1f, 0f, 0f)
                     .mirror()
                     .build(),
             PoseData.builder("waterfowl_wings_down")
-                    .joint(BirdSkeleton.L_UPPER_WING,  0f, 0f, 0.8f)
-                    .joint(BirdSkeleton.L_FOREARM,     0f, 0f, 0.25f)
-                    .joint(BirdSkeleton.L_HAND,        0f, 0f, 0.2f)
-                    .joint(BirdSkeleton.L_SCAPULARS,   0f, 0f, 0.15f)
-                    .joint(BirdSkeleton.L_SECONDARIES, 0f, 0f, 0.12f)
-                    .joint(BirdSkeleton.L_PRIMARIES,   0f, 0f, 0.1f)
+                    .joint(BirdSkeleton.L_UPPER_WING,   0.8f, 0f, 0f)
+                    .joint(BirdSkeleton.L_FOREARM,      0.25f, 0f, 0f)
+                    .joint(BirdSkeleton.L_HAND,         0.2f, 0f, 0f)
+                    .joint(BirdSkeleton.L_SCAPULARS,    0.15f, 0f, 0f)
+                    .joint(BirdSkeleton.L_SECONDARIES,  0.12f, 0f, 0f)
+                    .joint(BirdSkeleton.L_PRIMARIES,    0.1f, 0f, 0f)
                     .mirror()
                     .build()
     );

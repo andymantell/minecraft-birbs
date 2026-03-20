@@ -27,10 +27,10 @@ public final class RaptorPoses {
             .joint(BirdSkeleton.NECK_MID,   -0.05f, 0f, 0f)
             .joint(BirdSkeleton.NECK_UPPER, -0.05f, 0f, 0f)
             .joint(BirdSkeleton.HEAD,        0.15f, 0f, 0f)   // slight uptilt to scan
-            // Wings spread wide — upper wing swept out, forearm extended, hand extended
-            .joint(BirdSkeleton.L_UPPER_WING, 0f, 0f, -1.4f)
-            .joint(BirdSkeleton.L_FOREARM,    0f, 0f, -0.1f)
-            .joint(BirdSkeleton.L_HAND,       0f, 0f, -0.05f)
+            // Wings spread wide — xRot in flight frame
+            .joint(BirdSkeleton.L_UPPER_WING, -1.4f, 0f, 0f)
+            .joint(BirdSkeleton.L_FOREARM,    -0.1f, 0f, 0f)
+            .joint(BirdSkeleton.L_HAND,       -0.05f, 0f, 0f)
             .joint(BirdSkeleton.TAIL_BASE,  -0.25f, 0f, 0f)
             .joint(BirdSkeleton.TAIL_FAN,    0f, 0f, 0f)
             // Legs tucked
@@ -109,10 +109,10 @@ public final class RaptorPoses {
             .joint(BirdSkeleton.NECK_MID,    0.0f, 0f, 0f)
             .joint(BirdSkeleton.NECK_UPPER,  0.0f, 0f, 0f)
             .joint(BirdSkeleton.HEAD,        0.3f,  0f, 0f)  // head tilted down to scan ground
-            // Wings spread wide for hovering
-            .joint(BirdSkeleton.L_UPPER_WING, 0f, 0f, -1.0f)
-            .joint(BirdSkeleton.L_FOREARM,    0f, 0f, -0.15f)
-            .joint(BirdSkeleton.L_HAND,       0f, 0f, -0.1f)
+            // Wings spread wide for hovering — xRot in flight frame
+            .joint(BirdSkeleton.L_UPPER_WING, -1.0f, 0f, 0f)
+            .joint(BirdSkeleton.L_FOREARM,    -0.15f, 0f, 0f)
+            .joint(BirdSkeleton.L_HAND,       -0.1f, 0f, 0f)
             .joint(BirdSkeleton.TAIL_BASE,  -0.3f, 0f, 0f)
             .joint(BirdSkeleton.TAIL_FAN,   -0.1f, 0f, 0f)
             // Legs dangling down for strike readiness
@@ -137,10 +137,10 @@ public final class RaptorPoses {
             .joint(BirdSkeleton.NECK_MID,   -0.05f, 0f, 0f)
             .joint(BirdSkeleton.NECK_UPPER, -0.05f, 0f, 0f)
             .joint(BirdSkeleton.HEAD,       -0.2f, 0f, 0f)  // looking down at prey
-            // Wings swept back to brake
-            .joint(BirdSkeleton.L_UPPER_WING, 0f, 0f, -0.6f)
-            .joint(BirdSkeleton.L_FOREARM,    0f, 0f, -0.3f)
-            .joint(BirdSkeleton.L_HAND,       0f, 0f, -0.2f)
+            // Wings swept back to brake — xRot
+            .joint(BirdSkeleton.L_UPPER_WING, -0.6f, 0f, 0f)
+            .joint(BirdSkeleton.L_FOREARM,    -0.3f, 0f, 0f)
+            .joint(BirdSkeleton.L_HAND,       -0.2f, 0f, 0f)
             .joint(BirdSkeleton.TAIL_BASE,  -0.6f, 0f, 0f)   // tail as brake
             // Legs extended forward — talons out
             .joint(BirdSkeleton.L_THIGH,    -0.6f, 0f, 0f)
@@ -179,24 +179,29 @@ public final class RaptorPoses {
      * Raptor wingbeat: slow, deep, powerful strokes.
      * Larger amplitude than passerine wingbeats, slower cycle.
      */
+    /**
+     * Raptor wingbeat: slow, deep, powerful strokes.
+     * Uses xRot (not zRot) — wings are children of chest, so when body
+     * pitches forward for flight, xRot correctly flaps up/down.
+     */
     public static final CyclicAnimation RAPTOR_WINGBEAT = new CyclicAnimation(
             "raptor_wingbeat",
             PoseData.builder("raptor_wings_up")
-                    .joint(BirdSkeleton.L_UPPER_WING,  0f, 0f, -1.0f)
-                    .joint(BirdSkeleton.L_FOREARM,     0f, 0f, -0.4f)
-                    .joint(BirdSkeleton.L_HAND,        0f, 0f, -0.3f)
-                    .joint(BirdSkeleton.L_SCAPULARS,   0f, 0f, -0.25f)
-                    .joint(BirdSkeleton.L_SECONDARIES, 0f, 0f, -0.2f)
-                    .joint(BirdSkeleton.L_PRIMARIES,   0f, 0f, -0.15f)
+                    .joint(BirdSkeleton.L_UPPER_WING,  -1.0f, 0f, 0f)
+                    .joint(BirdSkeleton.L_FOREARM,     -0.4f, 0f, 0f)
+                    .joint(BirdSkeleton.L_HAND,        -0.3f, 0f, 0f)
+                    .joint(BirdSkeleton.L_SCAPULARS,   -0.25f, 0f, 0f)
+                    .joint(BirdSkeleton.L_SECONDARIES, -0.2f, 0f, 0f)
+                    .joint(BirdSkeleton.L_PRIMARIES,   -0.15f, 0f, 0f)
                     .mirror()
                     .build(),
             PoseData.builder("raptor_wings_down")
-                    .joint(BirdSkeleton.L_UPPER_WING,  0f, 0f, 0.8f)
-                    .joint(BirdSkeleton.L_FOREARM,     0f, 0f, 0.3f)
-                    .joint(BirdSkeleton.L_HAND,        0f, 0f, 0.2f)
-                    .joint(BirdSkeleton.L_SCAPULARS,   0f, 0f, 0.2f)
-                    .joint(BirdSkeleton.L_SECONDARIES, 0f, 0f, 0.15f)
-                    .joint(BirdSkeleton.L_PRIMARIES,   0f, 0f, 0.12f)
+                    .joint(BirdSkeleton.L_UPPER_WING,   0.8f, 0f, 0f)
+                    .joint(BirdSkeleton.L_FOREARM,      0.3f, 0f, 0f)
+                    .joint(BirdSkeleton.L_HAND,         0.2f, 0f, 0f)
+                    .joint(BirdSkeleton.L_SCAPULARS,    0.2f, 0f, 0f)
+                    .joint(BirdSkeleton.L_SECONDARIES,  0.15f, 0f, 0f)
+                    .joint(BirdSkeleton.L_PRIMARIES,    0.12f, 0f, 0f)
                     .mirror()
                     .build()
     );
