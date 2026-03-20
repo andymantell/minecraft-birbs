@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,11 +29,11 @@ public final class PoseLoader {
 
     private static final String RESOURCE_PATH = "/assets/britishbirds/poses/";
 
-    private static final Map<String, Map<String, PoseData>> staticPoses = new HashMap<>();
-    private static final Map<String, Map<String, CyclicAnimation>> cyclicAnimations = new HashMap<>();
-    private static final Map<String, Map<String, PoseData>> overlayPoses = new HashMap<>();
+    private static Map<String, Map<String, PoseData>> staticPoses = new HashMap<>();
+    private static Map<String, Map<String, CyclicAnimation>> cyclicAnimations = new HashMap<>();
+    private static Map<String, Map<String, PoseData>> overlayPoses = new HashMap<>();
 
-    private static boolean loaded = false;
+    private static volatile boolean loaded = false;
 
     private PoseLoader() {}
 
@@ -43,6 +44,10 @@ public final class PoseLoader {
         loadArchetype("passerine");
         loadArchetype("raptor");
         loadArchetype("waterfowl");
+        // Freeze maps to prevent accidental mutation after loading
+        staticPoses = Collections.unmodifiableMap(staticPoses);
+        cyclicAnimations = Collections.unmodifiableMap(cyclicAnimations);
+        overlayPoses = Collections.unmodifiableMap(overlayPoses);
         loaded = true;
         LOGGER.info("[BritishBirds] Loaded pose data from JSON for {} archetypes", staticPoses.size());
     }

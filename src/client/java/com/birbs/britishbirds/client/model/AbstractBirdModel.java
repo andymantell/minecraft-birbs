@@ -118,6 +118,9 @@ public abstract class AbstractBirdModel<S extends BirdRenderState> extends Entit
         // 2. Load skeleton state from persistent storage
         skeleton.loadState(animState.skeletonState);
 
+        // 2b. Reset spring parameters to defaults (prevents bleed between entities)
+        skeleton.resetSprings();
+
         // 3. Compute deltaTime in seconds (ageInTicks is in game ticks, 20 ticks/sec)
         float dt;
         if (animState.skeletonState.prevAgeAndPartial < 0) {

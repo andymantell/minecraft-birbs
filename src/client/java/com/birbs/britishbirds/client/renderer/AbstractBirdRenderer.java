@@ -8,6 +8,9 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Base renderer for all British bird species.
  * Handles common render state extraction: sex, flight detection, and wing flap angle.
@@ -15,6 +18,9 @@ import net.minecraft.world.phys.Vec3;
  */
 public abstract class AbstractBirdRenderer<E extends AbstractBritishBird, S extends BirdRenderState, M extends EntityModel<S>>
         extends MobRenderer<E, S, M> {
+
+    /** Tracks per-entity flying state from the previous frame for edge detection. */
+    private final Map<Integer, Boolean> prevFlyingState = new HashMap<>();
 
     protected AbstractBirdRenderer(EntityRendererProvider.Context context, M model, float shadowRadius) {
         super(context, model, shadowRadius);
@@ -38,7 +44,9 @@ public abstract class AbstractBirdRenderer<E extends AbstractBritishBird, S exte
         state.yawDelta = entity.getYRot() - entity.yRotO;
         state.verticalVelocity = (float) entity.getDeltaMovement().y;
         state.speed = (float) entity.getDeltaMovement().horizontalDistance();
-        state.justLanded = !state.isFlying && entity.onGround() && entity.fallDistance > 0.0f;
+        boolean wasFlying = prevFlyingState.getOrDefault(entity.getId(), false);
+        state.justLanded = wasFlying && !state.isFlying && entity.onGround();
+        prevFlyingState.put(entity.getId(), state.isFlying);
         state.justStartled = false; // stub — species extractors will set this later
         state.lookTarget = findLookTarget(entity, state);
 

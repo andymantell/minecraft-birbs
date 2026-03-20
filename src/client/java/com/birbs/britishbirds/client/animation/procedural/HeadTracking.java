@@ -38,6 +38,14 @@ public class HeadTracking implements ProceduralBehaviour {
 
         double horizontalDist = Math.sqrt(dx * dx + dz * dz);
         float yawToTarget = (float) Math.atan2(dx, dz);
+
+        // Subtract body yaw — the model is already rotated by bodyRot, so the
+        // head offset must be relative to the body, not world space.
+        float bodyYawRad = (float) Math.toRadians(state.bodyRot);
+        yawToTarget -= bodyYawRad;
+        // Normalise to [-PI, PI]
+        yawToTarget = (float) (yawToTarget - Math.floor((yawToTarget + Math.PI) / (2 * Math.PI)) * 2 * Math.PI);
+
         float pitchToTarget = (float) -Math.atan2(dy, horizontalDist);
 
         // Clamp

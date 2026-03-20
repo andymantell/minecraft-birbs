@@ -133,6 +133,15 @@ public class BirdSkeleton {
         return joint;
     }
 
+    /**
+     * Resets all joint spring parameters to the default tuning values.
+     * Must be called each frame before pose resolution to prevent
+     * spring overrides from one entity bleeding into the next.
+     */
+    public void resetSprings() {
+        applyDefaultTuning(this);
+    }
+
     private static void applyDefaultTuning(BirdSkeleton s) {
         // Neck joints
         for (String n : new String[]{NECK_LOWER, NECK_MID, NECK_UPPER}) {
