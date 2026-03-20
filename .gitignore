@@ -23,4 +23,7 @@ remappedSrc/
 
 # Claude
 .claude/
+tools/*.png
+tools/*.class
+tools/*_b64.txt
 .superpowers/

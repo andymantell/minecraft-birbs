@@ -100,25 +100,25 @@ public class PosePreview {
     }
 
     static {
-        // Root: chest at (0, 19, 0) — the 19 is MC world Y, we treat it as our root origin
+        // Root: chest at (0, 19, 0) — LONGER and SLEEKER body
         Joint chest = addJoint("chest", null,
                 0f, 19f, 0f,
-                -1.5f, -1.5f, -1.5f, 3f, 3f, 3f, SPINE_BLUE);
+                -1.5f, -1.5f, -2f, 3f, 3f, 4f, SPINE_BLUE);  // deeper (4 instead of 3)
 
         // Shoulder mount (child of chest)
         Joint shoulderMount = addJoint("shoulder_mount", chest,
-                0f, -1f, 0f,
-                -1f, -1f, -1f, 2f, 2f, 2f, SPINE_BLUE);
+                0f, -0.5f, 0f,
+                -1f, -0.5f, -1f, 2f, 1f, 2f, SPINE_BLUE);  // flatter
 
-        // Torso (child of chest)
+        // Torso (child of chest) — elongated
         addJoint("torso", chest,
-                0f, 0f, 1.5f,
-                -1.5f, -1.5f, -1.5f, 3f, 3f, 3f, SPINE_BLUE);
+                0f, 0f, 2f,
+                -1.5f, -1.5f, -2f, 3f, 3f, 4f, SPINE_BLUE);  // deeper, offset further back
 
-        // Hip (child of chest)
+        // Hip (child of chest) — further back for longer body
         Joint hip = addJoint("hip", chest,
-                0f, 1f, 1f,
-                -1f, -1f, -1f, 2f, 2f, 2f, SPINE_BLUE);
+                0f, 0.5f, 3f,
+                -1f, -1f, -1.5f, 2f, 2f, 3f, SPINE_BLUE);  // deeper, further back
 
         // Neck chain (children of chest)
         Joint neckLower = addJoint("neck_lower", chest,
@@ -147,98 +147,98 @@ public class PosePreview {
                 0f, 0f, 0f,
                 -0.5f, -1f, -4f, 1f, 1f, 2f, BEAK_WHITE);
 
-        // --- LEFT WING ---
+        // --- LEFT WING --- (extends in +X outward from body)
         Joint lUpperWing = addJoint("L_upper_wing", shoulderMount,
-                1f, -1f, 0f,
-                0f, 0f, -2f, 1f, 4f, 4f, WING_GREEN);
+                1f, -0.5f, 0f,
+                0f, -0.5f, -2f, 4f, 1f, 4f, WING_GREEN);
 
         addJoint("L_scapulars", lUpperWing,
                 0f, 0f, 0f,
-                0f, 0.5f, -1f, 1f, 3f, 3f, WING_GREEN);
+                0.5f, 0f, -1f, 3f, 1f, 3f, WING_GREEN);
 
         Joint lForearm = addJoint("L_forearm", lUpperWing,
-                0f, 4f, 0f,
-                0f, 0f, -1.5f, 1f, 3f, 3f, WING_GREEN);
+                4f, 0f, 0f,
+                0f, -0.5f, -1.5f, 3f, 1f, 3f, WING_GREEN);
 
         addJoint("L_secondaries", lForearm,
                 0f, 0f, 0f,
-                0f, 0.5f, -1f, 1f, 3f, 3f, WING_GREEN);
+                0.5f, 0f, -1f, 3f, 1f, 3f, WING_GREEN);
 
         Joint lHand = addJoint("L_hand", lForearm,
-                0f, 3f, 0f,
-                0f, 0f, -1f, 1f, 3f, 2f, WING_GREEN);
+                3f, 0f, 0f,
+                0f, -0.5f, -1f, 3f, 1f, 2f, WING_GREEN);
 
         addJoint("L_primaries", lHand,
                 0f, 0f, 0f,
-                0f, 0.5f, -0.5f, 1f, 3f, 2f, WING_GREEN);
+                0.5f, 0f, -0.5f, 3f, 1f, 2f, WING_GREEN);
 
-        // --- RIGHT WING ---
+        // --- RIGHT WING --- (extends in -X outward from body)
         Joint rUpperWing = addJoint("R_upper_wing", shoulderMount,
-                -1f, -1f, 0f,
-                -1f, 0f, -2f, 1f, 4f, 4f, WING_GREEN);
+                -1f, -0.5f, 0f,
+                -4f, -0.5f, -2f, 4f, 1f, 4f, WING_GREEN);
 
         addJoint("R_scapulars", rUpperWing,
                 0f, 0f, 0f,
-                -1f, 0.5f, -1f, 1f, 3f, 3f, WING_GREEN);
+                -3.5f, 0f, -1f, 3f, 1f, 3f, WING_GREEN);
 
         Joint rForearm = addJoint("R_forearm", rUpperWing,
-                0f, 4f, 0f,
-                -1f, 0f, -1.5f, 1f, 3f, 3f, WING_GREEN);
+                -4f, 0f, 0f,
+                -3f, -0.5f, -1.5f, 3f, 1f, 3f, WING_GREEN);
 
         addJoint("R_secondaries", rForearm,
                 0f, 0f, 0f,
-                -1f, 0.5f, -1f, 1f, 3f, 3f, WING_GREEN);
+                -3.5f, 0f, -1f, 3f, 1f, 3f, WING_GREEN);
 
         Joint rHand = addJoint("R_hand", rForearm,
-                0f, 3f, 0f,
-                -1f, 0f, -1f, 1f, 3f, 2f, WING_GREEN);
+                -3f, 0f, 0f,
+                -3f, -0.5f, -1f, 3f, 1f, 2f, WING_GREEN);
 
         addJoint("R_primaries", rHand,
                 0f, 0f, 0f,
-                -1f, 0.5f, -0.5f, 1f, 3f, 2f, WING_GREEN);
+                -3.5f, 0f, -0.5f, 3f, 1f, 2f, WING_GREEN);
 
-        // --- TAIL ---
+        // --- TAIL --- (further back to match longer body)
         Joint tailBase = addJoint("tail_base", chest,
-                0f, 0f, 1.5f,
+                0f, 0f, 3.5f,
                 -1f, -0.5f, 0f, 2f, 1f, 2f, TAIL_YELLOW);
 
         addJoint("tail_fan", tailBase,
                 0f, 0f, 2f,
-                -1f, -0.5f, 0f, 2f, 1f, 3f, TAIL_YELLOW);
+                -1f, -0.5f, 0f, 2f, 1f, 4f, TAIL_YELLOW);  // longer tail fan
 
-        // --- LEFT LEG ---
+        // --- LEFT LEG --- (shorter — thigh 1, shin 2, tarsus 1.5)
         Joint lThigh = addJoint("L_thigh", hip,
                 0.75f, 1f, 0f,
-                -0.5f, 0f, -0.5f, 1f, 2f, 1f, LEG_ORANGE);
+                -0.5f, 0f, -0.5f, 1f, 1f, 1f, LEG_ORANGE);   // shorter thigh
 
         Joint lShin = addJoint("L_shin", lThigh,
-                0f, 2f, 0f,
-                -0.5f, 0f, -0.5f, 1f, 3f, 1f, LEG_ORANGE);
+                0f, 1f, 0f,
+                -0.5f, 0f, -0.5f, 1f, 2f, 1f, LEG_ORANGE);   // shorter shin
 
         Joint lTarsus = addJoint("L_tarsus", lShin,
-                0f, 3f, 0f,
-                -0.5f, 0f, -0.5f, 1f, 2f, 1f, LEG_ORANGE);
+                0f, 2f, 0f,
+                -0.5f, 0f, -0.5f, 1f, 1.5f, 1f, LEG_ORANGE); // shorter tarsus
 
         addJoint("L_foot", lTarsus,
-                0f, 2f, 0f,
-                -1f, 0f, -1.5f, 2f, 1f, 2f, LEG_ORANGE);
+                0f, 1.5f, 0f,
+                -1f, 0f, -1f, 2f, 0.5f, 2f, LEG_ORANGE);     // flatter foot
 
-        // --- RIGHT LEG ---
+        // --- RIGHT LEG --- (shorter to match left)
         Joint rThigh = addJoint("R_thigh", hip,
                 -0.75f, 1f, 0f,
-                -0.5f, 0f, -0.5f, 1f, 2f, 1f, LEG_ORANGE);
+                -0.5f, 0f, -0.5f, 1f, 1f, 1f, LEG_ORANGE);
 
         Joint rShin = addJoint("R_shin", rThigh,
-                0f, 2f, 0f,
-                -0.5f, 0f, -0.5f, 1f, 3f, 1f, LEG_ORANGE);
-
-        Joint rTarsus = addJoint("R_tarsus", rShin,
-                0f, 3f, 0f,
+                0f, 1f, 0f,
                 -0.5f, 0f, -0.5f, 1f, 2f, 1f, LEG_ORANGE);
 
-        addJoint("R_foot", rTarsus,
+        Joint rTarsus = addJoint("R_tarsus", rShin,
                 0f, 2f, 0f,
-                -1f, 0f, -1.5f, 2f, 1f, 2f, LEG_ORANGE);
+                -0.5f, 0f, -0.5f, 1f, 1.5f, 1f, LEG_ORANGE);
+
+        addJoint("R_foot", rTarsus,
+                0f, 1.5f, 0f,
+                -1f, 0f, -1f, 2f, 0.5f, 2f, LEG_ORANGE);
     }
 
     // =========================================================================
@@ -309,9 +309,13 @@ public class PosePreview {
                 "neck_mid", -0.1f, 0f, 0f,
                 "neck_upper", -0.1f, 0f, 0f,
                 "head", -0.05f, 0f, 0f,
-                "L_upper_wing", 0f, 0f, 0.05f,
-                "L_forearm", 0f, 0f, -2.0f,
-                "L_hand", 0f, 0f, 1.8f,
+                // Wing Z-fold: back, forward, back (yRot) + slight downward (zRot)
+                "L_upper_wing", 0f, -1.5f, 0.3f,    // fold back toward tail + slight down
+                "L_forearm", 0f, 2.2f, 0f,         // fold forward
+                "L_hand", 0f, -1.8f, 0f,             // fold back again
+                "L_scapulars", 0f, -0.3f, 0.1f,      // trailing feathers follow
+                "L_secondaries", 0f, -0.2f, 0.1f,
+                "L_primaries", 0f, -0.2f, 0f,
                 "tail_base", -0.2f, 0f, 0f,
                 "L_thigh", 0.1f, 0f, 0f,
                 "L_shin", 0.3f, 0f, 0f,
@@ -325,9 +329,12 @@ public class PosePreview {
                 "neck_mid", -0.15f, 0f, 0f,
                 "neck_upper", -0.15f, 0f, 0f,
                 "head", -0.1f, 0f, 0f,
-                "L_upper_wing", 0f, 0f, 0.05f,
-                "L_forearm", 0f, 0f, -2.0f,
-                "L_hand", 0f, 0f, 1.8f,
+                "L_upper_wing", 0f, -1.5f, 0.3f,
+                "L_forearm", 0f, 2.2f, 0f,
+                "L_hand", 0f, -1.8f, 0f,
+                "L_scapulars", 0f, -0.3f, 0.1f,
+                "L_secondaries", 0f, -0.2f, 0.1f,
+                "L_primaries", 0f, -0.2f, 0f,
                 "tail_base", -0.1f, 0f, 0f
         );
         mirror(ALERT);
@@ -340,9 +347,9 @@ public class PosePreview {
                 "neck_mid", 0.05f, 0f, 0f,
                 "neck_upper", 0.05f, 0f, 0f,
                 "head", 0.15f, 0f, 0f,
-                "L_upper_wing", -0.3f, 0f, 0f,
-                "L_forearm", -0.2f, 0f, 0f,
-                "L_hand", -0.1f, 0f, 0f,
+                "L_upper_wing", 0f, 0f, -0.3f,
+                "L_forearm", 0f, 0f, -0.2f,
+                "L_hand", 0f, 0f, -0.1f,
                 "tail_base", -0.3f, 0f, 0f
         );
         mirror(FLYING_CRUISE);
@@ -355,9 +362,9 @@ public class PosePreview {
                 "neck_mid", 0.1f, 0f, 0f,
                 "neck_upper", 0.1f, 0f, 0f,
                 "head", 0.2f, 0f, 0f,
-                "L_upper_wing", -0.5f, 0f, 0f,
-                "L_forearm", -0.2f, 0f, 0f,
-                "L_hand", -0.1f, 0f, 0f,
+                "L_upper_wing", 0f, 0f, -0.5f,
+                "L_forearm", 0f, 0f, -0.2f,
+                "L_hand", 0f, 0f, -0.1f,
                 "tail_base", -0.4f, 0f, 0f
         );
         mirror(FLYING_TAKEOFF);
@@ -368,9 +375,9 @@ public class PosePreview {
                 "neck_mid", -0.05f, 0f, 0f,
                 "neck_upper", -0.05f, 0f, 0f,
                 "head", -0.1f, 0f, 0f,
-                "L_upper_wing", -0.8f, 0f, 0f,
-                "L_forearm", -0.3f, 0f, 0f,
-                "L_hand", -0.15f, 0f, 0f,
+                "L_upper_wing", 0f, 0f, -0.8f,
+                "L_forearm", 0f, 0f, -0.3f,
+                "L_hand", 0f, 0f, -0.15f,
                 "tail_base", -0.8f, 0f, 0f,
                 "L_thigh", -0.3f, 0f, 0f,
                 "L_shin", -0.5f, 0f, 0f
@@ -383,9 +390,12 @@ public class PosePreview {
                 "neck_mid", -0.05f, 0f, 0f,
                 "neck_upper", -0.05f, 0f, 0f,
                 "head", 0.3f, 0f, 0.4f,
-                "L_upper_wing", 0f, 0f, 0.05f,
-                "L_forearm", 0f, 0f, -2.0f,
-                "L_hand", 0f, 0f, 1.8f,
+                "L_upper_wing", 0f, -1.5f, 0.3f,
+                "L_forearm", 0f, 2.2f, 0f,
+                "L_hand", 0f, -1.8f, 0f,
+                "L_scapulars", 0f, -0.3f, 0.1f,
+                "L_secondaries", 0f, -0.2f, 0.1f,
+                "L_primaries", 0f, -0.2f, 0f,
                 "tail_base", 0.1f, 0f, 0f
         );
         mirror(TUCKED);
@@ -398,33 +408,160 @@ public class PosePreview {
         );
         mirror(LEGS_TUCKED);
 
+        // Confirmed: negative zRot = wings UP, positive = wings DOWN
         WINGBEAT_UP = pose(
-                "L_upper_wing", -0.8f, 0f, 0f,
-                "L_forearm", -0.3f, 0f, 0f,
-                "L_hand", -0.2f, 0f, 0f,
-                "L_scapulars", -0.2f, 0f, 0f,
-                "L_secondaries", -0.15f, 0f, 0f,
-                "L_primaries", -0.1f, 0f, 0f
+                "L_upper_wing", 0f, 0f, -0.4f,
+                "L_forearm", 0f, 0f, -0.12f,
+                "L_hand", 0f, 0f, -0.08f,
+                "L_scapulars", 0f, 0f, -0.1f,
+                "L_secondaries", 0f, 0f, -0.06f,
+                "L_primaries", 0f, 0f, -0.04f
         );
         mirror(WINGBEAT_UP);
 
         WINGBEAT_DOWN = pose(
-                "L_upper_wing", 0.6f, 0f, 0f,
-                "L_forearm", 0.2f, 0f, 0f,
-                "L_hand", 0.15f, 0f, 0f,
-                "L_scapulars", 0.15f, 0f, 0f,
-                "L_secondaries", 0.1f, 0f, 0f,
-                "L_primaries", 0.08f, 0f, 0f
+                "L_upper_wing", 0f, 0f, 0.4f,
+                "L_forearm", 0f, 0f, 0.12f,
+                "L_hand", 0f, 0f, 0.08f,
+                "L_scapulars", 0f, 0f, 0.1f,
+                "L_secondaries", 0f, 0f, 0.06f,
+                "L_primaries", 0f, 0f, 0.04f
         );
         mirror(WINGBEAT_DOWN);
     }
 
     static Map<String, Map<String, float[]>> POSES = new LinkedHashMap<>();
 
+    // Iteration 2: neck tucked more forward (negative xRot on neck joints)
+    static Map<String, float[]> FLYING_V2, FLYING_V3, FLYING_V4;
+    static {
+        // V2: neck slightly forward (-0.1 per joint), head +0.3 to look ahead
+        FLYING_V2 = pose(
+                "chest", -1.2f, 0f, 0f,
+                "torso", -0.2f, 0f, 0f,
+                "hip", -0.15f, 0f, 0f,
+                "neck_lower", -0.1f, 0f, 0f,
+                "neck_mid", -0.1f, 0f, 0f,
+                "neck_upper", -0.1f, 0f, 0f,
+                "head", 0.3f, 0f, 0f,
+                "L_upper_wing", 0f, 0f, -0.3f,
+                "L_forearm", 0f, 0f, -0.2f,
+                "L_hand", 0f, 0f, -0.1f,
+                "tail_base", -0.3f, 0f, 0f
+        );
+        mirror(FLYING_V2);
+
+        // V3: neck more aggressively forward (-0.2), head +0.5 to compensate
+        FLYING_V3 = pose(
+                "chest", -1.2f, 0f, 0f,
+                "torso", -0.2f, 0f, 0f,
+                "hip", -0.15f, 0f, 0f,
+                "neck_lower", -0.2f, 0f, 0f,
+                "neck_mid", -0.15f, 0f, 0f,
+                "neck_upper", -0.1f, 0f, 0f,
+                "head", 0.5f, 0f, 0f,
+                "L_upper_wing", 0f, 0f, -0.3f,
+                "L_forearm", 0f, 0f, -0.2f,
+                "L_hand", 0f, 0f, -0.1f,
+                "tail_base", -0.3f, 0f, 0f
+        );
+        mirror(FLYING_V3);
+
+        // V4: kept for reference
+        FLYING_V4 = pose(
+                "chest", 1.2f, 0f, 0f,
+                "torso", 0.2f, 0f, 0f,
+                "hip", 0.15f, 0f, 0f,
+                "neck_lower", 0.1f, 0f, 0f,
+                "neck_mid", 0.1f, 0f, 0f,
+                "neck_upper", 0.1f, 0f, 0f,
+                "head", -0.3f, 0f, 0f,
+                "L_upper_wing", 0f, 0f, -0.3f,
+                "L_forearm", 0f, 0f, -0.2f,
+                "L_hand", 0f, 0f, -0.1f,
+                "tail_base", 0.3f, 0f, 0f
+        );
+        mirror(FLYING_V4);
+
+        // V9: kept for reference
+        Map<String, float[]> FLYING_V9 = pose(
+                "chest", 1.0f, 0f, 0f,
+                "torso", 0.15f, 0f, 0f,
+                "hip", 0.1f, 0f, 0f,
+                "neck_lower", 0.05f, 0f, 0f,
+                "neck_mid", 0.0f, 0f, 0f,
+                "neck_upper", -0.05f, 0f, 0f,
+                "head", -0.5f, 0f, 0f,
+                "L_upper_wing", 0f, 0f, -0.3f,
+                "L_forearm", 0f, 0f, -0.2f,
+                "L_hand", 0f, 0f, -0.1f,
+                "tail_base", -0.6f, 0f, 0f,
+                "tail_fan", -0.2f, 0f, 0f
+        );
+        mirror(FLYING_V9);
+        Map<String, float[]> LEGS_TUCKED_V9 = pose(
+                "L_thigh", -0.8f, 0f, 0f,
+                "L_shin", -1.5f, 0f, 0f,
+                "L_tarsus", 1.0f, 0f, 0f,
+                "L_foot", -0.3f, 0f, 0f
+        );
+        mirror(LEGS_TUCKED_V9);
+        POSES.put("flying_v9", addPoses(FLYING_V9, LEGS_TUCKED_V9));
+
+        // V10: refined body/tail/legs
+        Map<String, float[]> FLYING_V10 = pose(
+                "chest", 1.0f, 0f, 0f,
+                "torso", 0.15f, 0f, 0f,
+                "hip", 0.1f, 0f, 0f,
+                "neck_lower", 0.05f, 0f, 0f,
+                "neck_mid", 0.0f, 0f, 0f,
+                "neck_upper", -0.05f, 0f, 0f,
+                "head", -0.5f, 0f, 0f,
+                "L_upper_wing", 0f, 0f, -0.3f,
+                "L_forearm", 0f, 0f, -0.2f,
+                "L_hand", 0f, 0f, -0.1f,
+                "tail_base", -0.65f, 0f, 0f,       // stronger counteraction to get tail horizontal
+                "tail_fan", -0.15f, 0f, 0f
+        );
+        mirror(FLYING_V10);
+        Map<String, float[]> LEGS_TUCKED_V10 = pose(
+                "L_thigh", -1.2f, 0f, 0f,          // pull thigh even more up against belly
+                "L_shin", -2.0f, 0f, 0f,           // fold shin very tight
+                "L_tarsus", 1.5f, 0f, 0f,          // fold tarsus back tight
+                "L_foot", -0.5f, 0f, 0f
+        );
+        mirror(LEGS_TUCKED_V10);
+        POSES.put("flying_v10", addPoses(FLYING_V10, LEGS_TUCKED_V10));
+
+        // V11: same body as V10 but legs folded to near-invisible
+        Map<String, float[]> LEGS_TUCKED_V11 = pose(
+                "L_thigh", -1.5f, 0f, 0f,          // thigh almost flat against belly
+                "L_shin", -2.5f, 0f, 0f,           // shin doubles back on thigh
+                "L_tarsus", 2.0f, 0f, 0f,          // tarsus folds forward against shin
+                "L_foot", -0.8f, 0f, 0f            // toes tucked
+        );
+        mirror(LEGS_TUCKED_V11);
+        POSES.put("flying_v11", addPoses(FLYING_V10, LEGS_TUCKED_V11));
+        POSES.put("flying_v11_flap_up", addPoses(addPoses(FLYING_V10, LEGS_TUCKED_V11), WINGBEAT_UP));
+        POSES.put("flying_v11_flap_down", addPoses(addPoses(FLYING_V10, LEGS_TUCKED_V11), WINGBEAT_DOWN));
+
+        // Axis test: only change L_upper_wing zRot +0.5 to see which way it goes
+        Map<String, float[]> TEST_ZROT_POS = pose("L_upper_wing", 0f, 0f, 0.5f);
+        mirror(TEST_ZROT_POS);
+        POSES.put("test_zpos", addPoses(addPoses(FLYING_V10, LEGS_TUCKED_V11), TEST_ZROT_POS));
+
+        Map<String, float[]> TEST_ZROT_NEG = pose("L_upper_wing", 0f, 0f, -0.5f);
+        mirror(TEST_ZROT_NEG);
+        POSES.put("test_zneg", addPoses(addPoses(FLYING_V10, LEGS_TUCKED_V11), TEST_ZROT_NEG));
+    }
+
     static {
         POSES.put("perched", PERCHED);
         POSES.put("alert", ALERT);
         POSES.put("flying", addPoses(FLYING_CRUISE, LEGS_TUCKED));
+        POSES.put("flying_v2", addPoses(FLYING_V2, LEGS_TUCKED));
+        POSES.put("flying_v3", addPoses(FLYING_V3, LEGS_TUCKED));
+        POSES.put("flying_v4", addPoses(FLYING_V4, LEGS_TUCKED));
         POSES.put("flying_flap_up", addPoses(addPoses(FLYING_CRUISE, LEGS_TUCKED), WINGBEAT_UP));
         POSES.put("flying_flap_down", addPoses(addPoses(FLYING_CRUISE, LEGS_TUCKED), WINGBEAT_DOWN));
         POSES.put("takeoff", addPoses(FLYING_TAKEOFF, LEGS_TUCKED));
