@@ -2869,15 +2869,22 @@ public class PoseEditor extends JFrame {
         leftPanel.add(poseBtnPanel);
         leftPanel.add(Box.createVerticalStrut(8));
 
-        JPanel resetBtnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        JPanel resetBtnPanel = new JPanel();
+        resetBtnPanel.setLayout(new BoxLayout(resetBtnPanel, BoxLayout.Y_AXIS));
         resetBtnPanel.setAlignmentX(0f);
-        resetBtnPanel.setMaximumSize(new Dimension(200, 32));
         JButton resetBtn = new JButton("Zero All");
-        JButton resetToPresetBtn = new JButton("Reset to Preset");
-        JButton revertToSavedBtn = new JButton("Revert to Saved");
-        revertToSavedBtn.setToolTipText("Reload all poses from the last saved JSON file");
+        JButton resetToPresetBtn = new JButton("Revert this Pose");
+        JButton revertToSavedBtn = new JButton("Revert all Poses");
+        resetBtn.setAlignmentX(0f);
+        resetToPresetBtn.setAlignmentX(0f);
+        revertToSavedBtn.setAlignmentX(0f);
+        resetBtn.setToolTipText("Set all joints to zero rotation");
+        resetToPresetBtn.setToolTipText("Reset this pose to its original hardcoded default");
+        revertToSavedBtn.setToolTipText("Reload all poses from the JSON file on disk");
         resetBtnPanel.add(resetBtn);
+        resetBtnPanel.add(Box.createVerticalStrut(2));
         resetBtnPanel.add(resetToPresetBtn);
+        resetBtnPanel.add(Box.createVerticalStrut(2));
         resetBtnPanel.add(revertToSavedBtn);
         leftPanel.add(resetBtnPanel);
         leftPanel.add(Box.createVerticalStrut(16));
