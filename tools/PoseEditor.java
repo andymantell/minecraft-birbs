@@ -120,6 +120,7 @@ public class PoseEditor extends JFrame {
     static final String[] LEFT_WING_JOINTS = {"L_upper_wing", "L_scapulars", "L_forearm", "L_secondaries", "L_hand", "L_primaries"};
     static final String[] TAIL_JOINTS = {"tail_base", "tail_fan"};
     static final String[] LEFT_LEG_JOINTS = {"L_thigh", "L_shin", "L_tarsus", "L_foot"};
+    static final String[] RIGHT_LEG_JOINTS = {"R_thigh", "R_shin", "R_tarsus", "R_foot"};
 
     static class Skeleton {
         final Map<String, Joint> jointMap = new LinkedHashMap<>();
@@ -1147,10 +1148,13 @@ public class PoseEditor extends JFrame {
                     if (hit != null) {
                         captureState();  // snapshot BEFORE IK starts
                         ikDragging = true;
-                        // Always solve on L_ side — mirror the target X when R_ is clicked
-                        String ikTarget = hit.startsWith("R_") ? "L_" + hit.substring(2) : hit;
+                        // Map R_ to L_ for mirrored joints, but NOT for independent legs
+                        boolean isRLeg = hit.startsWith("R_") && (hit.contains("thigh") ||
+                            hit.contains("shin") || hit.contains("tarsus") || hit.contains("foot"));
+                        boolean shouldMirror = hit.startsWith("R_") && !(isRLeg && !mirrorLegs);
+                        String ikTarget = shouldMirror ? "L_" + hit.substring(2) : hit;
                         ikJointName = ikTarget;
-                        ikMirrorTarget = hit.startsWith("R_");  // flag to negate target X
+                        ikMirrorTarget = shouldMirror;
                         ikViewQuadrant = getQuadrant(mx, my, cellW, cellH);
                         ikChain = buildIkChain(ikTarget);
                         ikTargetScreenX = mx;
@@ -2018,6 +2022,18 @@ public class PoseEditor extends JFrame {
             // Apply current slider values and compute FK
             Map<String, float[]> poseData = getCurrentPose();
             applyPose(skeleton, poseData);
+            // Force R_ legs to mirror L_ when mirrorLegs is on
+            if (mirrorLegs) {
+                for (int i = 0; i < LEFT_LEG_JOINTS.length; i++) {
+                    Joint lj = skeleton.jointMap.get(LEFT_LEG_JOINTS[i]);
+                    Joint rj = skeleton.jointMap.get(RIGHT_LEG_JOINTS[i]);
+                    if (lj != null && rj != null) {
+                        rj.angleX = lj.angleX;
+                        rj.angleY = -lj.angleY;
+                        rj.angleZ = lj.angleZ;
+                    }
+                }
+            }
             computeFK(skeleton);
 
             drawPanel(g, View.FRONT, cellW, cellH, 0, 0, "FRONT (from +Z)", zoomFront, panFrontX, panFrontY);
@@ -2602,6 +2618,8 @@ public class PoseEditor extends JFrame {
     JSlider phaseSlider;
     JSlider speedSlider;
     JPanel animControlsPanel;
+    boolean mirrorLegs = true;
+    JPanel rLegSection = null;
     JButton playPauseBtn;
     JLabel cyclicStatusLabel;
 
@@ -2633,12 +2651,26 @@ public class PoseEditor extends JFrame {
             if (x != 0 || y != 0 || z != 0) {
                 pose.put(name, new float[]{x, y, z});
             }
-            // Auto-mirror for left joints
+            // Auto-mirror for left joints (yRot flips, zRot stays)
             if (name.startsWith("L_")) {
                 String rName = "R_" + name.substring(2);
                 if (skeleton.jointMap.containsKey(rName)) {
-                    if (x != 0 || y != 0 || z != 0) {
-                        pose.put(rName, new float[]{x, -y, -z});
+                    boolean isLeg = name.contains("thigh") || name.contains("shin") ||
+                                    name.contains("tarsus") || name.contains("foot");
+                    if (isLeg && !mirrorLegs) {
+                        // Independent legs mode — use R_ slider values directly
+                        JointSliderGroup rGroup = sliderGroups.get(rName);
+                        if (rGroup != null) {
+                            float rx = rGroup.getX(), ry = rGroup.getY(), rz = rGroup.getZ();
+                            if (rx != 0 || ry != 0 || rz != 0) {
+                                pose.put(rName, new float[]{rx, ry, rz});
+                            }
+                        }
+                    } else {
+                        // Auto-mirror from L_
+                        if (x != 0 || y != 0 || z != 0) {
+                            pose.put(rName, new float[]{x, -y, z});
+                        }
                     }
                 }
             }
@@ -3464,7 +3496,50 @@ public class PoseEditor extends JFrame {
         addSliderSection("Neck + Head", NECK_HEAD_JOINTS, NECK_PINK);
         addSliderSection("Left Wing (R auto-mirrors)", LEFT_WING_JOINTS, WING_GREEN);
         addSliderSection("Tail", TAIL_JOINTS, TAIL_YELLOW);
-        addSliderSection("Left Leg (R auto-mirrors)", LEFT_LEG_JOINTS, LEG_ORANGE);
+        addSliderSection("Left Leg", LEFT_LEG_JOINTS, LEG_ORANGE);
+
+        // Mirror legs checkbox + R leg section
+        JCheckBox mirrorLegsBox = new JCheckBox("Mirror Legs", mirrorLegs);
+        mirrorLegsBox.setAlignmentX(0f);
+        mirrorLegsBox.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        mirrorLegsBox.addActionListener(e -> {
+            captureState();
+            mirrorLegs = mirrorLegsBox.isSelected();
+            batchUpdating = true;
+            if (!mirrorLegs) {
+                // Unticking: copy L leg mirrored values to R leg sliders
+                for (int i = 0; i < LEFT_LEG_JOINTS.length; i++) {
+                    JointSliderGroup lGrp = sliderGroups.get(LEFT_LEG_JOINTS[i]);
+                    JointSliderGroup rGrp = sliderGroups.get(RIGHT_LEG_JOINTS[i]);
+                    if (lGrp != null && rGrp != null) {
+                        rGrp.setValues(lGrp.getX(), -lGrp.getY(), lGrp.getZ());
+                    }
+                }
+            } else {
+                // Re-ticking: sync R sliders to mirrored L values (so they're correct if shown later)
+                for (int i = 0; i < LEFT_LEG_JOINTS.length; i++) {
+                    JointSliderGroup lGrp = sliderGroups.get(LEFT_LEG_JOINTS[i]);
+                    JointSliderGroup rGrp = sliderGroups.get(RIGHT_LEG_JOINTS[i]);
+                    if (lGrp != null && rGrp != null) {
+                        rGrp.setValues(lGrp.getX(), -lGrp.getY(), lGrp.getZ());
+                    }
+                }
+            }
+            batchUpdating = false;
+            // Force full pose update — getCurrentPose will mirror L→R when mirrorLegs is true
+            Map<String, float[]> pose = getCurrentPose();
+            applyPose(skeleton, pose);
+            computeFK(skeleton);
+            updateSliderVisibility();
+            previewPanel.repaint();
+            updateExportText();
+        });
+        sliderPanel.add(mirrorLegsBox);
+
+        addSliderSection("Right Leg", RIGHT_LEG_JOINTS, LEG_ORANGE);
+        // Find the R leg section (last one added) and store reference
+        rLegSection = allSections.get(allSections.size() - 1);
+        rLegSection.setVisible(!mirrorLegs);  // hidden by default
 
         // Initialise geometry sliders from skeleton defaults
         initGeometrySliders();
@@ -3571,13 +3646,36 @@ public class PoseEditor extends JFrame {
 
     void updateSliderVisibility() {
         String sel = previewPanel.selectedJoint;
+
+        // R_ leg section is ONLY controlled by the mirrorLegs checkbox
+        if (rLegSection != null) {
+            rLegSection.setVisible(!mirrorLegs);
+        }
+
         if (sel == null) {
             // Nothing selected — show all sections
-            for (JPanel s : allSections) s.setVisible(true);
+            for (JPanel s : allSections) {
+                if (s == rLegSection) continue;  // already handled above
+                s.setVisible(true);
+            }
         } else {
             // Show only the section containing the selected joint
             JPanel activeSection = jointToSection.get(sel);
-            for (JPanel s : allSections) s.setVisible(s == activeSection);
+            // If R_ leg selected but mirror is on, show L_ leg instead
+            if (activeSection == rLegSection && mirrorLegs) {
+                String lName = sel.startsWith("R_") ? "L_" + sel.substring(2) : sel;
+                activeSection = jointToSection.get(lName);
+            }
+            for (JPanel s : allSections) {
+                if (s == rLegSection) continue;  // already handled above
+                s.setVisible(s == activeSection);
+            }
+            // Also show R_ leg section if the selected joint is a leg and mirror is off
+            if (!mirrorLegs && rLegSection != null) {
+                boolean isLeg = sel.contains("thigh") || sel.contains("shin") ||
+                                sel.contains("tarsus") || sel.contains("foot");
+                if (isLeg) rLegSection.setVisible(true);
+            }
         }
         sliderPanel.revalidate();
         sliderPanel.repaint();
