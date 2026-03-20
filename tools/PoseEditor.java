@@ -787,6 +787,25 @@ public class PoseEditor extends JFrame {
         waterfowlFlightBase.put("L_foot",       new float[]{-0.8f, 0f, 0f});
         mirror(waterfowlFlightBase);
 
+        // WADDLE offsets (from WaterfowlPoses.WADDLE — both sides explicit, no auto-mirror)
+        Map<String, float[]> waddleOffA = pose(
+            "chest",    0f, 0f, -0.12f,
+            "L_thigh", -0.3f, 0f, 0f,
+            "L_shin",   0.4f, 0f, 0f,
+            "L_tarsus",-0.2f, 0f, 0f,
+            "R_thigh",  0.3f, 0f, 0f,
+            "R_shin",  -0.1f, 0f, 0f,
+            "R_tarsus", 0.1f, 0f, 0f);
+        Map<String, float[]> waddleOffB = pose(
+            "chest",    0f, 0f,  0.12f,
+            "L_thigh",  0.3f, 0f, 0f,
+            "L_shin",  -0.1f, 0f, 0f,
+            "L_tarsus", 0.1f, 0f, 0f,
+            "R_thigh", -0.3f, 0f, 0f,
+            "R_shin",   0.4f, 0f, 0f,
+            "R_tarsus",-0.2f, 0f, 0f);
+        Map<String, float[]> waddleBase = new LinkedHashMap<>();  // neutral stand
+
         // --- Passerine-specific ---
         List<Preset> passerine = new ArrayList<>(base);
         passerine.add(preset("forage",
@@ -890,6 +909,8 @@ public class PoseEditor extends JFrame {
         // Cyclic presets for Raptor
         raptor.addAll(cyclicPresets("raptor_wingbeat", "up", "down",
                 raptorFlightBase, raptorWingOffA, raptorWingOffB));
+        raptor.addAll(cyclicPresets("walk", "legs_forward", "legs_back",
+                walkBase, walkOffA, walkOffB));
         presets.put("Raptor", raptor);
 
         // --- Waterfowl-specific ---
@@ -924,6 +945,10 @@ public class PoseEditor extends JFrame {
         // Cyclic presets for Waterfowl
         waterfowl.addAll(cyclicPresets("waterfowl_wingbeat", "up", "down",
                 waterfowlFlightBase, waterfowlWingOffA, waterfowlWingOffB));
+        waterfowl.addAll(cyclicPresets("walk", "legs_forward", "legs_back",
+                walkBase, walkOffA, walkOffB));
+        waterfowl.addAll(cyclicPresets("waddle", "waddle_left", "waddle_right",
+                waddleBase, waddleOffA, waddleOffB));
         presets.put("Waterfowl", waterfowl);
 
         return presets;
@@ -2592,6 +2617,9 @@ public class PoseEditor extends JFrame {
     Map<String, JPanel> jointToSection = new HashMap<>();  // joint name -> its section panel
     List<JPanel> allSections = new ArrayList<>();
 
+    // --- Per-pose edited values (remembered across preset switches) ---
+    Map<String, Map<String, float[]>> editedPoses = new HashMap<>();
+
     // =========================================================================
     // Build current pose from sliders
     // =========================================================================
@@ -2809,9 +2837,14 @@ public class PoseEditor extends JFrame {
         leftPanel.add(poseBtnPanel);
         leftPanel.add(Box.createVerticalStrut(8));
 
-        JButton resetBtn = new JButton("Reset All to Zero");
-        resetBtn.setAlignmentX(0f);
-        leftPanel.add(resetBtn);
+        JPanel resetBtnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        resetBtnPanel.setAlignmentX(0f);
+        resetBtnPanel.setMaximumSize(new Dimension(200, 32));
+        JButton resetBtn = new JButton("Zero All");
+        JButton resetToPresetBtn = new JButton("Reset to Preset");
+        resetBtnPanel.add(resetBtn);
+        resetBtnPanel.add(resetToPresetBtn);
+        leftPanel.add(resetBtnPanel);
         leftPanel.add(Box.createVerticalStrut(16));
 
         JPanel undoRedoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
@@ -2992,6 +3025,9 @@ public class PoseEditor extends JFrame {
                 animTimer.stop();
                 if (playPauseBtn != null) playPauseBtn.setText("Play");
             }
+            // Clear saved edits — they're archetype-specific
+            editedPoses.clear();
+            currentPoseName = null;
             editingCyclic = false;
             animControlsPanel.setVisible(false);
             cyclicBasePose = null; cyclicOffsetA = null; cyclicOffsetB = null;
@@ -3030,6 +3066,15 @@ public class PoseEditor extends JFrame {
             previewPanel.repaint();
             updateExportText();
             captureState();
+        });
+
+        resetToPresetBtn.addActionListener(e -> {
+            if (currentPoseName == null || currentPoseName.equals("custom")) return;
+            // Discard saved edits for this pose and reload the original preset values
+            editedPoses.remove(currentPoseName);
+            String pose = currentPoseName;
+            currentPoseName = null; // prevent save-on-switch from re-saving stale edits
+            loadPresetByName(pose, true);
         });
 
         geometryToggle.addActionListener(e -> {
@@ -3102,20 +3147,28 @@ public class PoseEditor extends JFrame {
             poseBtnPanel.add(row);
         }
 
-        // Cyclic row
+        // Cyclic rows — group by animation name (wingbeat, walk, hop etc.)
         if (!cyclicPresets.isEmpty()) {
             JLabel lbl = new JLabel("Cyclic:");
             lbl.setFont(new Font("SansSerif", Font.BOLD, 10));
             lbl.setAlignmentX(0f);
             poseBtnPanel.add(lbl);
-            JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 2));
-            row.setAlignmentX(0f);
+            // Group into pairs by animation name
+            Map<String, List<Preset>> groups = new LinkedHashMap<>();
             for (Preset p : cyclicPresets) {
-                JButton btn = makePresetButton(p, btnFont);
-                row.add(btn);
-                poseButtons.put(p.name, btn);
+                String groupName = p.cyclicName != null ? p.cyclicName : p.name;
+                groups.computeIfAbsent(groupName, k -> new ArrayList<>()).add(p);
             }
-            poseBtnPanel.add(row);
+            for (var entry : groups.entrySet()) {
+                JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 1));
+                row.setAlignmentX(0f);
+                for (Preset p : entry.getValue()) {
+                    JButton btn = makePresetButton(p, btnFont);
+                    row.add(btn);
+                    poseButtons.put(p.name, btn);
+                }
+                poseBtnPanel.add(row);
+            }
         }
 
         poseBtnPanel.revalidate();
@@ -3179,7 +3232,19 @@ public class PoseEditor extends JFrame {
 
     /** Load a preset by name directly (used by pose buttons and default load). */
     void loadPresetByName(String poseName) {
+        loadPresetByName(poseName, false);
+    }
+
+    /** Load a preset by name.  When {@code forcePreset} is true, ignore any saved edits
+     *  (used by "Reset to Preset"). */
+    void loadPresetByName(String poseName, boolean forcePreset) {
         if (poseName == null) return;
+
+        // Save current slider state under the old pose name before switching
+        if (currentPoseName != null && !currentPoseName.equals("custom")) {
+            editedPoses.put(currentPoseName, getCurrentPose());
+        }
+
         currentPoseName = poseName;
 
         List<Preset> presets = allPresets.get(currentArchetype);
@@ -3225,6 +3290,9 @@ public class PoseEditor extends JFrame {
             batchUpdating = false;
         }
 
+        // Check for saved edits (unless caller wants the original preset)
+        Map<String, float[]> saved = forcePreset ? null : editedPoses.get(poseName);
+
         batchUpdating = true;
         // Reset all sliders first
         for (JointSliderGroup g : sliderGroups.values()) {
@@ -3240,13 +3308,24 @@ public class PoseEditor extends JFrame {
                 gEntry.getValue().setGeometryFromJoint(j);
             }
         }
-        // Apply preset values (only left-side and non-mirrored joints)
-        for (var entry : found.joints.entrySet()) {
-            String name = entry.getKey();
-            float[] v = entry.getValue();
-            JointSliderGroup g = sliderGroups.get(name);
-            if (g != null) {
-                g.setValues(v[0], v[1], v[2]);
+        if (saved != null) {
+            // Restore the user's previously edited values
+            for (var entry : saved.entrySet()) {
+                JointSliderGroup g = sliderGroups.get(entry.getKey());
+                if (g != null) {
+                    float[] v = entry.getValue();
+                    g.setValues(v[0], v[1], v[2]);
+                }
+            }
+        } else {
+            // Apply original preset values (only left-side and non-mirrored joints)
+            for (var entry : found.joints.entrySet()) {
+                String name = entry.getKey();
+                float[] v = entry.getValue();
+                JointSliderGroup g = sliderGroups.get(name);
+                if (g != null) {
+                    g.setValues(v[0], v[1], v[2]);
+                }
             }
         }
         batchUpdating = false;
