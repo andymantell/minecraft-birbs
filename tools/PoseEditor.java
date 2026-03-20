@@ -516,7 +516,9 @@ public class PoseEditor extends JFrame {
             if (name.startsWith("L_")) {
                 String rName = "R_" + name.substring(2);
                 if (!pose.containsKey(rName)) {
-                    mirrored.put(rName, new float[]{v[0], -v[1], -v[2]});
+                    // Lateral wing geometry: yRot flips (fold direction), zRot does NOT (flap direction)
+                    // xRot stays the same (pitch is symmetric)
+                    mirrored.put(rName, new float[]{v[0], -v[1], v[2]});
                 }
             }
         }
@@ -885,9 +887,12 @@ public class PoseEditor extends JFrame {
                     if (hit != null) {
                         captureState();  // snapshot BEFORE IK starts
                         ikDragging = true;
-                        ikJointName = hit;
+                        // Map R_ joints to L_ equivalents so IK solves on the slider side
+                        // and mirroring handles the other wing/leg automatically
+                        String ikTarget = hit.startsWith("R_") ? "L_" + hit.substring(2) : hit;
+                        ikJointName = ikTarget;
                         ikViewQuadrant = getQuadrant(mx, my, cellW, cellH);
-                        ikChain = buildIkChain(hit);
+                        ikChain = buildIkChain(ikTarget);
                         ikTargetScreenX = mx;
                         ikTargetScreenY = my;
                         selectedJoint = hit;
@@ -968,6 +973,10 @@ public class PoseEditor extends JFrame {
                                     ikViewQuadrant, cellW, cellH, draggedJoint);
                             solveIK(targetWorld, 8);
                             syncIkSliderFields();
+                            // Force R_ joints to mirror L_ values before repaint
+                            Map<String, float[]> finalPose = getCurrentPose();
+                            applyPose(skeleton, finalPose);
+                            computeFK(skeleton);
                         }
                         repaint();
                         return;
@@ -1057,15 +1066,22 @@ public class PoseEditor extends JFrame {
                     jointName.endsWith("_shin") || jointName.endsWith("_thigh")) {
                 return "hip";
             }
-            // Neck/head + beak joints → chest
-            if (jointName.equals("lower_beak") || jointName.equals("upper_beak") ||
-                    jointName.equals("head") || jointName.equals("neck_upper") ||
-                    jointName.equals("neck_mid") || jointName.equals("neck_lower")) {
+            // Neck joints → chest (short chain to prevent wild spinning)
+            if (jointName.equals("neck_upper") || jointName.equals("neck_mid") ||
+                    jointName.equals("neck_lower")) {
                 return "chest";
             }
-            // Tail joints → chest
-            if (jointName.equals("tail_fan") || jointName.equals("tail_base")) {
-                return "chest";
+            // Head/beak → neck_lower only (2-joint chain max, prevents spinning)
+            if (jointName.equals("head") || jointName.equals("lower_beak") ||
+                    jointName.equals("upper_beak")) {
+                return "neck_lower";
+            }
+            // Tail joints → tail_base only (don't drag the whole body!)
+            if (jointName.equals("tail_fan")) {
+                return "tail_base";
+            }
+            if (jointName.equals("tail_base")) {
+                return null;  // tail_base itself — no chain, use handles instead
             }
             // Spine joints → chest
             if (jointName.equals("hip") || jointName.equals("torso") ||
@@ -1148,7 +1164,6 @@ public class PoseEditor extends JFrame {
         void ccdStep(Joint joint, double[] endEffectorPos, double[] targetPos, int q) {
             double[] jp = joint.worldPos;
 
-            // Vectors from joint to end effector and to target
             double ex = endEffectorPos[0] - jp[0];
             double ey = endEffectorPos[1] - jp[1];
             double ez = endEffectorPos[2] - jp[2];
@@ -1158,7 +1173,9 @@ public class PoseEditor extends JFrame {
             double tz = targetPos[2] - jp[2];
 
             double angleToEnd, angleToTarget, delta;
-            float damping = 0.5f;
+            float damping = 0.08f;
+            // No per-chain sign flip — use consistent direction for all
+            float maxStep = 0.05f;   // small max step per joint
 
             // Map the joint name to the slider name (L_ for mirrored joints)
             String sliderName = joint.name.startsWith("R_") ? "L_" + joint.name.substring(2) : joint.name;
@@ -1166,48 +1183,39 @@ public class PoseEditor extends JFrame {
             if (grp == null) return;
 
             switch (q) {
-                case 0 -> {  // FRONT view — XY plane: adjust xRot (pitch) and zRot (roll)
-                    // Use zRot for left-right (around Z axis in XY plane)
+                case 0 -> {  // FRONT view — XY plane: adjust zRot
                     angleToEnd    = Math.atan2(ey, ex);
                     angleToTarget = Math.atan2(ty, tx);
-                    delta = normaliseAngle(angleToTarget - angleToEnd) * damping;
-                    float newZ = clampAngle(grp.getZ() + (float) delta);
-                    batchUpdating = true;
-                    grp.zSlider.setValue(Math.round(newZ * 100));
-                    grp.zField.setText(String.format("%.2f", newZ));
-                    batchUpdating = false;
+                    delta = clampDelta(normaliseAngle(angleToTarget - angleToEnd) * damping, maxStep);
+                    joint.angleZ = clampAngle(joint.angleZ + (float) delta);
                 }
-                case 1 -> {  // SIDE view — ZY plane: adjust xRot (pitch)
+                case 1 -> {  // SIDE view — ZY plane: adjust xRot
                     angleToEnd    = Math.atan2(ey, ez);
                     angleToTarget = Math.atan2(ty, tz);
-                    delta = normaliseAngle(angleToTarget - angleToEnd) * damping;
-                    float newX = clampAngle(grp.getX() + (float) delta);
-                    batchUpdating = true;
-                    grp.xSlider.setValue(Math.round(newX * 100));
-                    grp.xField.setText(String.format("%.2f", newX));
-                    batchUpdating = false;
+                    delta = clampDelta(normaliseAngle(angleToTarget - angleToEnd) * damping, maxStep);
+                    joint.angleX = clampAngle(joint.angleX + (float) delta);
                 }
-                case 2 -> {  // TOP view — XZ plane: adjust yRot (yaw)
+                case 2 -> {  // TOP view — XZ plane: adjust yRot
                     angleToEnd    = Math.atan2(ez, ex);
                     angleToTarget = Math.atan2(tz, tx);
-                    delta = normaliseAngle(angleToTarget - angleToEnd) * damping;
-                    float newY = clampAngle(grp.getY() + (float) delta);
-                    batchUpdating = true;
-                    grp.ySlider.setValue(Math.round(newY * 100));
-                    grp.yField.setText(String.format("%.2f", newY));
-                    batchUpdating = false;
+                    delta = clampDelta(normaliseAngle(angleToTarget - angleToEnd) * damping, maxStep);
+                    joint.angleY = clampAngle(joint.angleY + (float) delta);
                 }
-                default -> {  // 3D view: use XY plane (same as FRONT) as approximation
+                default -> {  // 3D view: adjust both xRot and zRot
                     angleToEnd    = Math.atan2(ey, ex);
                     angleToTarget = Math.atan2(ty, tx);
-                    delta = normaliseAngle(angleToTarget - angleToEnd) * damping;
-                    float newZ = clampAngle(grp.getZ() + (float) delta);
-                    batchUpdating = true;
-                    grp.zSlider.setValue(Math.round(newZ * 100));
-                    grp.zField.setText(String.format("%.2f", newZ));
-                    batchUpdating = false;
+                    delta = clampDelta(normaliseAngle(angleToTarget - angleToEnd) * damping, maxStep);
+                    joint.angleZ = clampAngle(joint.angleZ + (float) delta);
+                    double ae2 = Math.atan2(ey, Math.sqrt(ex*ex + ez*ez));
+                    double at2 = Math.atan2(ty, Math.sqrt(tx*tx + tz*tz));
+                    double d2 = clampDelta(normaliseAngle(at2 - ae2) * damping, maxStep);
+                    joint.angleX = clampAngle(joint.angleX + (float) d2);
                 }
             }
+        }
+
+        double clampDelta(double d, float max) {
+            return Math.max(-max, Math.min(max, d));
         }
 
         double normaliseAngle(double a) {
@@ -1229,28 +1237,39 @@ public class PoseEditor extends JFrame {
             Joint endEffector = skeleton.jointMap.get(ikJointName);
             if (endEffector == null || ikChain.size() < 2) return;
 
+            // First, apply current slider state to skeleton
+            Map<String, float[]> poseData = getCurrentPose();
+            applyPose(skeleton, poseData);
+            computeFK(skeleton);
+
             for (int iter = 0; iter < iterations; iter++) {
-                // Walk from second-to-last joint (parent of dragged) toward root
-                for (int i = ikChain.size() - 2; i >= 0; i--) {
+                // Start from size-2 (parent of dragged) down to 1 (skip index 0 = root, which stays fixed)
+                for (int i = ikChain.size() - 2; i >= 1; i--) {
                     String jName = ikChain.get(i);
                     Joint joint = skeleton.jointMap.get(jName);
                     if (joint == null) continue;
 
-                    // Recompute FK so world positions are current
-                    Map<String, float[]> poseData = getCurrentPose();
-                    applyPose(skeleton, poseData);
-                    computeFK(skeleton);
-
-                    // End effector current world pos
                     double[] endPos = skeleton.jointMap.get(ikJointName).worldPos.clone();
-
                     ccdStep(joint, endPos, targetWorldPos, ikViewQuadrant);
+
+                    // Recompute FK after each joint change (don't reset from sliders!)
+                    computeFK(skeleton);
                 }
-                // Final FK recompute after each full pass
-                Map<String, float[]> poseData = getCurrentPose();
-                applyPose(skeleton, poseData);
-                computeFK(skeleton);
             }
+
+            // After solving, write ALL chain joint angles back to sliders
+            batchUpdating = true;
+            for (String jName : ikChain) {
+                Joint joint = skeleton.jointMap.get(jName);
+                String sliderName = jName.startsWith("R_") ? "L_" + jName.substring(2) : jName;
+                JointSliderGroup grp = sliderGroups.get(sliderName);
+                if (grp != null && joint != null) {
+                    grp.xSlider.setValue(Math.round(joint.angleX * 100));
+                    grp.ySlider.setValue(Math.round(joint.angleY * 100));
+                    grp.zSlider.setValue(Math.round(joint.angleZ * 100));
+                }
+            }
+            batchUpdating = false;
         }
 
         /** Push all IK chain joint values into their sliders' text fields (already done per-step, but ensure fields are synced). */
